@@ -2,52 +2,53 @@
 
 <div class="mb-2">
     <div class="border rounded bg-white px-2 py-2">
+
         <div class="row align-items-center">
 
-            <div class="col-md-8">
-                <span class="font-weight-bold">@Model.NodeName</span>
-
-                @if (Model.NodeType == "Block")
-                {
-                    <span class="badge badge-secondary ml-2">Block</span>
-                }
-                else
-                {
-                    <span class="badge badge-info ml-2">Field</span>
-                }
+            <div class="col-md-10">
+                <span class="font-weight-bold">
+                    @Model.NodeName
+                </span>
 
                 @if (!string.IsNullOrWhiteSpace(Model.InputType) && Model.InputType != "None")
                 {
-                    <span class="badge badge-light border ml-1">@Model.InputType</span>
+                    <span class="badge badge-secondary ml-2">
+                        @Model.InputType
+                    </span>
                 }
             </div>
 
-            <div class="col-md-4 text-right">
+            <div class="col-md-2 text-right">
+
                 <button type="button"
-                        class="btn btn-info btn-sm btnEditConfiguration"
-                        data-product-id="@Model.ProductId"
-                        title="Edit">
+                        class="btn btn-info btn-sm btnEditNode"
+                        data-node-id="@Model.NodeId"
+                        title="Edit Node">
                     <i class="fas fa-edit"></i>
                 </button>
 
                 <button type="button"
                         class="btn btn-danger btn-sm btnDeleteNode"
                         data-node-id="@Model.NodeId"
-                        title="Delete">
+                        title="Delete Node">
                     <i class="fas fa-trash"></i>
                 </button>
+
             </div>
 
         </div>
+
     </div>
 
     @if (Model.Children != null && Model.Children.Count > 0)
     {
         <div class="ml-4 mt-2 border-left pl-3">
+
             @for (int i = 0; i < Model.Children.Count; i++)
             {
-                @await Html.PartialAsync("_TreeNode", Model.Children[i])
+                @await Html.PartialAsync("~/Views/ProductConfiguration/_TreeNode.cshtml", Model.Children[i])
             }
+
         </div>
     }
 </div>

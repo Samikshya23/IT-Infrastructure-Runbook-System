@@ -1,0 +1,79 @@
+﻿@model List<EmployeeAccessSystem.Models.ProductConfigurationIndexItem>
+
+@if (Model != null && Model.Count > 0)
+{
+    for (int i = 0; i < Model.Count; i++)
+    {
+        var item = Model[i];
+
+        <div class="card card-outline card-primary mb-3">
+            <div class="card-header py-2">
+                <div class="row align-items-center">
+
+                    <div class="col-md-8">
+                        <h3 class="card-title font-weight-bold mb-0">
+                            @item.ProductName
+                        </h3>
+                    </div>
+
+                    <div class="col-md-4 text-right">
+
+                        <button type="button"
+                                class="btn btn-info btn-sm btnEditConfiguration"
+                                data-product-id="@item.ProductId"
+                                title="Edit Structure">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                        <form asp-controller="ProductConfiguration"
+                              asp-action="Delete"
+                              method="post"
+                              class="d-inline deleteForm">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="productId"
+                                   value="@item.ProductId" />
+
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm"
+                                    title="Delete Structure">
+                                <i class="fas fa-trash"></i>
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card-body p-2">
+
+                @if (item.Nodes != null && item.Nodes.Count > 0)
+                {
+                    for (int j = 0; j < item.Nodes.Count; j++)
+                    {
+                        @await Html.PartialAsync("~/Views/ProductConfiguration/_TreeNode.cshtml", item.Nodes[j])
+                    }
+                }
+                else
+                {
+                    <div class="text-muted text-center py-3">
+                        No structure added for this product.
+                    </div>
+                }
+
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center text-muted py-4">
+            Click <strong>Add Product Configuration</strong> to create or edit a product structure.
+        </div>
+    </div>
+}

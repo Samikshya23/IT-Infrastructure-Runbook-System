@@ -1,0 +1,309 @@
+﻿@model EmployeeAccessSystem.Models.ProductStructurePageViewModel
+
+@{
+    ViewData["Title"] = "Product Structure";
+}
+
+<section class="content pt-2 pb-0">
+    <div class="container-fluid px-0">
+
+        <div class="row mb-2 mx-0 align-items-center">
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Product Structure</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0">
+                <button type="button"
+                        class="btn btn-primary rounded-pill open-configuration-modal"
+                        data-url="/ProductConfiguration/Add">
+                    <i class="fas fa-plus mr-1"></i> Manage Product Configuration
+                </button>
+            </div>
+        </div>
+
+        <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
+
+            <div class="card-header bg-white border-bottom py-2 px-2 rounded-0">
+                <form asp-action="Index" method="get">
+                    <div class="row align-items-end mx-0">
+                        <div class="col-md-4 px-0">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold">Select Product</label>
+                                <select name="selectedProductId" class="form-control form-control-sm">
+                                    <option value="">Select Product</option>
+
+                                    @foreach (var item in Model.ProductList)
+                                    {
+                                        if (item.ProductId == Model.SelectedProductId)
+                                        {
+                                            <option value="@item.ProductId" selected>
+                                                @item.ProductName
+                                            </option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.ProductId">
+                                                @item.ProductName
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm btn-block">
+                                <i class="fas fa-search mr-1"></i> Show
+                            </button>
+                        </div>
+
+                        <div class="col-md-6 text-right">
+                            <input type="text"
+                                   id="customSearch"
+                                   class="form-control form-control-sm d-inline-block"
+                                   style="max-width:300px;"
+                                   placeholder="Search" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body p-0">
+                @if (Model.SelectedProductId <= 0)
+                {
+                    <div class="text-center text-muted py-4">
+                        Please select product to view product structure.
+                    </div>
+                }
+                else if (Model.Rows == null || Model.Rows.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">
+                        No product structure found for selected product.
+                    </div>
+                }
+                else
+                {
+                    <table id="productStructureTable"
+                           class="table table-bordered table-hover table-sm mb-0 rounded-0"
+                           style="border-color:#dee2e6;">
+                        <thead class="bg-light border-bottom">
+                            <tr>
+                                <th class="text-center align-middle" style="width:70px;">SN</th>
+                                <th class="text-center align-middle" style="width:35%;">Node / Group</th>
+                                <th class="text-center align-middle" style="width:35%;">Item Name</th>
+                                <th class="text-center align-middle" style="width:110px;">Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var row in Model.Rows)
+                            {
+                                string combinedItemNames = "";
+
+                                foreach (var childItem in row.Children)
+                                {
+                                    combinedItemNames = combinedItemNames + " " + childItem.ItemName;
+                                }
+
+                                <tr>
+                                    <td class="text-center align-middle" style="vertical-align: middle !important;">
+                                        @row.SN
+                                    </td>
+
+                                    <td class="align-middle" style="vertical-align: middle !important;">
+                                        @row.NodeName
+                                    </td>
+
+                                    <td class="p-0 align-top" data-order="@combinedItemNames">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed;">
+                                            <tbody>
+                                                @for (int i = 0; i < row.Children.Count; i++)
+                                                {
+                                                    var child = row.Children[i];
+
+                                                    <tr>
+                                                        <td class="p-0 align-middle @(i != row.Children.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="d-flex align-items-center px-2"
+                                                                 style="height:34px; padding-left:@(10 + (child.Level * 28))px !important;">
+                                                                @if (child.Level > 0)
+                                                                {
+                                                                    <i class="fas fa-level-up-alt fa-rotate-90 text-muted mr-2"></i>
+                                                                }
+
+                                                                @child.ItemName
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+
+                                    <td class="p-0 align-top">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed;">
+                                            <tbody>
+                                                @for (int i = 0; i < row.Children.Count; i++)
+                                                {
+                                                    var child = row.Children[i];
+
+                                                    <tr>
+                                                        <td class="p-0 align-middle text-center @(i != row.Children.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="d-flex justify-content-center align-items-center" style="height:34px; gap:4px;">
+                                                                <button type="button"
+                                                                        class="btn btn-xs btn-light border open-configuration-modal"
+                                                                        data-url="/ProductConfiguration/Add?productId=@child.ProductId"
+                                                                        title="Edit">
+                                                                    <i class="fas fa-pen"></i>
+                                                                </button>
+
+                                                                <button type="button"
+                                                                        class="btn btn-xs btn-outline-danger open-modal-btn"
+                                                                        data-url="/ProductStructure/Delete/@child.NodeId"
+                                                                        data-title="Delete Product Structure"
+                                                                        title="Delete">
+                                                                    <i class="fas fa-trash-alt"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<div class="modal fade" id="mainActionModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+        <div class="modal-content rounded-0">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mainActionModalTitle">Product Structure</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body" id="mainActionModalBody">
+                <div class="text-center py-3">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="configurationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content" id="configurationModalContent">
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            if ($('#productStructureTable').length) {
+                var table = $('#productStructureTable').DataTable({
+                    paging: true,
+                    searching: true,
+                    ordering: true,
+                    info: true,
+                    lengthChange: true,
+                    pageLength: 10,
+                    autoWidth: false,
+                    columnDefs: [
+                        { orderable: true, targets: 0 },
+                        { orderable: true, targets: 1 },
+                        { orderable: true, targets: 2 },
+                        { orderable: false, targets: 3 }
+                    ],
+                    dom: 'lrtip'
+                });
+
+                $('#customSearch').on('keyup', function () {
+                    table.search(this.value).draw();
+                });
+            }
+
+            $(document).on('click', '.open-modal-btn', function (e) {
+                e.preventDefault();
+
+                var url = $(this).data('url');
+                var title = $(this).data('title') || 'Product Structure';
+
+                $('#mainActionModalTitle').text(title);
+                $('#mainActionModalBody').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>');
+
+                $('#mainActionModalBody').load(url, function () {
+                    $('#mainActionModal').modal('show');
+                });
+            });
+
+            $(document).on('click', '.open-configuration-modal', function (e) {
+                e.preventDefault();
+
+                var url = $(this).data('url');
+
+                $.get(url, function (data) {
+                    $('#configurationModalContent').html(data);
+                    $('#configurationModal').modal('show');
+                });
+            });
+
+            $(document).on('submit', '#deleteProductStructureForm', function (e) {
+                e.preventDefault();
+
+                var form = $(this);
+                var actionUrl = form.attr('action');
+                var formData = form.serialize();
+
+                $.ajax({
+                    type: 'POST',
+                    url: actionUrl,
+                    data: formData,
+                    success: function (response) {
+
+                        if (typeof response === 'string' && response.startsWith('success|')) {
+                            var parts = response.split('|');
+                            var message = parts[1];
+                            var productId = parts[2];
+
+                            $('#mainActionModal').modal('hide');
+                            window.location.href = '/ProductStructure/Index?selectedProductId=' + productId + '&successMessage=' + encodeURIComponent(message);
+                            return;
+                        }
+
+                        if (typeof response === 'string' && response.startsWith('error|')) {
+                            var errorParts = response.split('|');
+                            var errorMessage = errorParts[1];
+                            var errorProductId = errorParts[2];
+
+                            $('#mainActionModal').modal('hide');
+                            window.location.href = '/ProductStructure/Index?selectedProductId=' + errorProductId + '&errorMessage=' + encodeURIComponent(errorMessage);
+                            return;
+                        }
+
+                        $('#mainActionModalBody').html(response);
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+
+            $('#mainActionModal').on('hidden.bs.modal', function () {
+                $('#mainActionModalBody').html('');
+            });
+
+        });
+    </script>
+}

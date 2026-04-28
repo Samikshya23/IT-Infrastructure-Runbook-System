@@ -70,6 +70,13 @@ namespace EmployeeAccessSystem.Repositories
         {
             using var conn = GetConnection();
 
+            int? sortOrderValue = null;
+
+            if (model.SortOrder > 0)
+            {
+                sortOrderValue = model.SortOrder;
+            }
+
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("Flag", "ADD");
             parameters.Add("ProductId", model.ProductId);
@@ -77,9 +84,27 @@ namespace EmployeeAccessSystem.Repositories
             parameters.Add("NodeName", model.NodeName);
             parameters.Add("NodeType", model.NodeType);
             parameters.Add("InputType", model.InputType);
-            parameters.Add("SortOrder", model.SortOrder);
+            parameters.Add("SortOrder", sortOrderValue);
             parameters.Add("IsActive", model.IsActive);
             parameters.Add("CreatedBy", model.CreatedBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "dbo.sp_ProductConfiguration_Manage",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<int> UpdateNodeAsync(ProductConfiguration model)
+        {
+            using var conn = GetConnection();
+
+            DynamicParameters parameters = new DynamicParameters();
+            parameters.Add("Flag", "UPDATENODE");
+            parameters.Add("NodeId", model.NodeId);
+            parameters.Add("NodeName", model.NodeName);
+            parameters.Add("NodeType", model.NodeType);
+            parameters.Add("InputType", model.InputType);
 
             return await conn.ExecuteScalarAsync<int>(
                 "dbo.sp_ProductConfiguration_Manage",

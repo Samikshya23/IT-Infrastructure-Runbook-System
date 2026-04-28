@@ -11,6 +11,7 @@ namespace EmployeeAccessSystem.Services
         Task<ProductConfiguration> GetNodeByIdAsync(int nodeId);
 
         Task<(bool Success, string Message)> SaveStructureAsync(ProductConfigurationSaveRequest request, string createdBy);
+        Task<(bool Success, string Message)> UpdateNodeAsync(ProductConfiguration model);
         Task<(bool Success, string Message)> DeleteByProductAsync(int productId, string deletedBy);
         Task<(bool Success, string Message)> DeleteNodeAsync(int nodeId, string deletedBy);
     }

@@ -10,6 +10,7 @@ namespace EmployeeAccessSystem.Repositories
         Task<IEnumerable<ProductConfiguration>> GetByProductIdAsync(int productId);
         Task<ProductConfiguration> GetNodeByIdAsync(int nodeId);
         Task<int> AddAsync(ProductConfiguration model);
+        Task<int> UpdateNodeAsync(ProductConfiguration model);
         Task<int> DeleteByProductAsync(int productId, string deletedBy);
         Task<int> DeleteNodeAsync(int nodeId, string deletedBy);
     }

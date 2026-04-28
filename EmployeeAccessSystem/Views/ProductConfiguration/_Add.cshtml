@@ -1,29 +1,27 @@
 ﻿@{
     Layout = null;
+
     int selectedProductId = ViewBag.SelectedProductId;
     string existingJson = ViewBag.ExistingJson;
 }
 
 <div class="modal-header bg-white border-bottom">
-    <h5 class="modal-title font-weight-bold text-dark">
-        Product Configuration
-    </h5>
+    <h5 class="modal-title font-weight-bold">Product Configuration</h5>
 
-    <button type="button" class="close text-dark" data-dismiss="modal">
+    <button type="button" class="close" data-dismiss="modal">
         <span>&times;</span>
     </button>
 </div>
 
 <div class="modal-body">
 
-    <div id="configErrorArea"></div>
+    <div id="msgArea"></div>
 
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
-
             <div class="row align-items-end">
 
-                <div class="col-md-10">
+                <div class="col-md-11">
                     <label class="font-weight-bold mb-1">Product</label>
 
                     <select id="ProductId"
@@ -33,35 +31,32 @@
                     </select>
                 </div>
 
-                <div class="col-md-2 text-right">
+                <div class="col-md-1 text-right">
                     <button type="button"
+                            id="btnAddRoot"
                             class="btn btn-primary btn-sm"
-                            id="btnAddMainNode">
-                        + Add Node
+                            title="Add Node"
+                            style="display:none;">
+                        <i class="fas fa-plus"></i>
                     </button>
                 </div>
 
             </div>
-
         </div>
     </div>
 
     <div class="card card-outline card-secondary mb-0">
-
         <div class="card-header py-2">
-            <h3 class="card-title font-weight-bold">
-                Structure Builder
-            </h3>
+            <h3 class="card-title font-weight-bold">Structure Builder</h3>
         </div>
 
-        <div class="card-body p-2" id="nodeContainer">
-
-            <div class="text-muted text-center py-3" id="emptyMessage">
-                Select product and click Add Node
+        <div class="card-body p-2">
+            <div id="nodeContainer">
+                <div class="text-muted text-center py-3" id="emptyMessage">
+                    Select product first, then click plus to add structure.
+                </div>
             </div>
-
         </div>
-
     </div>
 
 </div>
@@ -74,258 +69,405 @@
     </button>
 
     <button type="button"
-            class="btn btn-primary btn-sm"
-            id="btnSaveStructure">
+            id="btnSave"
+            class="btn btn-primary btn-sm">
         Save Structure
     </button>
 </div>
 
 <script>
-
     $(document).ready(function () {
 
         var selectedProductId = @selectedProductId;
         var existingNodes = @Html.Raw(existingJson);
+        var optionList = [];
+
+        buildOptions(existingNodes);
 
         if (selectedProductId > 0) {
             $("#ProductId").val(selectedProductId);
-            $("#ProductId").prop("disabled", true);
+            $("#btnAddRoot").show();
+
+            $("#nodeContainer").html(
+                '<div class="text-muted text-center py-3" id="emptyMessage">' +
+                'Click plus to add structure.' +
+                '</div>'
+            );
+        }
+        else {
+            $("#btnAddRoot").hide();
         }
 
-        if (existingNodes != null && existingNodes.length > 0) {
-
-            $("#emptyMessage").remove();
-
-            for (var i = 0; i < existingNodes.length; i++) {
-                renderExistingNode($("#nodeContainer"), existingNodes[i]);
-            }
-        }
-
-        $("#btnAddMainNode").click(function () {
-            addNode($("#nodeContainer"), "Block");
-        });
-
-        $("#btnSaveStructure").click(function () {
-            saveStructure();
-        });
-
-        $("#ProductId").change(function () {
+        $("#ProductId").off("change").on("change", function () {
 
             var productId = $(this).val();
 
-            if (productId !== "") {
-                $.get("/ProductConfiguration/Add?productId=" + productId, function (data) {
-                    $("#configurationModalContent").html(data);
-                });
-            }
-        });
-
-    });
-
-    function getInputTypeOptions(selectedValue) {
-
-        var options = [
-            "None",
-            "Checkbox",
-            "Text",
-            "Number",
-            "Percentage",
-            "Yes/No",
-            "Up/Down",
-            "Date"
-        ];
-
-        var html = "";
-
-        for (var i = 0; i < options.length; i++) {
-
-            if (options[i] === selectedValue) {
-                html += '<option selected>' + options[i] + '</option>';
-            }
-            else {
-                html += '<option>' + options[i] + '</option>';
-            }
-        }
-
-        return html;
-    }
-
-    function addNode(container, nodeType) {
-
-        $("#emptyMessage").remove();
-
-        var inputType = "None";
-
-        if (nodeType === "Field") {
-            inputType = "Checkbox";
-        }
-
-        var nodeHtml =
-        '<div class="card mb-1 node-row" data-node-type="' + nodeType + '">' +
-            '<div class="card-body p-2">' +
-
-                '<div class="row align-items-center">' +
-
-                    '<div class="col-md-7">' +
-                        '<input type="text" class="form-control form-control-sm node-name" placeholder="' + nodeType + ' Name" />' +
-                    '</div>' +
-
-                    '<div class="col-md-3">' +
-                        '<select class="form-control form-control-sm input-type">' +
-                            getInputTypeOptions(inputType) +
-                        '</select>' +
-                    '</div>' +
-
-                    '<div class="col-md-2 text-right">';
-
-                        if (nodeType === "Block") {
-
-                            nodeHtml +=
-                            '<button type="button" class="btn btn-outline-primary btn-sm btn-add-block mr-1" title="Add Block">+</button>' +
-                            '<button type="button" class="btn btn-outline-success btn-sm btn-add-field mr-1" title="Add Field">+</button>';
-                        }
-                        else {
-
-                            nodeHtml +=
-                            '<button type="button" class="btn btn-outline-primary btn-sm btn-add-field mr-1" title="Add Child">+</button>';
-                        }
-
-        nodeHtml +=
-                        '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-node" title="Delete">×</button>' +
-
-                    '</div>' +
-
-                '</div>' +
-
-                '<div class="child-container ml-4 mt-2"></div>' +
-
-            '</div>' +
-        '</div>';
-
-        container.append(nodeHtml);
-
-        var newNode = container.children(".node-row").last();
-
-        bindNodeButtons(newNode);
-    }
-
-    function bindNodeButtons(node) {
-
-        node.find(".btn-add-block").click(function () {
-
-            var child = $(this)
-                .closest(".node-row")
-                .find("> .card-body > .child-container");
-
-            addNode(child, "Block");
-        });
-
-        node.find(".btn-add-field").click(function () {
-
-            var child = $(this)
-                .closest(".node-row")
-                .find("> .card-body > .child-container");
-
-            addNode(child, "Field");
-        });
-
-        node.find(".btn-remove-node").click(function () {
-
-            $(this).closest(".node-row").remove();
-
-            if ($("#nodeContainer").children(".node-row").length === 0) {
+            if (productId === "") {
+                $("#btnAddRoot").hide();
 
                 $("#nodeContainer").html(
                     '<div class="text-muted text-center py-3" id="emptyMessage">' +
-                        'Select product and click Add Node' +
-                    '</div>');
+                    'Select product first, then click plus to add structure.' +
+                    '</div>'
+                );
+
+                return;
             }
-        });
-    }
 
-    function renderExistingNode(container, node) {
-
-        addNode(container, node.nodeType);
-
-        var newNode = container.children(".node-row").last();
-
-        newNode.find(".node-name").val(node.nodeName);
-        newNode.find(".input-type").val(node.inputType);
-
-        if (node.children != null && node.children.length > 0) {
-
-            var child = newNode.find("> .card-body > .child-container");
-
-            for (var i = 0; i < node.children.length; i++) {
-                renderExistingNode(child, node.children[i]);
-            }
-        }
-    }
-
-    function collectNodes(container) {
-
-        var nodes = [];
-
-        container.children(".node-row").each(function () {
-
-            var child = $(this).find("> .card-body > .child-container");
-
-            nodes.push({
-                nodeName: $(this).find(".node-name").val(),
-                nodeType: $(this).attr("data-node-type"),
-                inputType: $(this).find(".input-type").val(),
-                children: collectNodes(child)
+            $.get("/ProductConfiguration/Add?productId=" + productId, function (data) {
+                $("#configurationModalContent").html(data);
             });
         });
 
-        return nodes;
-    }
+        $("#btnAddRoot").off("click").on("click", function () {
 
-    function saveStructure() {
+            if ($("#ProductId").val() === "") {
+                showError("Please select product first.");
+                return;
+            }
 
-        var productId = $("#ProductId").val();
+            $("#emptyMessage").remove();
 
-        if (productId === "") {
-            showConfigError("Please select product.");
-            return;
-        }
+            addRow($("#nodeContainer"), 0, "", "");
+        });
 
-        var nodes = collectNodes($("#nodeContainer"));
+        $("#btnSave").off("click").on("click", function () {
+            saveData();
+        });
 
-        if (nodes.length === 0) {
-            showConfigError("Please add node.");
-            return;
-        }
-
-        $.ajax({
-            url: "/ProductConfiguration/SaveStructure",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-                productId: parseInt(productId),
-                nodes: nodes
-            }),
-            success: function (response) {
-
-                if (response.success) {
-                    window.location.href = "/ProductConfiguration?selectedProductId=" + productId;
-                }
-                else {
-                    showConfigError(response.message);
-                }
-            },
-            error: function () {
-                showConfigError("Error while saving.");
+        $(document).on("click", function (e) {
+            if (!$(e.target).closest(".node-name-wrapper").length) {
+                $(".node-suggestion-box").hide();
             }
         });
-    }
 
-    function showConfigError(message) {
+        function buildOptions(nodes) {
 
-        $("#configErrorArea").html(
-            '<div class="alert alert-danger py-1 mb-2">' +
-                message +
-            '</div>');
-    }
+            optionList = [];
 
+            collectNames(nodes);
+        }
+
+        function collectNames(nodes) {
+
+            if (nodes == null) {
+                return;
+            }
+
+            for (var i = 0; i < nodes.length; i++) {
+
+                if (nodes[i].nodeName != null && nodes[i].nodeName.trim() !== "") {
+
+                    if ($.inArray(nodes[i].nodeName, optionList) === -1) {
+                        optionList.push(nodes[i].nodeName);
+                    }
+                }
+
+                if (nodes[i].children != null && nodes[i].children.length > 0) {
+                    collectNames(nodes[i].children);
+                }
+            }
+        }
+
+        function inputOptions(selectedValue) {
+
+            var options = [
+                "Text",
+                "Checkbox",
+                "Yes/No",
+                "Up/Down",
+                "Percentage",
+                "Date"
+            ];
+
+            var html = "";
+
+            html += '<option value="">Select Type</option>';
+
+            for (var i = 0; i < options.length; i++) {
+
+                if (options[i] === selectedValue) {
+                    html += '<option selected value="' + options[i] + '">' + options[i] + '</option>';
+                }
+                else {
+                    html += '<option value="' + options[i] + '">' + options[i] + '</option>';
+                }
+            }
+
+            return html;
+        }
+
+        function addRow(container, level, selectedNodeName, selectedInputType) {
+
+            var margin = level * 30;
+
+            var html = "";
+
+            html += '<div class="node-row mb-2" data-level="' + level + '" style="margin-left:' + margin + 'px;">';
+
+            html += '<div class="row align-items-center">';
+
+            html += '<div class="col-md-6">';
+            html += '<div class="node-name-wrapper position-relative">';
+            html += '<input type="text" autocomplete="off" class="form-control form-control-sm node-name" placeholder="Type or select node name" value="' + escapeHtml(selectedNodeName) + '" />';
+            html += '<div class="dropdown-menu node-suggestion-box w-100"></div>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="col-md-4">';
+            html += '<select class="form-control form-control-sm input-type">';
+            html += inputOptions(selectedInputType);
+            html += '</select>';
+            html += '</div>';
+
+            html += '<div class="col-md-2 text-right">';
+            html += '<button type="button" class="btn btn-outline-primary btn-sm btn-plus mr-1" title="Add Child">';
+            html += '<i class="fas fa-plus"></i>';
+            html += '</button>';
+
+            html += '<button type="button" class="btn btn-outline-danger btn-sm btn-minus" title="Remove Node">';
+            html += '<i class="fas fa-minus"></i>';
+            html += '</button>';
+            html += '</div>';
+
+            html += '</div>';
+
+            html += '<div class="child-area mt-2"></div>';
+
+            html += '</div>';
+
+            container.append(html);
+
+            var current = container.children(".node-row").last();
+
+            current.find(".node-name").off("focus keyup").on("focus keyup", function () {
+                showNodeSuggestions($(this));
+            });
+
+            current.find(".node-suggestion-box").off("click", ".node-suggestion-item")
+                .on("click", ".node-suggestion-item", function () {
+
+                    var selectedText = $(this).attr("data-value");
+
+                    current.find(".node-name").val(selectedText);
+                    current.find(".node-suggestion-box").hide();
+                    $("#msgArea").html("");
+                });
+
+            current.find(".btn-plus").off("click").on("click", function () {
+
+                var parent = $(this).closest(".node-row");
+
+                var nodeName = parent.find("> .row .node-name").val();
+                var inputType = parent.find("> .row .input-type").val();
+
+                if (nodeName == null || nodeName.trim() === "") {
+                    showError("Please type or select node name first.");
+                    return;
+                }
+
+                if (inputType == null || inputType.trim() === "") {
+                    showError("Please select input type first.");
+                    return;
+                }
+
+                var childArea = parent.children(".child-area");
+
+                addRow(childArea, level + 1, "", "");
+            });
+
+            current.find(".btn-minus").off("click").on("click", function () {
+
+                current.remove();
+
+                if ($("#nodeContainer").children(".node-row").length === 0) {
+                    $("#nodeContainer").html(
+                        '<div class="text-muted text-center py-3" id="emptyMessage">' +
+                        'Click plus to add structure.' +
+                        '</div>'
+                    );
+                }
+            });
+
+            current.find(".node-name, .input-type").off("input change").on("input change", function () {
+                $("#msgArea").html("");
+            });
+        }
+
+        function showNodeSuggestions(input) {
+
+            var keyword = input.val().toLowerCase();
+            var suggestionBox = input.closest(".node-name-wrapper").find(".node-suggestion-box");
+
+            var html = "";
+
+            for (var i = 0; i < optionList.length; i++) {
+
+                var name = optionList[i];
+
+                if (keyword === "" || name.toLowerCase().indexOf(keyword) >= 0) {
+                    html += '<button type="button" class="dropdown-item node-suggestion-item" data-value="' + escapeHtml(name) + '">' +
+                            escapeHtml(name) +
+                            '</button>';
+                }
+            }
+
+            if (html === "") {
+                suggestionBox.hide();
+                return;
+            }
+
+            suggestionBox.html(html);
+            suggestionBox.show();
+        }
+
+        function saveData() {
+
+            var productId = $("#ProductId").val();
+
+            if (productId === "") {
+                showError("Please select product.");
+                return;
+            }
+
+            if ($("#nodeContainer").children(".node-row").length === 0) {
+                showError("Please click plus and add structure.");
+                return;
+            }
+
+            if (!validateRows($("#nodeContainer"))) {
+                return;
+            }
+
+            var nodes = collectRows($("#nodeContainer"));
+
+            if (nodes.length === 0) {
+                showError("Please add structure.");
+                return;
+            }
+
+            $.ajax({
+                url: "/ProductConfiguration/SaveStructure",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    productId: parseInt(productId),
+                    nodes: nodes
+                }),
+                success: function (response) {
+
+                    if (response.success) {
+                        window.location.href =
+                            "/ProductConfiguration?selectedProductId=" +
+                            productId +
+                            "&successMessage=" +
+                            encodeURIComponent(response.message);
+
+                        return;
+                    }
+
+                    showError(response.message);
+                },
+                error: function () {
+                    showError("Error while saving structure.");
+                }
+            });
+        }
+
+        function validateRows(container) {
+
+            var valid = true;
+
+            container.children(".node-row").each(function () {
+
+                var row = $(this);
+
+                var nodeName = row.find("> .row .node-name").val();
+                var inputType = row.find("> .row .input-type").val();
+
+                if (nodeName == null || nodeName.trim() === "") {
+                    showError("Please type or select node name for all rows.");
+                    valid = false;
+                    return false;
+                }
+
+                if (inputType == null || inputType.trim() === "") {
+                    showError("Please select input type for all rows.");
+                    valid = false;
+                    return false;
+                }
+
+                var childValid = validateRows(row.children(".child-area"));
+
+                if (!childValid) {
+                    valid = false;
+                    return false;
+                }
+            });
+
+            return valid;
+        }
+
+        function collectRows(container) {
+
+            var data = [];
+
+            container.children(".node-row").each(function () {
+
+                var row = $(this);
+
+                var nodeName = row.find("> .row .node-name").val();
+                var inputType = row.find("> .row .input-type").val();
+
+                if (nodeName != null &&
+                    nodeName.trim() !== "" &&
+                    inputType != null &&
+                    inputType.trim() !== "") {
+
+                    data.push({
+                        nodeName: nodeName.trim(),
+                        nodeType: "Block",
+                        inputType: inputType,
+                        children: collectRows(row.children(".child-area"))
+                    });
+                }
+            });
+
+            return data;
+        }
+
+        function showError(message) {
+
+            $("#msgArea").html(
+                '<div class="toast bg-danger text-white show mb-2">' +
+                    '<div class="toast-header bg-danger text-white border-0">' +
+                        '<strong class="mr-auto">Error</strong>' +
+                        '<small>Now</small>' +
+                        '<button type="button" class="close text-white" onclick="$(\'#msgArea\').html(\'\')">' +
+                            '<span>&times;</span>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="toast-body">' +
+                        message +
+                    '</div>' +
+                '</div>'
+            );
+        }
+
+        function escapeHtml(value) {
+
+            if (value == null) {
+                return "";
+            }
+
+            return value
+                .toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+    });
 </script>

@@ -42,6 +42,7 @@ namespace EmployeeAccessSystem.Services
                 if (!productExists)
                 {
                     ProductConfigurationIndexItem indexItem = new ProductConfigurationIndexItem();
+
                     indexItem.ProductId = item.ProductId;
                     indexItem.ProductName = item.ProductName;
                     indexItem.Nodes = new List<ProductConfiguration>();
@@ -57,6 +58,7 @@ namespace EmployeeAccessSystem.Services
                     }
 
                     indexItem.Nodes = BuildTree(productNodes);
+
                     result.Add(indexItem);
                 }
             }
@@ -88,7 +90,9 @@ namespace EmployeeAccessSystem.Services
             return await _repository.GetNodeByIdAsync(nodeId);
         }
 
-        public async Task<(bool Success, string Message)> SaveStructureAsync(ProductConfigurationSaveRequest request, string createdBy)
+        public async Task<(bool Success, string Message)> SaveStructureAsync(
+            ProductConfigurationSaveRequest request,
+            string createdBy)
         {
             if (request == null)
             {
@@ -111,26 +115,79 @@ namespace EmployeeAccessSystem.Services
 
             foreach (ProductConfigurationNodeRequest node in request.Nodes)
             {
-                await SaveNodeRecursive(request.ProductId, null, node, sortOrder, createdBy);
+                await SaveNodeRecursive(
+                    request.ProductId,
+                    null,
+                    node,
+                    sortOrder,
+                    createdBy
+                );
+
                 sortOrder++;
             }
 
             return (true, "Product configuration saved successfully.");
         }
 
-        public async Task<(bool Success, string Message)> DeleteByProductAsync(int productId, string deletedBy)
+        public async Task<(bool Success, string Message)> UpdateNodeAsync(ProductConfiguration model)
+        {
+            if (model == null)
+            {
+                return (false, "Invalid node.");
+            }
+
+            if (model.NodeId <= 0)
+            {
+                return (false, "Invalid node.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.NodeName))
+            {
+                return (false, "Node name is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.NodeType))
+            {
+                model.NodeType = "Block";
+            }
+
+            if (string.IsNullOrWhiteSpace(model.InputType))
+            {
+                model.InputType = "None";
+            }
+
+            int result = await _repository.UpdateNodeAsync(model);
+
+            if (result > 0)
+            {
+                return (true, "Node updated successfully.");
+            }
+
+            return (false, "Node update failed.");
+        }
+
+        public async Task<(bool Success, string Message)> DeleteByProductAsync(
+            int productId,
+            string deletedBy)
         {
             if (productId <= 0)
             {
                 return (false, "Invalid product configuration.");
             }
 
-            await _repository.DeleteByProductAsync(productId, deletedBy);
+            int result = await _repository.DeleteByProductAsync(productId, deletedBy);
 
-            return (true, "Product configuration deleted successfully.");
+            if (result > 0)
+            {
+                return (true, "Product configuration deleted successfully.");
+            }
+
+            return (false, "Product configuration delete failed.");
         }
 
-        public async Task<(bool Success, string Message)> DeleteNodeAsync(int nodeId, string deletedBy)
+        public async Task<(bool Success, string Message)> DeleteNodeAsync(
+            int nodeId,
+            string deletedBy)
         {
             if (nodeId <= 0)
             {
@@ -179,6 +236,7 @@ namespace EmployeeAccessSystem.Services
             }
 
             ProductConfiguration model = new ProductConfiguration();
+
             model.ProductId = productId;
             model.ParentNodeId = parentNodeId;
             model.NodeName = requestNode.NodeName.Trim();
@@ -196,7 +254,14 @@ namespace EmployeeAccessSystem.Services
 
                 foreach (ProductConfigurationNodeRequest child in requestNode.Children)
                 {
-                    await SaveNodeRecursive(productId, newNodeId, child, childSort, createdBy);
+                    await SaveNodeRecursive(
+                        productId,
+                        newNodeId,
+                        child,
+                        childSort,
+                        createdBy
+                    );
+
                     childSort++;
                 }
             }
