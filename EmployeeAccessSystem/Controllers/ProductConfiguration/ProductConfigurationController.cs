@@ -95,7 +95,13 @@ namespace EmployeeAccessSystem.Controllers
 
             return PartialView("_Add");
         }
+        [HttpGet]
+        public async Task<IActionResult> GetNodeNameOptions(int productId)
+        {
+            List<string> data = await _service.GetNodeNameOptionsAsync(productId);
 
+            return Json(data);
+        }
         [HttpPost]
         public async Task<IActionResult> SaveStructure([FromBody] ProductConfigurationSaveRequest request)
         {

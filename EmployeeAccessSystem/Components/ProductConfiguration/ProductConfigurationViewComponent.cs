@@ -17,11 +17,13 @@ namespace EmployeeAccessSystem.Components.ProductConfiguration
 
         public async Task<IViewComponentResult> InvokeAsync(int selectedProductId)
         {
-            List<ProductConfigurationIndexItem> result = new List<ProductConfigurationIndexItem>();
+            List<ProductConfigurationIndexItem> result =
+                new List<ProductConfigurationIndexItem>();
 
             if (selectedProductId > 0)
             {
-                List<ProductConfigurationIndexItem> data = await _service.GetIndexAsync();
+                List<ProductConfigurationIndexItem> data =
+                    await _service.GetIndexAsync();
 
                 foreach (ProductConfigurationIndexItem item in data)
                 {

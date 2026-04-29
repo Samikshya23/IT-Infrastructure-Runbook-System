@@ -18,7 +18,6 @@
                         @TempData["Success"]
                     </div>
                 }
-
                 @if (ViewBag.Error != null)
                 {
                     <div class="alert alert-danger">
@@ -33,13 +32,11 @@
                         <input asp-for="FullName" class="form-control" />
                         <span asp-validation-for="FullName" class="text-danger"></span>
                     </div>
-
                     <div class="mb-3">
                         <label asp-for="Email" class="form-label"></label>
                         <input asp-for="Email" class="form-control" />
                         <span asp-validation-for="Email" class="text-danger"></span>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Department</label>
                         <select asp-for="DepartmentId"
@@ -49,13 +46,12 @@
                         </select>
                         <span asp-validation-for="DepartmentId" class="text-danger"></span>
                     </div>
-
                     <div class="mb-3">
                         <label asp-for="Role" class="form-label">Role</label>
                         <select asp-for="Role"
                                 asp-items="ViewBag.Roles"
                                 class="form-control">
-                            <option value="">-- Select Role --</option>
+                            <option value="">Select Role</option>
                         </select>
                         <span asp-validation-for="Role" class="text-danger"></span>
                     </div>
@@ -65,7 +61,7 @@
                         <select asp-for="SupervisorEmployeeId"
                                 asp-items="ViewBag.Supervisors"
                                 class="form-control">
-                            <option value="">-- Select Supervisor --</option>
+                            <option value="">Select Supervisor</option>
                         </select>
                         <span asp-validation-for="SupervisorEmployeeId" class="text-danger"></span>
                     </div>

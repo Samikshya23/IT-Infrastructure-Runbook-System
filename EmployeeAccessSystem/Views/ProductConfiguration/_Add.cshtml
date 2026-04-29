@@ -7,12 +7,10 @@
 
 <div class="modal-header bg-white border-bottom">
     <h5 class="modal-title font-weight-bold">Product Configuration</h5>
-
-    <button type="button" class="close" data-dismiss="modal">
+    <button type="button" id="btnHeaderClose" class="close">
         <span>&times;</span>
     </button>
 </div>
-
 <div class="modal-body">
 
     <div id="msgArea"></div>
@@ -20,23 +18,21 @@
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
             <div class="row align-items-end">
-
                 <div class="col-md-11">
                     <label class="font-weight-bold mb-1">Product</label>
-
                     <select id="ProductId"
                             class="form-control form-control-sm"
-                            asp-items="ViewBag.ProductList">
+                            asp-l
+                            items="ViewBag.ProductList">
                         <option value="">Select Product</option>
                     </select>
                 </div>
-
                 <div class="col-md-1 text-right">
                     <button type="button"
                             id="btnAddRoot"
-                            class="btn btn-primary btn-sm"
+                            class="btn btn-outline-primary btn-sm"
                             title="Add Node"
-                            style="display:none;">
+                            style="display:none; min-width:28px;">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -45,7 +41,7 @@
         </div>
     </div>
 
-    <div class="card card-outline card-secondary mb-0">
+    <div class="card card-outline card-secondary">
         <div class="card-header py-2">
             <h3 class="card-title font-weight-bold">Structure Builder</h3>
         </div>
@@ -60,11 +56,10 @@
     </div>
 
 </div>
-
 <div class="modal-footer">
     <button type="button"
-            class="btn btn-secondary btn-sm"
-            data-dismiss="modal">
+            id="btnFooterClose"
+            class="btn btn-secondary btn-sm">
         Close
     </button>
 
@@ -74,29 +69,81 @@
         Save Structure
     </button>
 </div>
+<div class="modal fade"
+     id="confirmCloseModal"
+     tabindex="-1"
+     role="dialog"
+     data-backdrop="static"
+     data-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
+            </div>
 
+            <div class="modal-body text-center py-4">
+                <div class="font-weight-bold">
+                    Do you want to close this form?
+                </div>
+            </div>
+
+            <div class="modal-footer justify-content-center bg-light">
+                <button type="button"
+                        id="btnContinueEditing"
+                        class="btn btn-secondary btn-sm px-3">
+                    Continue Editing
+                </button>
+
+                <button type="button"
+                        id="btnConfirmClose"
+                        class="btn btn-danger btn-sm px-3">
+                    Yes, Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     $(document).ready(function () {
 
         var selectedProductId = @selectedProductId;
-        var existingNodes = @Html.Raw(existingJson);
-        var optionList = [];
+        var allowClose = false;
 
-        buildOptions(existingNodes);
+        var modalParent = $("#ProductId").closest(".modal");
+
+        if (modalParent.length === 0) {
+            modalParent = $(".modal.show");
+        }
+
+        $("#ProductId").select2({
+            theme: "bootstrap4",
+            width: "100%",
+            dropdownParent: modalParent
+        });
 
         if (selectedProductId > 0) {
-            $("#ProductId").val(selectedProductId);
+            $("#ProductId").val(selectedProductId).trigger("change");
             $("#btnAddRoot").show();
 
             $("#nodeContainer").html(
-                '<div class="text-muted text-center py-3" id="emptyMessage">' +
-                'Click plus to add structure.' +
-                '</div>'
+                '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
             );
         }
-        else {
-            $("#btnAddRoot").hide();
-        }
+        $("#btnHeaderClose,#btnFooterClose").off("click").on("click", function (e) {
+            e.preventDefault();
+            $("#confirmCloseModal").modal("show");
+        });
+        $("#btnContinueEditing").off("click").on("click", function () {
+            $("#confirmCloseModal").modal("hide");
+        });
+        $("#btnConfirmClose").off("click").on("click", function () {
+            allowClose = true;
+            $("#confirmCloseModal").modal("hide");
+
+            setTimeout(function () {
+                modalParent.modal("hide");
+            }, 200);
+        });
 
         $("#ProductId").off("change").on("change", function () {
 
@@ -106,9 +153,7 @@
                 $("#btnAddRoot").hide();
 
                 $("#nodeContainer").html(
-                    '<div class="text-muted text-center py-3" id="emptyMessage">' +
-                    'Select product first, then click plus to add structure.' +
-                    '</div>'
+                    '<div class="text-muted text-center py-3" id="emptyMessage">Select product first, then click plus to add structure.</div>'
                 );
 
                 return;
@@ -128,95 +173,34 @@
 
             $("#emptyMessage").remove();
 
-            addRow($("#nodeContainer"), 0, "", "");
+            addRow($("#nodeContainer"), 0);
         });
 
         $("#btnSave").off("click").on("click", function () {
             saveData();
         });
 
-        $(document).on("click", function (e) {
-            if (!$(e.target).closest(".node-name-wrapper").length) {
-                $(".node-suggestion-box").hide();
-            }
-        });
-
-        function buildOptions(nodes) {
-
-            optionList = [];
-
-            collectNames(nodes);
-        }
-
-        function collectNames(nodes) {
-
-            if (nodes == null) {
-                return;
-            }
-
-            for (var i = 0; i < nodes.length; i++) {
-
-                if (nodes[i].nodeName != null && nodes[i].nodeName.trim() !== "") {
-
-                    if ($.inArray(nodes[i].nodeName, optionList) === -1) {
-                        optionList.push(nodes[i].nodeName);
-                    }
-                }
-
-                if (nodes[i].children != null && nodes[i].children.length > 0) {
-                    collectNames(nodes[i].children);
-                }
-            }
-        }
-
-        function inputOptions(selectedValue) {
-
-            var options = [
-                "Text",
-                "Checkbox",
-                "Yes/No",
-                "Up/Down",
-                "Percentage",
-                "Date"
-            ];
-
-            var html = "";
-
-            html += '<option value="">Select Type</option>';
-
-            for (var i = 0; i < options.length; i++) {
-
-                if (options[i] === selectedValue) {
-                    html += '<option selected value="' + options[i] + '">' + options[i] + '</option>';
-                }
-                else {
-                    html += '<option value="' + options[i] + '">' + options[i] + '</option>';
-                }
-            }
-
-            return html;
-        }
-
-        function addRow(container, level, selectedNodeName, selectedInputType) {
+        function addRow(container, level) {
 
             var margin = level * 30;
-
             var html = "";
 
-            html += '<div class="node-row mb-2" data-level="' + level + '" style="margin-left:' + margin + 'px;">';
-
+            html += '<div class="node-row mb-2" style="margin-left:' + margin + 'px;">';
             html += '<div class="row align-items-center">';
 
             html += '<div class="col-md-6">';
-            html += '<div class="node-name-wrapper position-relative">';
-            html += '<input type="text" autocomplete="off" class="form-control form-control-sm node-name" placeholder="Type or select node name" value="' + escapeHtml(selectedNodeName) + '" />';
-            html += '<div class="dropdown-menu node-suggestion-box w-100"></div>';
-            html += '</div>';
+            html += '<input type="text" class="form-control form-control-sm node-name" placeholder="Type node name">';
             html += '</div>';
 
             html += '<div class="col-md-4">';
             html += '<select class="form-control form-control-sm input-type">';
-            html += inputOptions(selectedInputType);
+            html += '<option value="">Select Type</option>';
+            html += '<option value="Text">Text</option>';
+            html += '<option value="Checkbox">Checkbox</option>';
+            html += '<option value="Yes/No">Yes/No</option>';
+            html += '<option value="Up/Down">Up/Down</option>';
+            html += '<option value="Percentage">Percentage</option>';
+            html += '<option value="Date">Date</option>';
             html += '</select>';
             html += '</div>';
 
@@ -231,49 +215,29 @@
             html += '</div>';
 
             html += '</div>';
-
             html += '<div class="child-area mt-2"></div>';
-
             html += '</div>';
 
             container.append(html);
 
             var current = container.children(".node-row").last();
 
-            current.find(".node-name").off("focus keyup").on("focus keyup", function () {
-                showNodeSuggestions($(this));
-            });
-
-            current.find(".node-suggestion-box").off("click", ".node-suggestion-item")
-                .on("click", ".node-suggestion-item", function () {
-
-                    var selectedText = $(this).attr("data-value");
-
-                    current.find(".node-name").val(selectedText);
-                    current.find(".node-suggestion-box").hide();
-                    $("#msgArea").html("");
-                });
-
             current.find(".btn-plus").off("click").on("click", function () {
 
-                var parent = $(this).closest(".node-row");
+                var nodeName = current.find("> .row .node-name").val();
+                var inputType = current.find("> .row .input-type").val();
 
-                var nodeName = parent.find("> .row .node-name").val();
-                var inputType = parent.find("> .row .input-type").val();
-
-                if (nodeName == null || nodeName.trim() === "") {
-                    showError("Please type or select node name first.");
+                if ($.trim(nodeName) === "") {
+                    showError("Please type node name first.");
                     return;
                 }
 
-                if (inputType == null || inputType.trim() === "") {
+                if ($.trim(inputType) === "") {
                     showError("Please select input type first.");
                     return;
                 }
 
-                var childArea = parent.children(".child-area");
-
-                addRow(childArea, level + 1, "", "");
+                addRow(current.children(".child-area"), level + 1);
             });
 
             current.find(".btn-minus").off("click").on("click", function () {
@@ -282,9 +246,7 @@
 
                 if ($("#nodeContainer").children(".node-row").length === 0) {
                     $("#nodeContainer").html(
-                        '<div class="text-muted text-center py-3" id="emptyMessage">' +
-                        'Click plus to add structure.' +
-                        '</div>'
+                        '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
                     );
                 }
             });
@@ -292,33 +254,6 @@
             current.find(".node-name, .input-type").off("input change").on("input change", function () {
                 $("#msgArea").html("");
             });
-        }
-
-        function showNodeSuggestions(input) {
-
-            var keyword = input.val().toLowerCase();
-            var suggestionBox = input.closest(".node-name-wrapper").find(".node-suggestion-box");
-
-            var html = "";
-
-            for (var i = 0; i < optionList.length; i++) {
-
-                var name = optionList[i];
-
-                if (keyword === "" || name.toLowerCase().indexOf(keyword) >= 0) {
-                    html += '<button type="button" class="dropdown-item node-suggestion-item" data-value="' + escapeHtml(name) + '">' +
-                            escapeHtml(name) +
-                            '</button>';
-                }
-            }
-
-            if (html === "") {
-                suggestionBox.hide();
-                return;
-            }
-
-            suggestionBox.html(html);
-            suggestionBox.show();
         }
 
         function saveData() {
@@ -331,7 +266,7 @@
             }
 
             if ($("#nodeContainer").children(".node-row").length === 0) {
-                showError("Please click plus and add structure.");
+                showError("Please add structure.");
                 return;
             }
 
@@ -357,16 +292,17 @@
                 success: function (response) {
 
                     if (response.success) {
+                        allowClose = true;
+
                         window.location.href =
                             "/ProductConfiguration?selectedProductId=" +
                             productId +
                             "&successMessage=" +
                             encodeURIComponent(response.message);
-
-                        return;
                     }
-
-                    showError(response.message);
+                    else {
+                        showError(response.message);
+                    }
                 },
                 error: function () {
                     showError("Error while saving structure.");
@@ -385,21 +321,19 @@
                 var nodeName = row.find("> .row .node-name").val();
                 var inputType = row.find("> .row .input-type").val();
 
-                if (nodeName == null || nodeName.trim() === "") {
-                    showError("Please type or select node name for all rows.");
+                if (nodeName == null || $.trim(nodeName) === "") {
+                    showError("Please type node name for all rows.");
                     valid = false;
                     return false;
                 }
 
-                if (inputType == null || inputType.trim() === "") {
+                if (inputType == null || $.trim(inputType) === "") {
                     showError("Please select input type for all rows.");
                     valid = false;
                     return false;
                 }
 
-                var childValid = validateRows(row.children(".child-area"));
-
-                if (!childValid) {
+                if (!validateRows(row.children(".child-area"))) {
                     valid = false;
                     return false;
                 }
@@ -419,18 +353,12 @@
                 var nodeName = row.find("> .row .node-name").val();
                 var inputType = row.find("> .row .input-type").val();
 
-                if (nodeName != null &&
-                    nodeName.trim() !== "" &&
-                    inputType != null &&
-                    inputType.trim() !== "") {
-
-                    data.push({
-                        nodeName: nodeName.trim(),
-                        nodeType: "Block",
-                        inputType: inputType,
-                        children: collectRows(row.children(".child-area"))
-                    });
-                }
+                data.push({
+                    nodeName: $.trim(nodeName),
+                    nodeType: "Block",
+                    inputType: $.trim(inputType),
+                    children: collectRows(row.children(".child-area"))
+                });
             });
 
             return data;
@@ -439,34 +367,11 @@
         function showError(message) {
 
             $("#msgArea").html(
-                '<div class="toast bg-danger text-white show mb-2">' +
-                    '<div class="toast-header bg-danger text-white border-0">' +
-                        '<strong class="mr-auto">Error</strong>' +
-                        '<small>Now</small>' +
-                        '<button type="button" class="close text-white" onclick="$(\'#msgArea\').html(\'\')">' +
-                            '<span>&times;</span>' +
-                        '</button>' +
-                    '</div>' +
-                    '<div class="toast-body">' +
-                        message +
-                    '</div>' +
+                '<div class="alert alert-danger alert-dismissible fade show mb-2">' +
+                message +
+                '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
                 '</div>'
             );
-        }
-
-        function escapeHtml(value) {
-
-            if (value == null) {
-                return "";
-            }
-
-            return value
-                .toString()
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
         }
 
     });

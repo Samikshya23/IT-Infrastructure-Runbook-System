@@ -90,6 +90,28 @@ namespace EmployeeAccessSystem.Services
             return await _repository.GetNodeByIdAsync(nodeId);
         }
 
+        public async Task<List<string>> GetNodeNameOptionsAsync(int productId)
+        {
+            List<string> result = new List<string>();
+
+            if (productId <= 0)
+            {
+                return result;
+            }
+
+            IEnumerable<string> data = await _repository.GetNodeNameOptionsAsync(productId);
+
+            foreach (string item in data)
+            {
+                if (!string.IsNullOrWhiteSpace(item))
+                {
+                    result.Add(item);
+                }
+            }
+
+            return result;
+        }
+
         public async Task<(bool Success, string Message)> SaveStructureAsync(
             ProductConfigurationSaveRequest request,
             string createdBy)
@@ -109,19 +131,22 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Please add at least one node.");
             }
 
-            await _repository.DeleteByProductAsync(request.ProductId, createdBy);
-
             int sortOrder = 1;
 
             foreach (ProductConfigurationNodeRequest node in request.Nodes)
             {
-                await SaveNodeRecursive(
+                int saveResult = await SaveNodeRecursive(
                     request.ProductId,
                     null,
                     node,
                     sortOrder,
                     createdBy
                 );
+
+                if (saveResult == -1)
+                {
+                    return (false, "Same node name already exists in this level.");
+                }
 
                 sortOrder++;
             }
@@ -204,7 +229,7 @@ namespace EmployeeAccessSystem.Services
             return (false, "Node delete failed.");
         }
 
-        private async Task SaveNodeRecursive(
+        private async Task<int> SaveNodeRecursive(
             int productId,
             int? parentNodeId,
             ProductConfigurationNodeRequest requestNode,
@@ -213,12 +238,25 @@ namespace EmployeeAccessSystem.Services
         {
             if (requestNode == null)
             {
-                return;
+                return 0;
             }
 
             if (string.IsNullOrWhiteSpace(requestNode.NodeName))
             {
-                return;
+                return 0;
+            }
+
+            string cleanNodeName = requestNode.NodeName.Trim();
+
+            int duplicateCount = await _repository.CheckDuplicateNodeAsync(
+                productId,
+                parentNodeId,
+                cleanNodeName
+            );
+
+            if (duplicateCount > 0)
+            {
+                return -1;
             }
 
             string nodeType = requestNode.NodeType;
@@ -239,7 +277,7 @@ namespace EmployeeAccessSystem.Services
 
             model.ProductId = productId;
             model.ParentNodeId = parentNodeId;
-            model.NodeName = requestNode.NodeName.Trim();
+            model.NodeName = cleanNodeName;
             model.NodeType = nodeType;
             model.InputType = inputType;
             model.SortOrder = sortOrder;
@@ -254,7 +292,7 @@ namespace EmployeeAccessSystem.Services
 
                 foreach (ProductConfigurationNodeRequest child in requestNode.Children)
                 {
-                    await SaveNodeRecursive(
+                    int childResult = await SaveNodeRecursive(
                         productId,
                         newNodeId,
                         child,
@@ -262,9 +300,16 @@ namespace EmployeeAccessSystem.Services
                         createdBy
                     );
 
+                    if (childResult == -1)
+                    {
+                        return -1;
+                    }
+
                     childSort++;
                 }
             }
+
+            return newNodeId;
         }
 
         private List<ProductConfiguration> BuildTree(List<ProductConfiguration> flatList)
@@ -323,3 +368,5 @@ namespace EmployeeAccessSystem.Services
         }
     }
 }
+        
+    

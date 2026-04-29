@@ -66,6 +66,36 @@ namespace EmployeeAccessSystem.Repositories
             );
         }
 
+        public async Task<IEnumerable<string>> GetNodeNameOptionsAsync(int productId)
+        {
+            using var conn = GetConnection();
+
+            DynamicParameters parameters = new DynamicParameters();
+            parameters.Add("Flag", "GET_NODE_NAME_OPTIONS");
+            parameters.Add("ProductId", productId);
+
+            return await conn.QueryAsync<string>(
+                "dbo.sp_ProductConfiguration_Manage",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+        public async Task<int> CheckDuplicateNodeAsync(int productId, int? parentNodeId, string nodeName)
+        {
+            using var conn = GetConnection();
+
+            DynamicParameters parameters = new DynamicParameters();
+            parameters.Add("Flag", "CHECKDUPLICATE");
+            parameters.Add("ProductId", productId);
+            parameters.Add("ParentNodeId", parentNodeId);
+            parameters.Add("NodeName", nodeName);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "dbo.sp_ProductConfiguration_Manage",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
         public async Task<int> AddAsync(ProductConfiguration model)
         {
             using var conn = GetConnection();
