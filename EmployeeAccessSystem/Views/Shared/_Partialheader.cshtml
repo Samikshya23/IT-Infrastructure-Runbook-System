@@ -17,6 +17,7 @@
                 data-widget="treeview"
                 role="menu"
                 data-accordion="false">
+
                 <li class="nav-item">
                     <a asp-controller="Home"
                        asp-action="Index"
@@ -25,6 +26,7 @@
                         <p>Home</p>
                     </a>
                 </li>
+
                 @if (isLoggedIn)
                 {
                     <li class="nav-item">
@@ -44,7 +46,6 @@
                             <p>Category</p>
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a asp-controller="SubCategory"
                            asp-action="Index"
@@ -53,9 +54,12 @@
                             <p>Sub Category</p>
                         </a>
                     </li>
+
                     <li class="nav-item has-treeview @(
                         currentController == "ProductSetup" ||
                         currentController == "ProductConfiguration" ||
+                        currentController == "ProductSetupConfiguration" ||
+                        currentController == "ProductStructure" ||
                         currentController == "SMCProduct" ||
                         currentController == "SMCProductItem" ||
                         currentController == "SMCConfig" ||
@@ -71,6 +75,8 @@
                            class="nav-link @(
                                currentController == "ProductSetup" ||
                                currentController == "ProductConfiguration" ||
+                               currentController == "ProductSetupConfiguration" ||
+                               currentController == "ProductStructure" ||
                                currentController == "SMCProduct" ||
                                currentController == "SMCProductItem" ||
                                currentController == "SMCConfig" ||
@@ -105,18 +111,27 @@
                                    asp-action="Index"
                                    class="nav-link @(currentController == "ProductConfiguration" ? "active" : "")">
                                     <i class="far fa-circle nav-icon"></i>
-                                    <p>ProductConfiguration</p>
+                                    <p>Product Configuration</p>
                                 </a>
                             </li>
 
                             <li class="nav-item">
-    <a asp-controller="ProductStructure"
-       asp-action="Index"
-       class="nav-link @(currentController == "ProductStructure" ? "active" : "")">
-        <i class="far fa-circle nav-icon"></i>
-        <p>Product Structure</p>
-    </a>
-</li>
+                                <a asp-controller="ProductSetupConfiguration"
+                                   asp-action="Index"
+                                   class="nav-link @(currentController == "ProductSetupConfiguration" ? "active" : "")">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Product Setup Configuration</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a asp-controller="ProductStructure"
+                                   asp-action="Index"
+                                   class="nav-link @(currentController == "ProductStructure" ? "active" : "")">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Product Structure</p>
+                                </a>
+                            </li>
 
                             <li class="nav-item has-treeview @(
                                 currentController == "SMCProduct" ||

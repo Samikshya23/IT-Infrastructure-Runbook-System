@@ -19,7 +19,6 @@ namespace EmployeeAccessSystem.Controllers
             _configurationService = configurationService;
             _productRepo = productRepo;
         }
-
         public async Task<IActionResult> Index(int? selectedProductId, string successMessage, string errorMessage)
         {
             if (!string.IsNullOrWhiteSpace(successMessage))

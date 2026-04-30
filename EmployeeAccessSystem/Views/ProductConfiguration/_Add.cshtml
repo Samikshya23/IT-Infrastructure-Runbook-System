@@ -4,35 +4,32 @@
     int selectedProductId = ViewBag.SelectedProductId;
     string existingJson = ViewBag.ExistingJson;
 }
-
 <div class="modal-header bg-white border-bottom">
     <h5 class="modal-title font-weight-bold">Product Configuration</h5>
-    <button type="button" id="btnHeaderClose" class="close">
-        <span>&times;</span>
-    </button>
 </div>
 <div class="modal-body">
-
     <div id="msgArea"></div>
 
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
             <div class="row align-items-end">
+
                 <div class="col-md-11">
                     <label class="font-weight-bold mb-1">Product</label>
+
                     <select id="ProductId"
                             class="form-control form-control-sm"
-                            asp-l
-                            items="ViewBag.ProductList">
+                            asp-items="ViewBag.ProductList">
                         <option value="">Select Product</option>
                     </select>
                 </div>
+
                 <div class="col-md-1 text-right">
                     <button type="button"
                             id="btnAddRoot"
-                            class="btn btn-outline-primary btn-sm"
-                            title="Add Node"
-                            style="display:none; min-width:28px;">
+                            class="btn btn-outline-primary btn-sm px-2 py-1"
+                            title="Add Label"
+                            style="display:none;">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -56,6 +53,7 @@
     </div>
 
 </div>
+
 <div class="modal-footer">
     <button type="button"
             id="btnFooterClose"
@@ -69,14 +67,17 @@
         Save Structure
     </button>
 </div>
+
 <div class="modal fade"
      id="confirmCloseModal"
      tabindex="-1"
      role="dialog"
      data-backdrop="static"
      data-keyboard="false">
+
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
+
             <div class="modal-header bg-white border-bottom">
                 <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
             </div>
@@ -100,14 +101,15 @@
                     Yes, Close
                 </button>
             </div>
+
         </div>
     </div>
 </div>
+
 <script>
     $(document).ready(function () {
 
         var selectedProductId = @selectedProductId;
-        var allowClose = false;
 
         var modalParent = $("#ProductId").closest(".modal");
 
@@ -129,15 +131,17 @@
                 '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
             );
         }
-        $("#btnHeaderClose,#btnFooterClose").off("click").on("click", function (e) {
+
+        $("#btnFooterClose").off("click").on("click", function (e) {
             e.preventDefault();
             $("#confirmCloseModal").modal("show");
         });
+
         $("#btnContinueEditing").off("click").on("click", function () {
             $("#confirmCloseModal").modal("hide");
         });
+
         $("#btnConfirmClose").off("click").on("click", function () {
-            allowClose = true;
             $("#confirmCloseModal").modal("hide");
 
             setTimeout(function () {
@@ -166,14 +170,23 @@
 
         $("#btnAddRoot").off("click").on("click", function () {
 
+            clearMessage();
+
             if ($("#ProductId").val() === "") {
                 showError("Please select product first.");
+                return;
+            }
+
+            if (!canAddNewRow($("#nodeContainer"))) {
+                showError("Please fill existing label/level name first.");
                 return;
             }
 
             $("#emptyMessage").remove();
 
             addRow($("#nodeContainer"), 0);
+            refreshHeading();
+            refreshDeleteButtons();
         });
 
         $("#btnSave").off("click").on("click", function () {
@@ -188,28 +201,27 @@
             html += '<div class="node-row mb-2" style="margin-left:' + margin + 'px;">';
             html += '<div class="row align-items-center">';
 
-            html += '<div class="col-md-6">';
-            html += '<input type="text" class="form-control form-control-sm node-name" placeholder="Type node name">';
+            html += '<div class="col-md-1 text-center">';
+            html += '<span class="heading-label text-dark"></span>';
+            html += '</div>';
+
+            html += '<div class="col-md-5">';
+            html += '<input type="text" class="form-control form-control-sm node-name" placeholder="Type label/level name">';
             html += '</div>';
 
             html += '<div class="col-md-4">';
             html += '<select class="form-control form-control-sm input-type">';
-            html += '<option value="">Select Type</option>';
-            html += '<option value="Text">Text</option>';
-            html += '<option value="Checkbox">Checkbox</option>';
-            html += '<option value="Yes/No">Yes/No</option>';
-            html += '<option value="Up/Down">Up/Down</option>';
-            html += '<option value="Percentage">Percentage</option>';
+            html += '<option value="Text" selected>Text</option>';
             html += '<option value="Date">Date</option>';
             html += '</select>';
             html += '</div>';
 
             html += '<div class="col-md-2 text-right">';
-            html += '<button type="button" class="btn btn-outline-primary btn-sm btn-plus mr-1" title="Add Child">';
+            html += '<button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 btn-plus mr-1" title="Add Child">';
             html += '<i class="fas fa-plus"></i>';
             html += '</button>';
 
-            html += '<button type="button" class="btn btn-outline-danger btn-sm btn-minus" title="Remove Node">';
+            html += '<button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 btn-minus" title="Remove">';
             html += '<i class="fas fa-minus"></i>';
             html += '</button>';
             html += '</div>';
@@ -224,25 +236,36 @@
 
             current.find(".btn-plus").off("click").on("click", function () {
 
+                clearMessage();
+
                 var nodeName = current.find("> .row .node-name").val();
-                var inputType = current.find("> .row .input-type").val();
 
                 if ($.trim(nodeName) === "") {
-                    showError("Please type node name first.");
+                    showError("Please type label/level name first.");
                     return;
                 }
 
-                if ($.trim(inputType) === "") {
-                    showError("Please select input type first.");
+                if (!canAddNewRow(current.children(".child-area"))) {
+                    showError("Please fill existing child label/level name first.");
                     return;
                 }
 
                 addRow(current.children(".child-area"), level + 1);
+                refreshHeading();
+                refreshDeleteButtons();
             });
 
             current.find(".btn-minus").off("click").on("click", function () {
 
+                clearMessage();
+
+                if (current.children(".child-area").children(".node-row").length > 0) {
+                    return;
+                }
+
                 current.remove();
+                refreshHeading();
+                refreshDeleteButtons();
 
                 if ($("#nodeContainer").children(".node-row").length === 0) {
                     $("#nodeContainer").html(
@@ -252,35 +275,82 @@
             });
 
             current.find(".node-name, .input-type").off("input change").on("input change", function () {
-                $("#msgArea").html("");
+                clearMessage();
+            });
+        }
+
+        function canAddNewRow(container) {
+
+            var valid = true;
+
+            container.find(".node-row").each(function () {
+
+                var row = $(this);
+
+                var nodeName = row.find("> .row .node-name").val();
+
+                if ($.trim(nodeName) === "") {
+                    valid = false;
+                    return false;
+                }
+            });
+
+            return valid;
+        }
+
+        function refreshHeading() {
+
+            $("#nodeContainer").children(".node-row").each(function (i) {
+
+                var headingNumber = i + 1;
+
+                setHeading($(this), headingNumber.toString());
+            });
+        }
+
+        function setHeading(row, number) {
+
+            row.find("> .row .heading-label").text("H" + number);
+
+            row.children(".child-area").children(".node-row").each(function (i) {
+
+                var childNumber = number + "." + (i + 1);
+
+                setHeading($(this), childNumber);
+            });
+        }
+
+        function refreshDeleteButtons() {
+
+            $("#nodeContainer").find(".node-row").each(function () {
+
+                var row = $(this);
+                var childCount = row.children(".child-area").children(".node-row").length;
+
+                if (childCount > 0) {
+                    row.find("> .row .btn-minus").hide();
+                }
+                else {
+                    row.find("> .row .btn-minus").show();
+                }
             });
         }
 
         function saveData() {
-
+            clearMessage();
             var productId = $("#ProductId").val();
-
             if (productId === "") {
                 showError("Please select product.");
                 return;
             }
-
             if ($("#nodeContainer").children(".node-row").length === 0) {
                 showError("Please add structure.");
                 return;
             }
-
             if (!validateRows($("#nodeContainer"))) {
                 return;
             }
-
             var nodes = collectRows($("#nodeContainer"));
-
-            if (nodes.length === 0) {
-                showError("Please add structure.");
-                return;
-            }
-
             $.ajax({
                 url: "/ProductConfiguration/SaveStructure",
                 type: "POST",
@@ -292,8 +362,6 @@
                 success: function (response) {
 
                     if (response.success) {
-                        allowClose = true;
-
                         window.location.href =
                             "/ProductConfiguration?selectedProductId=" +
                             productId +
@@ -309,31 +377,18 @@
                 }
             });
         }
-
         function validateRows(container) {
 
             var valid = true;
 
-            container.children(".node-row").each(function () {
+            container.find(".node-row").each(function () {
 
                 var row = $(this);
 
                 var nodeName = row.find("> .row .node-name").val();
-                var inputType = row.find("> .row .input-type").val();
 
                 if (nodeName == null || $.trim(nodeName) === "") {
-                    showError("Please type node name for all rows.");
-                    valid = false;
-                    return false;
-                }
-
-                if (inputType == null || $.trim(inputType) === "") {
-                    showError("Please select input type for all rows.");
-                    valid = false;
-                    return false;
-                }
-
-                if (!validateRows(row.children(".child-area"))) {
+                    showError("Please type label/level name for all rows.");
                     valid = false;
                     return false;
                 }
@@ -369,9 +424,15 @@
             $("#msgArea").html(
                 '<div class="alert alert-danger alert-dismissible fade show mb-2">' +
                 message +
-                '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
+                '<button type="button" class="close" data-dismiss="alert">' +
+                '<span>&times;</span>' +
+                '</button>' +
                 '</div>'
             );
+        }
+
+        function clearMessage() {
+            $("#msgArea").html("");
         }
 
     });
