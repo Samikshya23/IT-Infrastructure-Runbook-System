@@ -1,0 +1,100 @@
+﻿@model List<EmployeeAccessSystem.Models.ProductSetupConfiguration>
+
+@{
+    ViewData["Title"] = "Product Setup Configuration";
+
+    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
+    int? selectedProductId = ViewBag.SelectedProductId as int?;
+}
+
+<div class="card card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Product Setup Configuration</h3>
+    </div>
+
+    <div class="card-body">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">
+                @TempData["Success"]
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["Error"]
+            </div>
+        }
+
+        <form asp-action="Index" method="get">
+            <div class="form-group">
+                <label>Select Product</label>
+
+                <select name="productId" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- Select Product --</option>
+
+                    @if (products != null)
+                    {
+                        foreach (var product in products)
+                        {
+                            if (selectedProductId != null && selectedProductId.Value == product.ProductId)
+                            {
+                                <option value="@product.ProductId" selected>
+                                    @product.ProductName
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@product.ProductId">
+                                    @product.ProductName
+                                </option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+        </form>
+
+        @if (selectedProductId != null && selectedProductId.Value > 0)
+        {
+            <div class="mb-3">
+                <a asp-action="Add"
+                   asp-route-productId="@selectedProductId.Value"
+                   class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Add First Level
+                </a>
+            </div>
+
+            <div class="card card-outline card-secondary">
+                <div class="card-header">
+                    <h3 class="card-title">Configured Values</h3>
+                </div>
+
+                <div class="card-body">
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var node in Model)
+                        {
+                            <partial name="_TreeNode" model="node" />
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">
+                            No setup configuration added yet.
+                        </p>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">
+                Please select product to continue.
+            </p>
+        }
+
+    </div>
+</div>

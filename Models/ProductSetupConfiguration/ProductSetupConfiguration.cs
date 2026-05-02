@@ -6,14 +6,16 @@ namespace EmployeeAccessSystem.Models
     {
         public int NodeId { get; set; }
         public int ProductId { get; set; }
+        public int ConfigurationNodeId { get; set; }
         public int? ParentNodeId { get; set; }
 
-        public string NodeName { get; set; }
-        public string NodeType { get; set; }
+        public string NodeValue { get; set; }
         public string InputType { get; set; }
 
         public int SortOrder { get; set; }
         public bool IsActive { get; set; }
+
+        public string ConfigurationNodeName { get; set; }
 
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }

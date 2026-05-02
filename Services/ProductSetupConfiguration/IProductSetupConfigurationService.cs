@@ -7,8 +7,9 @@ namespace EmployeeAccessSystem.Services
     public interface IProductSetupConfigurationService
     {
         Task<List<ProductSetupConfiguration>> GetTreeByProductIdAsync(int productId);
-        Task<ProductSetupConfiguration> GetNodeByIdAsync(int nodeId);
-        Task<List<string>> GetNodeNameOptionsAsync(int productId);
+
+        Task<ProductSetupConfiguration> PrepareAddAsync(int productId, int? parentNodeId);
+        Task<ProductSetupConfiguration> PrepareEditAsync(int nodeId);
 
         Task<(bool Success, string Message)> AddAsync(ProductSetupConfiguration model, string createdBy);
         Task<(bool Success, string Message)> UpdateNodeAsync(ProductSetupConfiguration model, string modifiedBy);

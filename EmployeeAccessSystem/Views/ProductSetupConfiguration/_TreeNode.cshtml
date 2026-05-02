@@ -1,0 +1,62 @@
+﻿@model EmployeeAccessSystem.Models.ProductSetupConfiguration
+
+<div class="mb-2 ml-2">
+
+    <div class="border rounded bg-white p-2">
+        <div class="row align-items-center">
+
+            <div class="col-md-8">
+                <span class="text-muted">@Model.ConfigurationNodeName:</span>
+                <strong>@Model.NodeValue</strong>
+            </div>
+
+            <div class="col-md-4 text-right">
+
+                <a asp-controller="ProductSetupConfiguration"
+                   asp-action="Add"
+                   asp-route-productId="@Model.ProductId"
+                   asp-route-parentNodeId="@Model.NodeId"
+                   class="btn btn-primary btn-sm"
+                   title="Add Child">
+                    <i class="fas fa-plus"></i>
+                </a>
+
+                <a asp-controller="ProductSetupConfiguration"
+                   asp-action="Edit"
+                   asp-route-nodeId="@Model.NodeId"
+                   class="btn btn-warning btn-sm"
+                   title="Edit">
+                    <i class="fas fa-edit"></i>
+                </a>
+
+                <form asp-controller="ProductSetupConfiguration"
+                      asp-action="Delete"
+                      method="post"
+                      class="d-inline">
+
+                    <input type="hidden" name="nodeId" value="@Model.NodeId" />
+                    <input type="hidden" name="productId" value="@Model.ProductId" />
+
+                    <button type="submit"
+                            class="btn btn-danger btn-sm"
+                            onclick="return confirm('Are you sure you want to delete this node and its children?');">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+
+    @if (Model.Children != null && Model.Children.Count > 0)
+    {
+        <div class="ml-4 mt-2">
+            @foreach (var child in Model.Children)
+            {
+                <partial name="_TreeNode" model="child" />
+            }
+        </div>
+    }
+
+</div>

@@ -52,30 +52,16 @@ namespace EmployeeAccessSystem.Repositories
             );
         }
 
-        public async Task<IEnumerable<string>> GetNodeNameOptionsAsync(int productId)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GET_NODE_NAME_OPTIONS");
-            parameters.Add("ProductId", productId);
-
-            return await conn.QueryAsync<string>(
-                "dbo.sp_ProductSetupConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-        }
-
-        public async Task<int> CheckDuplicateNodeAsync(int productId, int? parentNodeId, string nodeName)
+        public async Task<int> CheckDuplicateNodeAsync(int productId, int configurationNodeId, int? parentNodeId, string nodeValue)
         {
             using var conn = GetConnection();
 
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("Flag", "CHECKDUPLICATE");
             parameters.Add("ProductId", productId);
+            parameters.Add("ConfigurationNodeId", configurationNodeId);
             parameters.Add("ParentNodeId", parentNodeId);
-            parameters.Add("NodeName", nodeName);
+            parameters.Add("NodeValue", nodeValue);
 
             return await conn.ExecuteScalarAsync<int>(
                 "dbo.sp_ProductSetupConfiguration_Manage",
@@ -98,12 +84,11 @@ namespace EmployeeAccessSystem.Repositories
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("Flag", "ADD");
             parameters.Add("ProductId", model.ProductId);
+            parameters.Add("ConfigurationNodeId", model.ConfigurationNodeId);
             parameters.Add("ParentNodeId", model.ParentNodeId);
-            parameters.Add("NodeName", model.NodeName);
-            parameters.Add("NodeType", model.NodeType);
+            parameters.Add("NodeValue", model.NodeValue);
             parameters.Add("InputType", model.InputType);
             parameters.Add("SortOrder", sortOrderValue);
-            parameters.Add("IsActive", model.IsActive);
             parameters.Add("CreatedBy", model.CreatedBy);
 
             return await conn.ExecuteScalarAsync<int>(
@@ -120,9 +105,7 @@ namespace EmployeeAccessSystem.Repositories
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("Flag", "UPDATENODE");
             parameters.Add("NodeId", model.NodeId);
-            parameters.Add("NodeName", model.NodeName);
-            parameters.Add("NodeType", model.NodeType);
-            parameters.Add("InputType", model.InputType);
+            parameters.Add("NodeValue", model.NodeValue);
             parameters.Add("ModifiedBy", model.ModifiedBy);
 
             return await conn.ExecuteScalarAsync<int>(
