@@ -52,12 +52,40 @@ namespace EmployeeAccessSystem.Repositories
             );
         }
 
-        public async Task<int> CheckDuplicateNodeAsync(int productId, int configurationNodeId, int? parentNodeId, string nodeValue)
+        public async Task<int> CheckDuplicateNodeAsync(
+            int productId,
+            int? configurationNodeId,
+            int? parentNodeId,
+            string nodeValue)
         {
             using var conn = GetConnection();
 
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("Flag", "CHECKDUPLICATE");
+            parameters.Add("ProductId", productId);
+            parameters.Add("ConfigurationNodeId", configurationNodeId);
+            parameters.Add("ParentNodeId", parentNodeId);
+            parameters.Add("NodeValue", nodeValue);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "dbo.sp_ProductSetupConfiguration_Manage",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<int> CheckDuplicateNodeForUpdateAsync(
+            int nodeId,
+            int productId,
+            int? configurationNodeId,
+            int? parentNodeId,
+            string nodeValue)
+        {
+            using var conn = GetConnection();
+
+            DynamicParameters parameters = new DynamicParameters();
+            parameters.Add("Flag", "CHECKDUPLICATEFORUPDATE");
+            parameters.Add("NodeId", nodeId);
             parameters.Add("ProductId", productId);
             parameters.Add("ConfigurationNodeId", configurationNodeId);
             parameters.Add("ParentNodeId", parentNodeId);
@@ -88,6 +116,8 @@ namespace EmployeeAccessSystem.Repositories
             parameters.Add("ParentNodeId", model.ParentNodeId);
             parameters.Add("NodeValue", model.NodeValue);
             parameters.Add("InputType", model.InputType);
+            parameters.Add("FieldType", model.FieldType);
+            parameters.Add("IsFieldValue", model.IsFieldValue);
             parameters.Add("SortOrder", sortOrderValue);
             parameters.Add("CreatedBy", model.CreatedBy);
 
@@ -106,6 +136,7 @@ namespace EmployeeAccessSystem.Repositories
             parameters.Add("Flag", "UPDATENODE");
             parameters.Add("NodeId", model.NodeId);
             parameters.Add("NodeValue", model.NodeValue);
+            parameters.Add("FieldType", model.FieldType);
             parameters.Add("ModifiedBy", model.ModifiedBy);
 
             return await conn.ExecuteScalarAsync<int>(

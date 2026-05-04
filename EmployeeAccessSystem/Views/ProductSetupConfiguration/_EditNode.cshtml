@@ -1,0 +1,56 @@
+﻿@model EmployeeAccessSystem.Models.ProductSetupConfiguration
+
+@{
+    Layout = null;
+}
+
+<div class="modal-header bg-white border-bottom">
+    <h5 class="modal-title font-weight-bold">
+        Edit @(Model.IsFieldValue ? "Field Value" : Model.ConfigurationNodeName)
+    </h5>
+</div>
+
+<form asp-action="EditNode" method="post">
+    <div class="modal-body">
+
+        <input type="hidden" asp-for="NodeId" />
+        <input type="hidden" asp-for="ProductId" />
+
+        <div class="form-group">
+            <label>
+                @(Model.IsFieldValue ? "Field Value" : Model.ConfigurationNodeName)
+            </label>
+
+            <input asp-for="NodeValue"
+                   type="text"
+                   class="form-control form-control-sm"
+                   required />
+        </div>
+
+        @if (Model.IsFieldValue)
+        {
+            <div class="form-group">
+                <label>Field Type</label>
+                <select asp-for="FieldType" class="form-control form-control-sm">
+                    <option value="Text">Text</option>
+                    <option value="Up/Down">Up/Down</option>
+                    <option value="Tick/Untick">Tick/Untick</option>
+                    <option value="Yes/No">Yes/No</option>
+                    <option value="Percentage">Percentage</option>
+                    <option value="Date">Date</option>
+                </select>
+            </div>
+        }
+
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+            Close
+        </button>
+
+        <button type="submit" class="btn btn-primary btn-sm">
+            Update
+        </button>
+    </div>
+</form>

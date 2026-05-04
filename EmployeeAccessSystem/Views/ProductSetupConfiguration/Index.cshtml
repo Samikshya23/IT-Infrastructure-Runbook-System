@@ -2,99 +2,155 @@
 
 @{
     ViewData["Title"] = "Product Setup Configuration";
-
-    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
-    int? selectedProductId = ViewBag.SelectedProductId as int?;
+    int selectedProductId = ViewBag.SelectedProductId;
+    string successMessage = ViewBag.SuccessMessage;
 }
 
-<div class="card card-primary">
-    <div class="card-header">
-        <h3 class="card-title">Product Setup Configuration</h3>
-    </div>
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h4 class="m-0 font-weight-bold">Product Setup Configuration</h4>
+            </div>
 
-    <div class="card-body">
+            <div class="col-sm-6 text-right">
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        id="btnAddSetupConfiguration">
+                    <i class="fas fa-plus mr-1"></i>
+                    Add Product Setup Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+
+        @if (!string.IsNullOrWhiteSpace(successMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show auto-hide-message">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                @successMessage
+            </div>
+        }
 
         @if (TempData["Success"] != null)
         {
-            <div class="alert alert-success">
+            <div class="alert alert-success alert-dismissible fade show auto-hide-message">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
                 @TempData["Success"]
             </div>
         }
 
         @if (TempData["Error"] != null)
         {
-            <div class="alert alert-danger">
+            <div class="alert alert-danger alert-dismissible fade show auto-hide-message">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
                 @TempData["Error"]
             </div>
         }
 
-        <form asp-action="Index" method="get">
-            <div class="form-group">
-                <label>Select Product</label>
-
-                <select name="productId" class="form-control" onchange="this.form.submit()">
-                    <option value="">-- Select Product --</option>
-
-                    @if (products != null)
-                    {
-                        foreach (var product in products)
-                        {
-                            if (selectedProductId != null && selectedProductId.Value == product.ProductId)
-                            {
-                                <option value="@product.ProductId" selected>
-                                    @product.ProductName
-                                </option>
-                            }
-                            else
-                            {
-                                <option value="@product.ProductId">
-                                    @product.ProductName
-                                </option>
-                            }
-                        }
-                    }
-                </select>
-            </div>
-        </form>
-
-        @if (selectedProductId != null && selectedProductId.Value > 0)
+        @if (Model != null && Model.Count > 0)
         {
-            <div class="mb-3">
-                <a asp-action="Add"
-                   asp-route-productId="@selectedProductId.Value"
-                   class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Add First Level
-                </a>
-            </div>
-
             <div class="card card-outline card-secondary">
-                <div class="card-header">
-                    <h3 class="card-title">Configured Values</h3>
+                <div class="card-header py-2">
+                    <h3 class="card-title font-weight-bold">Setup Tree</h3>
                 </div>
 
                 <div class="card-body">
-                    @if (Model != null && Model.Count > 0)
+                    @foreach (var node in Model)
                     {
-                        foreach (var node in Model)
-                        {
-                            <partial name="_TreeNode" model="node" />
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-muted mb-0">
-                            No setup configuration added yet.
-                        </p>
+                        <partial name="_TreeNode" model="node" />
                     }
                 </div>
             </div>
         }
         else
         {
-            <p class="text-muted mb-0">
-                Please select product to continue.
-            </p>
+            <div class="card">
+                <div class="card-body text-center text-muted py-4">
+                    Click <strong>Add Product Setup Configuration</strong> to create setup configuration.
+                </div>
+            </div>
         }
 
     </div>
+</section>
+
+<div class="modal fade" id="setupConfigurationModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content" id="setupConfigurationModalContent"></div>
+    </div>
 </div>
+
+<div class="modal fade" id="nodeModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id="nodeModalContent"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            setTimeout(function () {
+                $(".auto-hide-message").fadeOut("slow");
+            }, 3000);
+
+            $(document).on("click", "#btnAddSetupConfiguration", function () {
+                $.get("/ProductSetupConfiguration/Add",
+                    {
+                        productId: @selectedProductId
+                    },
+                    function (data) {
+                        $("#setupConfigurationModalContent").html(data);
+                        $("#setupConfigurationModal").modal("show");
+                    });
+            });
+
+            $(document).on("click", ".btnAddChild", function () {
+                var nodeId = $(this).data("node-id");
+                var productId = $(this).data("product-id");
+
+                $.get("/ProductSetupConfiguration/AddChild",
+                    {
+                        parentNodeId: nodeId,
+                        productId: productId
+                    },
+                    function (data) {
+                        $("#nodeModalContent").html(data);
+                        $("#nodeModal").modal("show");
+                    });
+            });
+
+            $(document).on("click", ".btnEditNode", function () {
+                var nodeId = $(this).data("node-id");
+
+                $.get("/ProductSetupConfiguration/EditNode",
+                    {
+                        nodeId: nodeId
+                    },
+                    function (data) {
+                        $("#nodeModalContent").html(data);
+                        $("#nodeModal").modal("show");
+                    });
+            });
+
+            $(document).on("click", ".btnDeleteNode", function () {
+                var nodeId = $(this).data("node-id");
+
+                $.get("/ProductSetupConfiguration/DeleteNode",
+                    {
+                        nodeId: nodeId
+                    },
+                    function (data) {
+                        $("#nodeModalContent").html(data);
+                        $("#nodeModal").modal("show");
+                    });
+            });
+
+        });
+    </script>
+}

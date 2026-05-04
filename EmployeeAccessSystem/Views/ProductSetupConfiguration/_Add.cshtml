@@ -1,0 +1,529 @@
+﻿@{
+    Layout = null;
+
+    int selectedProductId = ViewBag.SelectedProductId;
+    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
+}
+
+<div class="modal-header bg-white border-bottom">
+    <h5 class="modal-title font-weight-bold">Product Setup Configuration</h5>
+</div>
+
+<div class="modal-body">
+
+    <div id="msgArea"></div>
+
+    <div class="card card-outline card-secondary mb-2">
+        <div class="card-body p-2">
+            <div class="row align-items-end">
+
+                <div class="col-md-10">
+                    <label class="font-weight-bold mb-1">Product</label>
+
+                    <select id="ProductId" class="form-control form-control-sm">
+                        <option value="">Select Product</option>
+
+                        @if (products != null)
+                        {
+                            foreach (var product in products)
+                            {
+                                if (selectedProductId == product.ProductId)
+                                {
+                                    <option value="@product.ProductId" selected>
+                                        @product.ProductName
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@product.ProductId">
+                                        @product.ProductName
+                                    </option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2 text-right">
+                    <button type="button"
+                            id="btnAddRoot"
+                            class="btn btn-primary btn-sm"
+                            style="display:none;">
+                        <i class="fas fa-plus mr-1"></i>
+                        Add
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="rootOptionArea" class="mb-2" style="display:none;"></div>
+
+    <div class="card card-outline card-secondary">
+        <div class="card-header py-2">
+            <h3 class="card-title font-weight-bold">Setup Tree</h3>
+        </div>
+
+        <div class="card-body p-2">
+            <div id="nodeContainer">
+                <div class="text-muted text-center py-3" id="emptyMessage">
+                    Select product first, then click Add.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" id="btnFooterClose" class="btn btn-secondary btn-sm">
+        Close
+    </button>
+
+    <button type="button" id="btnSave" class="btn btn-primary btn-sm">
+        Save
+    </button>
+</div>
+
+<div class="modal fade" id="confirmCloseModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
+            </div>
+
+            <div class="modal-body text-center py-4">
+                <div class="font-weight-bold">
+                    Do you want to close this form?
+                </div>
+            </div>
+
+            <div class="modal-footer justify-content-center bg-light">
+                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-3">
+                    Continue Editing
+                </button>
+
+                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-3">
+                    Yes, Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        var selectedProductId = @selectedProductId;
+        var rootLevels = [];
+
+        if (selectedProductId > 0) {
+            $("#ProductId").val(selectedProductId);
+            $("#btnAddRoot").show();
+            loadRootLevels(selectedProductId);
+        }
+
+        $("#ProductId").off("change").on("change", function () {
+            var productId = $(this).val();
+
+            $("#nodeContainer").html(
+                '<div class="text-muted text-center py-3" id="emptyMessage">Click Add to create setup tree.</div>'
+            );
+
+            $("#rootOptionArea").hide();
+            $("#rootOptionArea").html("");
+
+            if (productId === "") {
+                $("#btnAddRoot").hide();
+                rootLevels = [];
+                return;
+            }
+
+            $("#btnAddRoot").show();
+            loadRootLevels(productId);
+        });
+
+        function loadRootLevels(productId) {
+            rootLevels = [];
+
+            $.get("/ProductSetupConfiguration/GetRootLevels", { productId: productId }, function (res) {
+                if (!res.success) {
+                    showError(res.message);
+                    return;
+                }
+
+                rootLevels = res.data;
+                buildRootOptions();
+            });
+        }
+
+        function buildRootOptions() {
+            var html = "";
+
+            html += '<div class="card card-outline card-primary mb-2">';
+            html += '<div class="card-body p-2">';
+
+            if (rootLevels.length === 0) {
+                html += '<div class="text-muted text-center">No root heading found in Product Configuration.</div>';
+            }
+            else {
+                for (var i = 0; i < rootLevels.length; i++) {
+                    html += '<button type="button" class="btn btn-outline-primary btn-sm mr-1 mb-1 btn-add-root-option" ';
+                    html += 'data-config-id="' + rootLevels[i].id + '" ';
+                    html += 'data-name="' + rootLevels[i].name + '">';
+                    html += '<i class="fas fa-plus"></i> Add ' + rootLevels[i].name;
+                    html += '</button>';
+                }
+            }
+
+            html += '</div>';
+            html += '</div>';
+
+            $("#rootOptionArea").html(html);
+        }
+
+        $("#btnAddRoot").off("click").on("click", function () {
+            clearMessage();
+
+            var productId = $("#ProductId").val();
+
+            if (productId === "") {
+                showError("Please select product first.");
+                return;
+            }
+
+            $("#rootOptionArea").toggle();
+        });
+
+        $(document).off("click", ".btn-add-root-option");
+        $(document).on("click", ".btn-add-root-option", function () {
+            clearMessage();
+
+            var configId = $(this).data("config-id");
+            var name = $(this).data("name");
+
+            $("#emptyMessage").remove();
+
+            addRow($("#nodeContainer"), 0, false, name, configId);
+            $("#rootOptionArea").hide();
+            refreshDeleteButtons();
+        });
+
+        $(document).off("click", ".btn-add-child");
+        $(document).on("click", ".btn-add-child", function () {
+            clearMessage();
+
+            var currentRow = $(this).closest(".node-row");
+            var currentValue = currentRow.find("> .row .node-value").val();
+
+            if ($.trim(currentValue) === "") {
+                showError("Please type value first.");
+                return;
+            }
+
+            var productId = $("#ProductId").val();
+            var configurationNodeId = currentRow.attr("data-config-id");
+            var optionArea = currentRow.children(".child-option-area");
+
+            $.get("/ProductSetupConfiguration/GetChildLevels",
+                {
+                    productId: productId,
+                    parentConfigurationNodeId: configurationNodeId
+                },
+                function (res) {
+                    if (!res.success) {
+                        showError(res.message);
+                        return;
+                    }
+
+                    if (res.data.length === 0) {
+                        addRow(currentRow.children(".child-area"), getLevel(currentRow) + 1, true, "Field Value", "");
+                        refreshDeleteButtons();
+                        return;
+                    }
+
+                    buildChildOptions(optionArea, res.data);
+                    optionArea.toggle();
+                });
+        });
+
+        $(document).off("click", ".btn-add-child-option");
+        $(document).on("click", ".btn-add-child-option", function () {
+            clearMessage();
+
+            var button = $(this);
+            var currentRow = button.closest(".node-row");
+            var configId = button.data("config-id");
+            var name = button.data("name");
+
+            addRow(currentRow.children(".child-area"), getLevel(currentRow) + 1, false, name, configId);
+
+            currentRow.children(".child-option-area").hide();
+            currentRow.children(".child-option-area").html("");
+
+            refreshDeleteButtons();
+        });
+
+        function buildChildOptions(optionArea, data) {
+            var html = "";
+
+            html += '<div class="card card-outline card-info mb-2">';
+            html += '<div class="card-body p-2">';
+
+            for (var i = 0; i < data.length; i++) {
+                html += '<button type="button" class="btn btn-outline-primary btn-sm mr-1 mb-1 btn-add-child-option" ';
+                html += 'data-config-id="' + data[i].id + '" ';
+                html += 'data-name="' + data[i].name + '">';
+                html += '<i class="fas fa-plus"></i> Add ' + data[i].name;
+                html += '</button>';
+            }
+
+            html += '</div>';
+            html += '</div>';
+
+            optionArea.html(html);
+        }
+
+        $(document).off("click", ".btn-remove-row");
+        $(document).on("click", ".btn-remove-row", function () {
+            clearMessage();
+
+            var currentRow = $(this).closest(".node-row");
+
+            if (currentRow.children(".child-area").children(".node-row").length > 0) {
+                showError("Remove child rows first.");
+                return;
+            }
+
+            currentRow.remove();
+
+            if ($("#nodeContainer").children(".node-row").length === 0) {
+                $("#nodeContainer").html(
+                    '<div class="text-muted text-center py-3" id="emptyMessage">Click Add to create setup tree.</div>'
+                );
+            }
+
+            refreshDeleteButtons();
+        });
+
+        function addRow(container, level, isFieldValue, labelName, configId) {
+            var margin = level * 30;
+            var html = "";
+
+            html += '<div class="node-row mb-2" ';
+            html += 'data-level="' + level + '" ';
+            html += 'data-field="' + isFieldValue + '" ';
+            html += 'data-config-id="' + configId + '" ';
+            html += 'style="margin-left:' + margin + 'px;">';
+
+            html += '<div class="row align-items-center">';
+
+            html += '<div class="col-md-3">';
+            html += '<label class="mb-0 font-weight-bold">' + labelName + '</label>';
+            html += '</div>';
+
+            if (isFieldValue) {
+                html += '<div class="col-md-5">';
+                html += '<input type="text" class="form-control form-control-sm node-value" placeholder="Enter field value">';
+                html += '</div>';
+
+                html += '<div class="col-md-2">';
+                html += '<select class="form-control form-control-sm field-type">';
+                html += '<option value="Text" selected>Text</option>';
+                html += '<option value="Up/Down">Up/Down</option>';
+                html += '<option value="Tick/Untick">Tick/Untick</option>';
+                html += '<option value="Yes/No">Yes/No</option>';
+                html += '<option value="Percentage">Percentage</option>';
+                html += '<option value="Date">Date</option>';
+                html += '</select>';
+                html += '</div>';
+
+                html += '<div class="col-md-2 text-right">';
+                html += '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Remove">';
+                html += '<i class="fas fa-minus"></i>';
+                html += '</button>';
+                html += '</div>';
+            }
+            else {
+                html += '<div class="col-md-7">';
+                html += '<input type="text" class="form-control form-control-sm node-value" placeholder="Enter ' + labelName + '">';
+                html += '</div>';
+
+                html += '<div class="col-md-2 text-right">';
+                html += '<button type="button" class="btn btn-outline-primary btn-sm btn-add-child mr-1" title="Add child">';
+                html += '<i class="fas fa-plus"></i>';
+                html += '</button>';
+
+                html += '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Remove">';
+                html += '<i class="fas fa-minus"></i>';
+                html += '</button>';
+                html += '</div>';
+            }
+
+            html += '</div>';
+            html += '<div class="child-option-area mt-2" style="display:none;"></div>';
+            html += '<div class="child-area mt-2"></div>';
+            html += '</div>';
+
+            container.append(html);
+        }
+
+        function getLevel(row) {
+            var level = row.attr("data-level");
+
+            if (level === undefined || level === null || level === "") {
+                return 0;
+            }
+
+            return parseInt(level);
+        }
+
+        function refreshDeleteButtons() {
+            $("#nodeContainer").find(".node-row").each(function () {
+                var row = $(this);
+                var childCount = row.children(".child-area").children(".node-row").length;
+
+                if (childCount > 0) {
+                    row.find("> .row .btn-remove-row").hide();
+                }
+                else {
+                    row.find("> .row .btn-remove-row").show();
+                }
+            });
+        }
+
+        $("#btnSave").off("click").on("click", function () {
+            saveData();
+        });
+
+        function saveData() {
+            clearMessage();
+
+            var productId = $("#ProductId").val();
+
+            if (productId === "") {
+                showError("Please select product.");
+                return;
+            }
+
+            if ($("#nodeContainer").children(".node-row").length === 0) {
+                showError("Please add setup data.");
+                return;
+            }
+
+            if (!validateRows($("#nodeContainer"))) {
+                return;
+            }
+
+            var nodes = collectRows($("#nodeContainer"));
+
+            $.ajax({
+                url: "/ProductSetupConfiguration/SaveData",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    productId: parseInt(productId),
+                    nodes: nodes
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        window.location.href =
+                            "/ProductSetupConfiguration?selectedProductId=" +
+                            productId +
+                            "&successMessage=" +
+                            encodeURIComponent(response.message);
+                    }
+                    else {
+                        showError(response.message);
+                    }
+                },
+                error: function () {
+                    showError("Error while saving setup configuration.");
+                }
+            });
+        }
+
+        function validateRows(container) {
+            var valid = true;
+
+            container.find(".node-row").each(function () {
+                var row = $(this);
+                var nodeValue = row.find("> .row .node-value").val();
+
+                if ($.trim(nodeValue) === "") {
+                    showError("Please type value for all rows.");
+                    valid = false;
+                    return false;
+                }
+            });
+
+            return valid;
+        }
+
+        function collectRows(container) {
+            var data = [];
+
+            container.children(".node-row").each(function () {
+                var row = $(this);
+
+                var isFieldValue = row.attr("data-field") === "true";
+                var nodeValue = row.find("> .row .node-value").val();
+                var fieldType = null;
+                var configurationNodeId = null;
+
+                if (isFieldValue) {
+                    fieldType = row.find("> .row .field-type").val();
+                }
+                else {
+                    configurationNodeId = row.attr("data-config-id");
+                }
+
+                data.push({
+                    nodeValue: $.trim(nodeValue),
+                    isFieldValue: isFieldValue,
+                    fieldType: fieldType,
+                    configurationNodeId: configurationNodeId,
+                    children: collectRows(row.children(".child-area"))
+                });
+            });
+
+            return data;
+        }
+
+        $("#btnFooterClose").off("click").on("click", function () {
+            $("#confirmCloseModal").modal("show");
+        });
+
+        $("#btnContinueEditing").off("click").on("click", function () {
+            $("#confirmCloseModal").modal("hide");
+        });
+
+        $("#btnConfirmClose").off("click").on("click", function () {
+            $("#confirmCloseModal").modal("hide");
+            $("#setupConfigurationModal").modal("hide");
+        });
+
+        function showError(message) {
+            $("#msgArea").html(
+                '<div class="alert alert-danger alert-dismissible fade show mb-2">' +
+                message +
+                '<button type="button" class="close" data-dismiss="alert">' +
+                '<span>&times;</span>' +
+                '</button>' +
+                '</div>'
+            );
+
+            setTimeout(function () {
+                $("#msgArea").html("");
+            }, 3000);
+        }
+
+        function clearMessage() {
+            $("#msgArea").html("");
+        }
+
+    });
+</script>

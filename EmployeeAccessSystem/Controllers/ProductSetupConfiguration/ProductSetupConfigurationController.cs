@@ -20,80 +20,194 @@ namespace EmployeeAccessSystem.Controllers
             _productSetupService = productSetupService;
         }
 
-        public async Task<IActionResult> Index(int? productId)
+        public async Task<IActionResult> Index(int? selectedProductId, string successMessage)
         {
-            var products = await _productSetupService.GetAllAsync();
-            ViewBag.Products = products;
-            ViewBag.SelectedProductId = productId;
+            ViewBag.SelectedProductId = selectedProductId ?? 0;
+            ViewBag.SuccessMessage = successMessage;
 
-            if (productId != null && productId.Value > 0)
+            if (selectedProductId != null && selectedProductId.Value > 0)
             {
-                var tree = await _setupConfigurationService.GetTreeByProductIdAsync(productId.Value);
+                List<ProductSetupConfiguration> tree =
+                    await _setupConfigurationService.GetTreeByProductIdAsync(selectedProductId.Value);
+
                 return View(tree);
             }
 
             return View(new List<ProductSetupConfiguration>());
         }
 
-        public async Task<IActionResult> Add(int productId, int? parentNodeId)
+        public async Task<IActionResult> Add(int? productId)
         {
-            var model = await _setupConfigurationService.PrepareAddAsync(productId, parentNodeId);
+            var products = await _productSetupService.GetAllAsync();
 
-            if (model == null)
+            ViewBag.Products = products;
+            ViewBag.SelectedProductId = productId ?? 0;
+
+            return PartialView("_Add");
+        }
+
+        public async Task<IActionResult> GetRootLevels(int productId)
+        {
+            List<ProductConfiguration> roots =
+                await _setupConfigurationService.GetRootLevelsAsync(productId);
+
+            List<object> data = new List<object>();
+
+            foreach (ProductConfiguration item in roots)
             {
-                TempData["Error"] = "No next configuration level found. Please check Product Configuration.";
-                return RedirectToAction("Index", new { productId = productId });
+                data.Add(new
+                {
+                    id = item.NodeId,
+                    name = item.NodeName,
+                    inputType = item.InputType
+                });
             }
 
-            return View(model);
+            return Json(new
+            {
+                success = true,
+                data = data
+            });
+        }
+
+        public async Task<IActionResult> GetChildLevels(int productId, int? parentConfigurationNodeId)
+        {
+            List<ProductConfiguration> children =
+                await _setupConfigurationService.GetChildLevelsAsync(productId, parentConfigurationNodeId);
+
+            List<object> data = new List<object>();
+
+            foreach (ProductConfiguration item in children)
+            {
+                data.Add(new
+                {
+                    id = item.NodeId,
+                    name = item.NodeName,
+                    inputType = item.InputType
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                data = data
+            });
         }
 
         [HttpPost]
-        public async Task<IActionResult> Add(ProductSetupConfiguration model)
+        public async Task<IActionResult> SaveData([FromBody] ProductSetupConfigurationSaveRequest request)
+        {
+            if (request == null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Invalid request."
+                });
+            }
+
+            var result = await _setupConfigurationService.SaveDataAsync(request, GetCurrentUser());
+
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message
+            });
+        }
+
+        public async Task<IActionResult> AddChild(int productId, int? parentNodeId)
+        {
+            ProductSetupConfiguration model =
+                await _setupConfigurationService.PrepareAddAsync(productId, parentNodeId);
+
+            if (model == null)
+            {
+                return Content("Cannot add child. Product Configuration is missing.");
+            }
+
+            return PartialView("_AddChild", model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddChild(ProductSetupConfiguration model)
         {
             var result = await _setupConfigurationService.AddAsync(model, GetCurrentUser());
 
-            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
 
-            return RedirectToAction("Index", new { productId = model.ProductId });
+            return RedirectToAction("Index", new { selectedProductId = model.ProductId });
         }
 
-        public async Task<IActionResult> Edit(int nodeId)
+        public async Task<IActionResult> EditNode(int nodeId)
         {
-            var model = await _setupConfigurationService.PrepareEditAsync(nodeId);
+            ProductSetupConfiguration model =
+                await _setupConfigurationService.PrepareEditAsync(nodeId);
 
             if (model == null)
             {
-                TempData["Error"] = "Configuration not found.";
-                return RedirectToAction("Index");
+                return Content("Item not found.");
             }
 
-            return View(model);
+            return PartialView("_EditNode", model);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(ProductSetupConfiguration model)
+        public async Task<IActionResult> EditNode(ProductSetupConfiguration model)
         {
             var result = await _setupConfigurationService.UpdateNodeAsync(model, GetCurrentUser());
 
-            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
 
-            return RedirectToAction("Index", new { productId = model.ProductId });
+            return RedirectToAction("Index", new { selectedProductId = model.ProductId });
+        }
+
+        public async Task<IActionResult> DeleteNode(int nodeId)
+        {
+            ProductSetupConfiguration model =
+                await _setupConfigurationService.PrepareEditAsync(nodeId);
+
+            if (model == null)
+            {
+                return Content("Item not found.");
+            }
+
+            return PartialView("_DeleteNode", model);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Delete(int nodeId, int productId)
+        public async Task<IActionResult> DeleteConfirmed(int nodeId, int productId)
         {
             var result = await _setupConfigurationService.DeleteNodeAsync(nodeId, GetCurrentUser());
 
-            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
 
-            return RedirectToAction("Index", new { productId = productId });
+            return RedirectToAction("Index", new { selectedProductId = productId });
         }
 
         private string GetCurrentUser()
         {
-            var name = User.FindFirst(ClaimTypes.Name)?.Value;
+            string name = User.FindFirst(ClaimTypes.Name)?.Value;
 
             if (!string.IsNullOrWhiteSpace(name))
             {
@@ -105,7 +219,7 @@ namespace EmployeeAccessSystem.Controllers
                 return User.Identity.Name;
             }
 
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            string email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (!string.IsNullOrWhiteSpace(email))
             {

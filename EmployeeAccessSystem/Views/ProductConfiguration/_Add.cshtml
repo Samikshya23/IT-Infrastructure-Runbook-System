@@ -4,12 +4,13 @@
     int selectedProductId = ViewBag.SelectedProductId;
     string existingJson = ViewBag.ExistingJson;
 }
+
 <div class="modal-header bg-white border-bottom">
     <h5 class="modal-title font-weight-bold">Product Configuration</h5>
 </div>
+
 <div class="modal-body">
     <div id="msgArea"></div>
-
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
             <div class="row align-items-end">
@@ -23,11 +24,10 @@
                         <option value="">Select Product</option>
                     </select>
                 </div>
-
                 <div class="col-md-1 text-right">
                     <button type="button"
                             id="btnAddRoot"
-                            class="btn btn-outline-primary btn-sm px-2 py-1"
+                            class="btn btn-outline-primary btn-sm px-2 py-0"
                             title="Add Label"
                             style="display:none;">
                         <i class="fas fa-plus"></i>
@@ -38,7 +38,7 @@
         </div>
     </div>
 
-    <div class="card card-outline card-secondary">
+    <div class="card">
         <div class="card-header py-2">
             <h3 class="card-title font-weight-bold">Structure Builder</h3>
         </div>
@@ -47,34 +47,29 @@
             <div id="nodeContainer">
                 <div class="text-muted text-center py-3" id="emptyMessage">
                     Select product first, then click plus to add structure.
-                </div>
+                 </div>
             </div>
         </div>
     </div>
-
 </div>
-
 <div class="modal-footer">
     <button type="button"
             id="btnFooterClose"
             class="btn btn-secondary btn-sm">
         Close
     </button>
-
     <button type="button"
             id="btnSave"
             class="btn btn-primary btn-sm">
         Save Structure
     </button>
 </div>
-
 <div class="modal fade"
      id="confirmCloseModal"
      tabindex="-1"
      role="dialog"
      data-backdrop="static"
      data-keyboard="false">
-
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
 
@@ -94,7 +89,6 @@
                         class="btn btn-secondary btn-sm px-3">
                     Continue Editing
                 </button>
-
                 <button type="button"
                         id="btnConfirmClose"
                         class="btn btn-danger btn-sm px-3">
@@ -217,11 +211,11 @@
             html += '</div>';
 
             html += '<div class="col-md-2 text-right">';
-            html += '<button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 btn-plus mr-1" title="Add Child">';
+            html += '<button type="button" class="btn btn-outline-primary btn-sm px-2 py-0 btn-plus mr-1" title="Add Child">';
             html += '<i class="fas fa-plus"></i>';
             html += '</button>';
 
-            html += '<button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 btn-minus" title="Remove">';
+            html += '<button type="button" class="btn btn-outline-danger btn-sm px-2 py-0 btn-minus" title="Remove">';
             html += '<i class="fas fa-minus"></i>';
             html += '</button>';
             html += '</div>';
@@ -286,7 +280,6 @@
             container.find(".node-row").each(function () {
 
                 var row = $(this);
-
                 var nodeName = row.find("> .row .node-name").val();
 
                 if ($.trim(nodeName) === "") {
@@ -337,20 +330,27 @@
         }
 
         function saveData() {
+
             clearMessage();
+
             var productId = $("#ProductId").val();
+
             if (productId === "") {
                 showError("Please select product.");
                 return;
             }
+
             if ($("#nodeContainer").children(".node-row").length === 0) {
                 showError("Please add structure.");
                 return;
             }
+
             if (!validateRows($("#nodeContainer"))) {
                 return;
             }
+
             var nodes = collectRows($("#nodeContainer"));
+
             $.ajax({
                 url: "/ProductConfiguration/SaveStructure",
                 type: "POST",
@@ -377,6 +377,7 @@
                 }
             });
         }
+
         function validateRows(container) {
 
             var valid = true;
@@ -384,7 +385,6 @@
             container.find(".node-row").each(function () {
 
                 var row = $(this);
-
                 var nodeName = row.find("> .row .node-name").val();
 
                 if (nodeName == null || $.trim(nodeName) === "") {
@@ -429,6 +429,10 @@
                 '</button>' +
                 '</div>'
             );
+
+            setTimeout(function () {
+                $("#msgArea").html("");
+            }, 3000);
         }
 
         function clearMessage() {
