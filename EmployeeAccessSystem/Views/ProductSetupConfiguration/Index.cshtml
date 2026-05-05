@@ -60,9 +60,9 @@
                 </div>
 
                 <div class="card-body">
-                    @foreach (var node in Model)
+                    @for (int i = 0; i < Model.Count; i++)
                     {
-                        <partial name="_TreeNode" model="node" />
+                        <partial name="_TreeNode" model="Model[i]" />
                     }
                 </div>
             </div>
@@ -85,12 +85,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="nodeModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content" id="nodeModalContent"></div>
-    </div>
-</div>
-
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -107,47 +101,6 @@
                     function (data) {
                         $("#setupConfigurationModalContent").html(data);
                         $("#setupConfigurationModal").modal("show");
-                    });
-            });
-
-            $(document).on("click", ".btnAddChild", function () {
-                var nodeId = $(this).data("node-id");
-                var productId = $(this).data("product-id");
-
-                $.get("/ProductSetupConfiguration/AddChild",
-                    {
-                        parentNodeId: nodeId,
-                        productId: productId
-                    },
-                    function (data) {
-                        $("#nodeModalContent").html(data);
-                        $("#nodeModal").modal("show");
-                    });
-            });
-
-            $(document).on("click", ".btnEditNode", function () {
-                var nodeId = $(this).data("node-id");
-
-                $.get("/ProductSetupConfiguration/EditNode",
-                    {
-                        nodeId: nodeId
-                    },
-                    function (data) {
-                        $("#nodeModalContent").html(data);
-                        $("#nodeModal").modal("show");
-                    });
-            });
-
-            $(document).on("click", ".btnDeleteNode", function () {
-                var nodeId = $(this).data("node-id");
-
-                $.get("/ProductSetupConfiguration/DeleteNode",
-                    {
-                        nodeId: nodeId
-                    },
-                    function (data) {
-                        $("#nodeModalContent").html(data);
-                        $("#nodeModal").modal("show");
                     });
             });
 

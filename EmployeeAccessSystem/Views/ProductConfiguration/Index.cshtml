@@ -2,17 +2,15 @@
 
 @{
     ViewData["Title"] = "Product Configuration";
-    int selectedProductId = ViewBag.SelectedProductId;
 }
 
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2 align-items-center">
             <div class="col-sm-6">
-                <h4 class="m-0 font-weight-bold">
-                    Product Configuration
-                </h4>
+                <h4 class="m-0 font-weight-bold">Product Configuration</h4>
             </div>
+
             <div class="col-sm-6 text-right">
                 <button type="button"
                         class="btn btn-primary btn-sm"
@@ -24,13 +22,83 @@
         </div>
     </div>
 </div>
+
 <section class="content">
     <div class="container-fluid">
 
-        @await Component.InvokeAsync("ProductConfiguration", new { selectedProductId = selectedProductId })
+        @if (Model != null && Model.Count > 0)
+        {
+            for (int i = 0; i < Model.Count; i++)
+            {
+                var item = Model[i];
+
+                <div class="card card-outline card-primary mb-3">
+                    <div class="card-header py-2">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="card-title font-weight-bold mb-0">
+                                    @item.ProductName
+                                </h3>
+                            </div>
+
+                            <div class="col-md-4 text-right">
+                                <button type="button"
+                                        class="btn btn-warning btn-sm btnEditConfiguration"
+                                        data-product-id="@item.ProductId"
+                                        title="Edit Configuration">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+
+                                <form asp-action="Delete"
+                                      method="post"
+                                      class="d-inline deleteForm">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="productId"
+                                           value="@item.ProductId" />
+
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm"
+                                            title="Delete Configuration">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2">
+                        @if (item.Nodes != null && item.Nodes.Count > 0)
+                        {
+                            for (int j = 0; j < item.Nodes.Count; j++)
+                            {
+                                @await Html.PartialAsync("~/Views/ProductConfiguration/_TreeNode.cshtml", item.Nodes[j])
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-muted text-center py-2">
+                                No structure found.
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body text-center text-muted">
+                    Click <strong>Add Product Configuration</strong> to create or edit a product structure.
+                </div>
+            </div>
+        }
 
     </div>
 </section>
+
 <div class="modal fade"
      id="configurationModal"
      tabindex="-1"
@@ -104,24 +172,6 @@
                 });
             });
 
-            $(document).on("click", ".btnEditNode", function () {
-                var nodeId = $(this).attr("data-node-id");
-
-                $.get("/ProductConfiguration/EditNode?nodeId=" + nodeId, function (data) {
-                    $("#configurationModalContent").html(data);
-                    $("#configurationModal").modal("show");
-                });
-            });
-
-            $(document).on("click", ".btnDeleteNode", function () {
-                var nodeId = $(this).attr("data-node-id");
-
-                $.get("/ProductConfiguration/DeleteNode?nodeId=" + nodeId, function (data) {
-                    $("#configurationModalContent").html(data);
-                    $("#configurationModal").modal("show");
-                });
-            });
-
             $(document).on("submit", ".deleteForm", function () {
                 return confirm("Are you sure you want to delete this product configuration?");
             });
@@ -133,7 +183,6 @@
             if ($("#errorToast").length) {
                 $("#errorToast").toast("show");
             }
-
         });
     </script>
 }

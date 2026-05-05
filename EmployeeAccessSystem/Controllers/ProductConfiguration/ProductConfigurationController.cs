@@ -23,7 +23,10 @@ namespace EmployeeAccessSystem.Controllers
             _productRepo = productRepo;
         }
 
-        public async Task<IActionResult> Index(int? selectedProductId, string successMessage, string errorMessage)
+        public async Task<IActionResult> Index(
+            int? selectedProductId,
+            string successMessage,
+            string errorMessage)
         {
             if (!string.IsNullOrWhiteSpace(successMessage))
             {
@@ -44,16 +47,39 @@ namespace EmployeeAccessSystem.Controllers
                 selectedProductId
             );
 
+            ViewBag.SelectedProductId = selectedProductId ?? 0;
+
+            List<ProductConfigurationIndexItem> model =
+                new List<ProductConfigurationIndexItem>();
+
             if (selectedProductId.HasValue && selectedProductId.Value > 0)
             {
-                ViewBag.SelectedProductId = selectedProductId.Value;
-            }
-            else
-            {
-                ViewBag.SelectedProductId = 0;
+                List<ProductConfiguration> nodes =
+                    await _service.GetTreeByProductIdAsync(selectedProductId.Value);
+
+                if (nodes != null && nodes.Count > 0)
+                {
+                    ProductConfigurationIndexItem item =
+                        new ProductConfigurationIndexItem();
+
+                    item.ProductId = selectedProductId.Value;
+                    item.ProductName = "";
+
+                    foreach (var product in products)
+                    {
+                        if (product.ProductId == selectedProductId.Value)
+                        {
+                            item.ProductName = product.ProductName;
+                            break;
+                        }
+                    }
+
+                    item.Nodes = nodes;
+                    model.Add(item);
+                }
             }
 
-            return View(new List<ProductConfigurationIndexItem>());
+            return View(model);
         }
 
         public async Task<IActionResult> Add(int? productId)
@@ -67,43 +93,29 @@ namespace EmployeeAccessSystem.Controllers
                 productId
             );
 
-            if (productId.HasValue && productId.Value > 0)
-            {
-                ViewBag.SelectedProductId = productId.Value;
-            }
-            else
-            {
-                ViewBag.SelectedProductId = 0;
-            }
+            ViewBag.SelectedProductId = productId ?? 0;
 
             string existingJson = "[]";
 
             if (productId.HasValue && productId.Value > 0)
             {
-                var existingNodes = await _service.GetTreeByProductIdAsync(productId.Value);
+                List<ProductConfiguration> existingNodes =
+                    await _service.GetTreeByProductIdAsync(productId.Value);
 
-                existingJson = JsonSerializer.Serialize(
-                    existingNodes,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    }
-                );
+                JsonSerializerOptions options = new JsonSerializerOptions();
+                options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+
+                existingJson = JsonSerializer.Serialize(existingNodes, options);
             }
 
             ViewBag.ExistingJson = existingJson;
 
             return PartialView("_Add");
         }
-        [HttpGet]
-        public async Task<IActionResult> GetNodeNameOptions(int productId)
-        {
-            List<string> data = await _service.GetNodeNameOptionsAsync(productId);
 
-            return Json(data);
-        }
         [HttpPost]
-        public async Task<IActionResult> SaveStructure([FromBody] ProductConfigurationSaveRequest request)
+        public async Task<IActionResult> SaveStructure(
+            [FromBody] ProductConfigurationSaveRequest request)
         {
             try
             {
@@ -118,11 +130,18 @@ namespace EmployeeAccessSystem.Controllers
 
                 var result = await _service.SaveStructureAsync(request, userName);
 
+                int productId = 0;
+
+                if (request != null)
+                {
+                    productId = request.ProductId;
+                }
+
                 return Json(new
                 {
                     success = result.Success,
                     message = result.Message,
-                    productId = request.ProductId
+                    productId = productId
                 });
             }
             catch (Exception ex)
@@ -133,73 +152,6 @@ namespace EmployeeAccessSystem.Controllers
                     message = ex.Message
                 });
             }
-        }
-
-        public async Task<IActionResult> EditNode(int nodeId)
-        {
-            ProductConfiguration node = await _service.GetNodeByIdAsync(nodeId);
-
-            if (node == null)
-            {
-                node = new ProductConfiguration();
-            }
-
-            return PartialView("_EditNode", node);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditNode(ProductConfiguration model)
-        {
-            var result = await _service.UpdateNodeAsync(model);
-
-            if (result.Success)
-            {
-                return Content("success|" + result.Message + "|" + model.ProductId);
-            }
-
-            ViewBag.Error = result.Message;
-
-            return PartialView("_EditNode", model);
-        }
-
-        public async Task<IActionResult> DeleteNode(int nodeId)
-        {
-            ProductConfiguration node = await _service.GetNodeByIdAsync(nodeId);
-
-            if (node == null)
-            {
-                node = new ProductConfiguration();
-            }
-
-            return PartialView("_DeleteNode", node);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteNodeConfirmed(int nodeId, int productId)
-        {
-            string userName = "System";
-
-            if (User != null &&
-                User.Identity != null &&
-                User.Identity.IsAuthenticated)
-            {
-                userName = User.Identity.Name;
-            }
-
-            var result = await _service.DeleteNodeAsync(nodeId, userName);
-
-            if (result.Success)
-            {
-                TempData["Success"] = result.Message;
-            }
-            else
-            {
-                TempData["Error"] = result.Message;
-            }
-
-            return RedirectToAction("Index", new { selectedProductId = productId });
         }
 
         [HttpPost]

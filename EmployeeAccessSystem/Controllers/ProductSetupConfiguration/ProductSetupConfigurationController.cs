@@ -20,15 +20,21 @@ namespace EmployeeAccessSystem.Controllers
             _productSetupService = productSetupService;
         }
 
-        public async Task<IActionResult> Index(int? selectedProductId, string successMessage)
+        public async Task<IActionResult> Index(
+            int? selectedProductId,
+            string successMessage)
         {
-            ViewBag.SelectedProductId = selectedProductId ?? 0;
+            ViewBag.SelectedProductId = 0;
             ViewBag.SuccessMessage = successMessage;
 
-            if (selectedProductId != null && selectedProductId.Value > 0)
+            if (selectedProductId != null &&
+                selectedProductId.Value > 0)
             {
+                ViewBag.SelectedProductId = selectedProductId.Value;
+
                 List<ProductSetupConfiguration> tree =
-                    await _setupConfigurationService.GetTreeByProductIdAsync(selectedProductId.Value);
+                    await _setupConfigurationService
+                        .GetTreeByProductIdAsync(selectedProductId.Value);
 
                 return View(tree);
             }
@@ -41,7 +47,13 @@ namespace EmployeeAccessSystem.Controllers
             var products = await _productSetupService.GetAllAsync();
 
             ViewBag.Products = products;
-            ViewBag.SelectedProductId = productId ?? 0;
+            ViewBag.SelectedProductId = 0;
+
+            if (productId != null &&
+                productId.Value > 0)
+            {
+                ViewBag.SelectedProductId = productId.Value;
+            }
 
             return PartialView("_Add");
         }
@@ -70,10 +82,15 @@ namespace EmployeeAccessSystem.Controllers
             });
         }
 
-        public async Task<IActionResult> GetChildLevels(int productId, int? parentConfigurationNodeId)
+        public async Task<IActionResult> GetChildLevels(
+            int productId,
+            int? parentConfigurationNodeId)
         {
             List<ProductConfiguration> children =
-                await _setupConfigurationService.GetChildLevelsAsync(productId, parentConfigurationNodeId);
+                await _setupConfigurationService.GetChildLevelsAsync(
+                    productId,
+                    parentConfigurationNodeId
+                );
 
             List<object> data = new List<object>();
 
@@ -95,7 +112,8 @@ namespace EmployeeAccessSystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveData([FromBody] ProductSetupConfigurationSaveRequest request)
+        public async Task<IActionResult> SaveData(
+            [FromBody] ProductSetupConfigurationSaveRequest request)
         {
             if (request == null)
             {
@@ -106,32 +124,28 @@ namespace EmployeeAccessSystem.Controllers
                 });
             }
 
-            var result = await _setupConfigurationService.SaveDataAsync(request, GetCurrentUser());
+            var result =
+                await _setupConfigurationService.SaveDataAsync(
+                    request,
+                    GetCurrentUser()
+                );
 
             return Json(new
             {
                 success = result.Success,
-                message = result.Message
+                message = result.Message,
+                productId = request.ProductId
             });
         }
 
-        public async Task<IActionResult> AddChild(int productId, int? parentNodeId)
-        {
-            ProductSetupConfiguration model =
-                await _setupConfigurationService.PrepareAddAsync(productId, parentNodeId);
-
-            if (model == null)
-            {
-                return Content("Cannot add child. Product Configuration is missing.");
-            }
-
-            return PartialView("_AddChild", model);
-        }
-
         [HttpPost]
-        public async Task<IActionResult> AddChild(ProductSetupConfiguration model)
+        public async Task<IActionResult> Delete(int productId)
         {
-            var result = await _setupConfigurationService.AddAsync(model, GetCurrentUser());
+            var result =
+                await _setupConfigurationService.DeleteByProductAsync(
+                    productId,
+                    GetCurrentUser()
+                );
 
             if (result.Success)
             {
@@ -142,67 +156,10 @@ namespace EmployeeAccessSystem.Controllers
                 TempData["Error"] = result.Message;
             }
 
-            return RedirectToAction("Index", new { selectedProductId = model.ProductId });
-        }
-
-        public async Task<IActionResult> EditNode(int nodeId)
-        {
-            ProductSetupConfiguration model =
-                await _setupConfigurationService.PrepareEditAsync(nodeId);
-
-            if (model == null)
-            {
-                return Content("Item not found.");
-            }
-
-            return PartialView("_EditNode", model);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> EditNode(ProductSetupConfiguration model)
-        {
-            var result = await _setupConfigurationService.UpdateNodeAsync(model, GetCurrentUser());
-
-            if (result.Success)
-            {
-                TempData["Success"] = result.Message;
-            }
-            else
-            {
-                TempData["Error"] = result.Message;
-            }
-
-            return RedirectToAction("Index", new { selectedProductId = model.ProductId });
-        }
-
-        public async Task<IActionResult> DeleteNode(int nodeId)
-        {
-            ProductSetupConfiguration model =
-                await _setupConfigurationService.PrepareEditAsync(nodeId);
-
-            if (model == null)
-            {
-                return Content("Item not found.");
-            }
-
-            return PartialView("_DeleteNode", model);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteConfirmed(int nodeId, int productId)
-        {
-            var result = await _setupConfigurationService.DeleteNodeAsync(nodeId, GetCurrentUser());
-
-            if (result.Success)
-            {
-                TempData["Success"] = result.Message;
-            }
-            else
-            {
-                TempData["Error"] = result.Message;
-            }
-
-            return RedirectToAction("Index", new { selectedProductId = productId });
+            return RedirectToAction(
+                "Index",
+                new { selectedProductId = productId }
+            );
         }
 
         private string GetCurrentUser()
@@ -214,7 +171,8 @@ namespace EmployeeAccessSystem.Controllers
                 return name;
             }
 
-            if (User.Identity != null && !string.IsNullOrWhiteSpace(User.Identity.Name))
+            if (User.Identity != null &&
+                !string.IsNullOrWhiteSpace(User.Identity.Name))
             {
                 return User.Identity.Name;
             }

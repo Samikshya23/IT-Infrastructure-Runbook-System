@@ -5,50 +5,26 @@
     <div class="border rounded bg-white px-3 py-2">
         <div class="row align-items-center">
 
-            <div class="col-md-9">
-                @if (Model.IsFieldValue)
-                {
-                    <span class="text-muted">Field Value:</span>
-                    <strong>@Model.NodeValue</strong>
+            <div class="col-md-10">
 
-                    @if (!string.IsNullOrWhiteSpace(Model.FieldType))
-                    {
-                        <span class="badge badge-secondary ml-2">@Model.FieldType</span>
-                    }
-                }
-                else
+                <strong>
+                    @Model.NodeValue
+                </strong>
+
+                @if (!string.IsNullOrWhiteSpace(Model.FieldType))
                 {
-                    <span class="text-muted">@Model.ConfigurationNodeName:</span>
-                    <strong>@Model.NodeValue</strong>
+                    <span class="badge badge-secondary ml-2">
+                        @Model.FieldType
+                    </span>
                 }
+
             </div>
 
-            <div class="col-md-3 text-right">
+            <div class="col-md-2 text-right">
 
-                @if (!Model.IsFieldValue)
-                {
-                    <button type="button"
-                            class="btn btn-outline-primary btn-sm px-2 py-0 btnAddChild"
-                            data-node-id="@Model.NodeId"
-                            data-product-id="@Model.ProductId"
-                            title="Add Child">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                }
-
-                <button type="button"
-                        class="btn btn-outline-warning btn-sm px-2 py-0 btnEditNode"
-                        data-node-id="@Model.NodeId"
-                        title="Edit">
-                    <i class="fas fa-edit"></i>
-                </button>
-
-                <button type="button"
-                        class="btn btn-outline-danger btn-sm px-2 py-0 btnDeleteNode"
-                        data-node-id="@Model.NodeId"
-                        title="Delete">
-                    <i class="far fa-trash-alt"></i>
-                </button>
+                <span class="text-muted small">
+                    JSON Item
+                </span>
 
             </div>
 
@@ -58,10 +34,12 @@
     @if (Model.Children != null && Model.Children.Count > 0)
     {
         <div class="border-left ml-4 pl-3 mt-2">
+
             @foreach (var child in Model.Children)
             {
                 <partial name="_TreeNode" model="child" />
             }
+
         </div>
     }
 

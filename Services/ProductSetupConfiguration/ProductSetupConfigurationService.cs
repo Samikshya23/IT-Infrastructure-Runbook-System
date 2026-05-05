@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
@@ -20,81 +21,67 @@ namespace EmployeeAccessSystem.Services
 
         public async Task<List<ProductSetupConfiguration>> GetTreeByProductIdAsync(int productId)
         {
-            var setupData = await _setupRepository.GetByProductIdAsync(productId);
+            List<ProductSetupConfiguration> result = new List<ProductSetupConfiguration>();
 
-            List<ProductSetupConfiguration> nodes = new List<ProductSetupConfiguration>();
-
-            foreach (var item in setupData)
+            if (productId <= 0)
             {
-                if (item.Children == null)
-                {
-                    item.Children = new List<ProductSetupConfiguration>();
-                }
-                else
-                {
-                    item.Children.Clear();
-                }
-
-                if (item.IsFieldValue)
-                {
-                    item.ConfigurationNodeName = "Field Value";
-                }
-
-                nodes.Add(item);
+                return result;
             }
 
-            List<ProductSetupConfiguration> rootNodes = new List<ProductSetupConfiguration>();
+            ProductSetupConfiguration savedData =
+                await _setupRepository.GetJsonByProductIdAsync(productId);
 
-            foreach (var node in nodes)
+            if (savedData == null ||
+                string.IsNullOrWhiteSpace(savedData.SetupJson))
             {
-                if (node.ParentNodeId == null)
-                {
-                    rootNodes.Add(node);
-                }
-                else
-                {
-                    foreach (var parent in nodes)
-                    {
-                        if (parent.NodeId == node.ParentNodeId.Value)
-                        {
-                            parent.Children.Add(node);
-                            break;
-                        }
-                    }
-                }
+                return result;
             }
 
-            return rootNodes;
+            return ConvertSetupJsonToTree(savedData.SetupJson, productId);
         }
 
         public async Task<List<ProductConfiguration>> GetRootLevelsAsync(int productId)
         {
-            return await GetChildLevelsAsync(productId, null);
+            List<ProductConfiguration> allNodes =
+                await GetConfigurationTreeFromJsonAsync(productId);
+
+            List<ProductConfiguration> roots = new List<ProductConfiguration>();
+
+            foreach (ProductConfiguration node in allNodes)
+            {
+                if (node.ParentNodeId == null)
+                {
+                    roots.Add(node);
+                }
+            }
+
+            return roots;
         }
 
-        public async Task<List<ProductConfiguration>> GetChildLevelsAsync(int productId, int? parentConfigurationNodeId)
+        public async Task<List<ProductConfiguration>> GetChildLevelsAsync(
+            int productId,
+            int? parentConfigurationNodeId)
         {
-            var configData = await _configurationRepository.GetByProductIdAsync(productId);
+            List<ProductConfiguration> allNodes =
+                await GetConfigurationTreeFromJsonAsync(productId);
 
             List<ProductConfiguration> children = new List<ProductConfiguration>();
 
-            foreach (var item in configData)
+            foreach (ProductConfiguration node in allNodes)
             {
                 if (parentConfigurationNodeId == null)
                 {
-                    if (item.ParentNodeId == null)
+                    if (node.ParentNodeId == null)
                     {
-                        children.Add(item);
+                        children.Add(node);
                     }
                 }
                 else
                 {
-                    if (item.ParentNodeId != null)
+                    if (node.ParentNodeId != null &&
+                        node.ParentNodeId.Value == parentConfigurationNodeId.Value)
                     {
-                        if (item.ParentNodeId.Value == parentConfigurationNodeId.Value)
-                        {
-                            children.Add(item);
-                        }
+                        children.Add(node);
                     }
                 }
             }
@@ -102,244 +89,9 @@ namespace EmployeeAccessSystem.Services
             return children;
         }
 
-        private async Task<ProductConfiguration> GetConfigurationNodeByIdAsync(int productId, int configurationNodeId)
-        {
-            var configData = await _configurationRepository.GetByProductIdAsync(productId);
-
-            foreach (var item in configData)
-            {
-                if (item.NodeId == configurationNodeId)
-                {
-                    return item;
-                }
-            }
-
-            return null;
-        }
-
-        public async Task<ProductSetupConfiguration> PrepareAddAsync(int productId, int? parentNodeId)
-        {
-            ProductSetupConfiguration model = new ProductSetupConfiguration();
-
-            model.ProductId = productId;
-            model.ParentNodeId = parentNodeId;
-
-            if (parentNodeId == null)
-            {
-                List<ProductConfiguration> roots = await GetRootLevelsAsync(productId);
-
-                if (roots.Count == 0)
-                {
-                    return null;
-                }
-
-                model.AvailableConfigurationNodes = roots;
-                model.IsFieldValue = false;
-                model.FieldType = null;
-
-                return model;
-            }
-
-            ProductSetupConfiguration parentNode = await _setupRepository.GetNodeByIdAsync(parentNodeId.Value);
-
-            if (parentNode == null)
-            {
-                return null;
-            }
-
-            if (parentNode.IsFieldValue)
-            {
-                return null;
-            }
-
-            List<ProductConfiguration> childLevels = await GetChildLevelsAsync(productId, parentNode.ConfigurationNodeId);
-
-            if (childLevels.Count == 0)
-            {
-                model.ConfigurationNodeId = null;
-                model.ConfigurationNodeName = "Field Value";
-                model.InputType = "Text";
-                model.IsFieldValue = true;
-                model.FieldType = "Text";
-            }
-            else
-            {
-                model.AvailableConfigurationNodes = childLevels;
-                model.IsFieldValue = false;
-                model.FieldType = null;
-            }
-
-            return model;
-        }
-
-        public async Task<ProductSetupConfiguration> PrepareEditAsync(int nodeId)
-        {
-            ProductSetupConfiguration node = await _setupRepository.GetNodeByIdAsync(nodeId);
-
-            if (node == null)
-            {
-                return null;
-            }
-
-            if (node.IsFieldValue)
-            {
-                node.ConfigurationNodeName = "Field Value";
-
-                if (string.IsNullOrWhiteSpace(node.FieldType))
-                {
-                    node.FieldType = "Text";
-                }
-            }
-
-            return node;
-        }
-
-        public async Task<(bool Success, string Message)> AddAsync(ProductSetupConfiguration model, string createdBy)
-        {
-            if (model == null)
-            {
-                return (false, "Invalid request.");
-            }
-
-            if (model.ProductId <= 0)
-            {
-                return (false, "Product is required.");
-            }
-
-            if (string.IsNullOrWhiteSpace(model.NodeValue))
-            {
-                return (false, "Value is required.");
-            }
-
-            model.NodeValue = model.NodeValue.Trim();
-
-            if (model.IsFieldValue)
-            {
-                model.ConfigurationNodeId = null;
-                model.ConfigurationNodeName = "Field Value";
-                model.InputType = "Text";
-
-                if (string.IsNullOrWhiteSpace(model.FieldType))
-                {
-                    model.FieldType = "Text";
-                }
-            }
-            else
-            {
-                if (model.ConfigurationNodeId == null)
-                {
-                    return (false, "Please select configuration label.");
-                }
-
-                ProductConfiguration configNode = await GetConfigurationNodeByIdAsync(
-                    model.ProductId,
-                    model.ConfigurationNodeId.Value
-                );
-
-                if (configNode == null)
-                {
-                    return (false, "Invalid configuration label.");
-                }
-
-                model.InputType = configNode.InputType;
-                model.ConfigurationNodeName = configNode.NodeName;
-                model.FieldType = null;
-            }
-
-            int duplicateCount = await _setupRepository.CheckDuplicateNodeAsync(
-                model.ProductId,
-                model.ConfigurationNodeId,
-                model.ParentNodeId,
-                model.NodeValue
-            );
-
-            if (duplicateCount > 0)
-            {
-                return (false, "Duplicate value found: " + model.NodeValue);
-            }
-
-            model.IsActive = true;
-            model.CreatedBy = createdBy;
-
-            int result = await _setupRepository.AddAsync(model);
-
-            if (result > 0)
-            {
-                return (true, "Product setup configuration added successfully.");
-            }
-
-            return (false, "Failed to add product setup configuration.");
-        }
-
-        public async Task<(bool Success, string Message)> UpdateNodeAsync(ProductSetupConfiguration model, string modifiedBy)
-        {
-            if (model == null)
-            {
-                return (false, "Invalid request.");
-            }
-
-            if (model.NodeId <= 0)
-            {
-                return (false, "Invalid node.");
-            }
-
-            ProductSetupConfiguration oldNode = await _setupRepository.GetNodeByIdAsync(model.NodeId);
-
-            if (oldNode == null)
-            {
-                return (false, "Setup node not found.");
-            }
-
-            if (string.IsNullOrWhiteSpace(model.NodeValue))
-            {
-                return (false, "Value is required.");
-            }
-
-            model.NodeValue = model.NodeValue.Trim();
-
-            model.ProductId = oldNode.ProductId;
-            model.ParentNodeId = oldNode.ParentNodeId;
-            model.ConfigurationNodeId = oldNode.ConfigurationNodeId;
-            model.IsFieldValue = oldNode.IsFieldValue;
-
-            if (oldNode.IsFieldValue)
-            {
-                if (string.IsNullOrWhiteSpace(model.FieldType))
-                {
-                    model.FieldType = "Text";
-                }
-            }
-            else
-            {
-                model.FieldType = null;
-            }
-
-            int duplicateCount = await _setupRepository.CheckDuplicateNodeForUpdateAsync(
-                model.NodeId,
-                model.ProductId,
-                model.ConfigurationNodeId,
-                model.ParentNodeId,
-                model.NodeValue
-            );
-
-            if (duplicateCount > 0)
-            {
-                return (false, "Duplicate value found: " + model.NodeValue);
-            }
-
-            model.ModifiedBy = modifiedBy;
-
-            int result = await _setupRepository.UpdateNodeAsync(model);
-
-            if (result > 0)
-            {
-                return (true, "Product setup configuration updated successfully.");
-            }
-
-            return (false, "Failed to update product setup configuration.");
-        }
-
-        public async Task<(bool Success, string Message)> SaveDataAsync(ProductSetupConfigurationSaveRequest request, string createdBy)
+        public async Task<(bool Success, string Message)> SaveDataAsync(
+            ProductSetupConfigurationSaveRequest request,
+            string createdBy)
         {
             if (request == null)
             {
@@ -356,142 +108,254 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Please add setup data.");
             }
 
-            foreach (var node in request.Nodes)
-            {
-                var result = await SaveNodeRecursive(
-                    request.ProductId,
-                    null,
-                    node,
-                    createdBy
-                );
+            string validationMessage = ValidateSetupNodes(request.Nodes);
 
-                if (!result.Success)
-                {
-                    return result;
-                }
+            if (!string.IsNullOrWhiteSpace(validationMessage))
+            {
+                return (false, validationMessage);
             }
 
-            return (true, "Product setup configuration saved successfully.");
-        }
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            options.WriteIndented = false;
 
-        private async Task<(bool Success, string Message)> SaveNodeRecursive(
-            int productId,
-            int? parentNodeId,
-            ProductSetupConfigurationNodeRequest node,
-            string createdBy)
-        {
-            if (node == null)
-            {
-                return (false, "Invalid setup node.");
-            }
+            string json = JsonSerializer.Serialize(request.Nodes, options);
 
-            if (string.IsNullOrWhiteSpace(node.NodeValue))
-            {
-                return (false, "Setup value cannot be empty.");
-            }
-
-            ProductSetupConfiguration model = new ProductSetupConfiguration();
-
-            model.ProductId = productId;
-            model.ParentNodeId = parentNodeId;
-            model.NodeValue = node.NodeValue.Trim();
-            model.IsFieldValue = node.IsFieldValue;
-            model.IsActive = true;
-            model.CreatedBy = createdBy;
-
-            if (node.IsFieldValue)
-            {
-                model.ConfigurationNodeId = null;
-                model.ConfigurationNodeName = "Field Value";
-                model.InputType = "Text";
-
-                if (string.IsNullOrWhiteSpace(node.FieldType))
-                {
-                    model.FieldType = "Text";
-                }
-                else
-                {
-                    model.FieldType = node.FieldType;
-                }
-            }
-            else
-            {
-                if (node.ConfigurationNodeId == null)
-                {
-                    return (false, "Configuration label is missing for " + node.NodeValue);
-                }
-
-                ProductConfiguration configNode = await GetConfigurationNodeByIdAsync(
-                    productId,
-                    node.ConfigurationNodeId.Value
-                );
-
-                if (configNode == null)
-                {
-                    return (false, "Invalid configuration label for " + node.NodeValue);
-                }
-
-                model.ConfigurationNodeId = node.ConfigurationNodeId;
-                model.ConfigurationNodeName = configNode.NodeName;
-                model.InputType = configNode.InputType;
-                model.FieldType = null;
-            }
-
-            int duplicateCount = await _setupRepository.CheckDuplicateNodeAsync(
-                model.ProductId,
-                model.ConfigurationNodeId,
-                model.ParentNodeId,
-                model.NodeValue
+            int result = await _setupRepository.SaveOrUpdateJsonAsync(
+                request.ProductId,
+                json,
+                createdBy
             );
 
-            if (duplicateCount > 0)
+            if (result > 0)
             {
-                return (false, "Duplicate value found: " + model.NodeValue);
+                return (true, "Product setup configuration saved successfully.");
             }
 
-            int newNodeId = await _setupRepository.AddAsync(model);
-
-            if (newNodeId <= 0)
-            {
-                return (false, "Failed to save setup value: " + model.NodeValue);
-            }
-
-            if (node.Children != null && node.Children.Count > 0)
-            {
-                foreach (var child in node.Children)
-                {
-                    var result = await SaveNodeRecursive(
-                        productId,
-                        newNodeId,
-                        child,
-                        createdBy
-                    );
-
-                    if (!result.Success)
-                    {
-                        return result;
-                    }
-                }
-            }
-
-            return (true, "OK");
+            return (false, "Product setup configuration save failed.");
         }
 
-        public async Task<(bool Success, string Message)> DeleteNodeAsync(int nodeId, string deletedBy)
+        public async Task<(bool Success, string Message)> DeleteByProductAsync(
+            int productId,
+            string deletedBy)
         {
-            if (nodeId <= 0)
+            if (productId <= 0)
             {
-                return (false, "Invalid node.");
+                return (false, "Invalid product setup configuration.");
             }
 
-            int result = await _setupRepository.DeleteNodeAsync(nodeId, deletedBy);
+            int result =
+                await _setupRepository.DeleteJsonByProductAsync(productId, deletedBy);
 
             if (result > 0)
             {
                 return (true, "Product setup configuration deleted successfully.");
             }
 
-            return (false, "Failed to delete product setup configuration.");
+            return (false, "Product setup configuration delete failed.");
+        }
+
+        private string ValidateSetupNodes(
+            List<ProductSetupConfigurationNodeRequest> nodes)
+        {
+            if (nodes == null || nodes.Count == 0)
+            {
+                return "Please add setup data.";
+            }
+
+            foreach (ProductSetupConfigurationNodeRequest node in nodes)
+            {
+                if (node == null)
+                {
+                    return "Invalid setup data.";
+                }
+
+                if (string.IsNullOrWhiteSpace(node.NodeValue))
+                {
+                    return "Setup value is required.";
+                }
+
+                if (node.NodeValue.Trim().Length > 100)
+                {
+                    return "Setup value cannot be more than 100 characters.";
+                }
+
+                if (node.Children != null && node.Children.Count > 0)
+                {
+                    string childMessage = ValidateSetupNodes(node.Children);
+
+                    if (!string.IsNullOrWhiteSpace(childMessage))
+                    {
+                        return childMessage;
+                    }
+                }
+            }
+
+            return "";
+        }
+
+        private async Task<List<ProductConfiguration>> GetConfigurationTreeFromJsonAsync(
+            int productId)
+        {
+            List<ProductConfiguration> result = new List<ProductConfiguration>();
+
+            if (productId <= 0)
+            {
+                return result;
+            }
+
+            ProductConfiguration configuration =
+                await _configurationRepository.GetJsonByProductIdAsync(productId);
+
+            if (configuration == null ||
+                string.IsNullOrWhiteSpace(configuration.ConfigurationJson))
+            {
+                return result;
+            }
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.PropertyNameCaseInsensitive = true;
+
+            List<ProductConfigurationNodeRequest> nodes =
+                JsonSerializer.Deserialize<List<ProductConfigurationNodeRequest>>(
+                    configuration.ConfigurationJson,
+                    options
+                );
+
+            if (nodes == null)
+            {
+                return result;
+            }
+
+            int nodeCounter = 1;
+
+            foreach (ProductConfigurationNodeRequest node in nodes)
+            {
+                ConvertConfigurationNode(
+                    node,
+                    null,
+                    result,
+                    ref nodeCounter
+                );
+            }
+
+            return result;
+        }
+
+        private void ConvertConfigurationNode(
+            ProductConfigurationNodeRequest requestNode,
+            int? parentNodeId,
+            List<ProductConfiguration> result,
+            ref int nodeCounter)
+        {
+            if (requestNode == null)
+            {
+                return;
+            }
+
+            ProductConfiguration node = new ProductConfiguration();
+
+            node.NodeId = nodeCounter;
+            node.ParentNodeId = parentNodeId;
+            node.NodeName = requestNode.NodeName;
+            node.InputType = requestNode.InputType;
+            node.Children = new List<ProductConfiguration>();
+
+            int currentNodeId = nodeCounter;
+            nodeCounter++;
+
+            result.Add(node);
+
+            if (requestNode.Children != null &&
+                requestNode.Children.Count > 0)
+            {
+                foreach (ProductConfigurationNodeRequest child
+                    in requestNode.Children)
+                {
+                    ConvertConfigurationNode(
+                        child,
+                        currentNodeId,
+                        result,
+                        ref nodeCounter
+                    );
+                }
+            }
+        }
+
+        private List<ProductSetupConfiguration> ConvertSetupJsonToTree(
+            string json,
+            int productId)
+        {
+            List<ProductSetupConfiguration> result =
+                new List<ProductSetupConfiguration>();
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return result;
+            }
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.PropertyNameCaseInsensitive = true;
+
+            List<ProductSetupConfigurationNodeRequest> nodes =
+                JsonSerializer.Deserialize<List<ProductSetupConfigurationNodeRequest>>(
+                    json,
+                    options
+                );
+
+            if (nodes == null)
+            {
+                return result;
+            }
+
+            int nodeCounter = 1;
+
+            foreach (ProductSetupConfigurationNodeRequest node in nodes)
+            {
+                ProductSetupConfiguration converted =
+                    ConvertSetupNode(node, productId, ref nodeCounter);
+
+                result.Add(converted);
+            }
+
+            return result;
+        }
+
+        private ProductSetupConfiguration ConvertSetupNode(
+            ProductSetupConfigurationNodeRequest requestNode,
+            int productId,
+            ref int nodeCounter)
+        {
+            ProductSetupConfiguration node =
+                new ProductSetupConfiguration();
+
+            node.NodeId = nodeCounter;
+            node.ProductId = productId;
+
+            node.NodeValue = requestNode.NodeValue;
+            node.FieldType = requestNode.FieldType;
+            node.IsFieldValue = requestNode.IsFieldValue;
+            node.ConfigurationNodeId = requestNode.ConfigurationNodeId;
+
+            node.IsActive = true;
+            node.Children = new List<ProductSetupConfiguration>();
+
+            nodeCounter++;
+
+            if (requestNode.Children != null &&
+                requestNode.Children.Count > 0)
+            {
+                foreach (ProductSetupConfigurationNodeRequest child
+                    in requestNode.Children)
+                {
+                    ProductSetupConfiguration childNode =
+                        ConvertSetupNode(child, productId, ref nodeCounter);
+
+                    node.Children.Add(childNode);
+                }
+            }
+
+            return node;
         }
     }
 }

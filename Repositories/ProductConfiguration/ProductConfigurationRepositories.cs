@@ -36,28 +36,13 @@ namespace EmployeeAccessSystem.Repositories
             );
         }
 
-        public async Task<IEnumerable<ProductConfiguration>> GetByProductIdAsync(int productId)
+        public async Task<ProductConfiguration> GetJsonByProductIdAsync(int productId)
         {
             using var conn = GetConnection();
 
             DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETBYPRODUCT");
+            parameters.Add("Flag", "GETJSONBYPRODUCT");
             parameters.Add("ProductId", productId);
-
-            return await conn.QueryAsync<ProductConfiguration>(
-                "dbo.sp_ProductConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-        }
-
-        public async Task<ProductConfiguration> GetNodeByIdAsync(int nodeId)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETNODEBYID");
-            parameters.Add("NodeId", nodeId);
 
             return await conn.QueryFirstOrDefaultAsync<ProductConfiguration>(
                 "dbo.sp_ProductConfiguration_Manage",
@@ -66,106 +51,33 @@ namespace EmployeeAccessSystem.Repositories
             );
         }
 
-        public async Task<IEnumerable<string>> GetNodeNameOptionsAsync(int productId)
+        public async Task<int> SaveOrUpdateJsonAsync(
+            int productId,
+            string configurationJson,
+            string createdBy)
         {
             using var conn = GetConnection();
 
             DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GET_NODE_NAME_OPTIONS");
+            parameters.Add("Flag", "SAVEORUPDATEJSON");
             parameters.Add("ProductId", productId);
+            parameters.Add("ConfigurationJson", configurationJson);
+            parameters.Add("CreatedBy", createdBy);
 
-            return await conn.QueryAsync<string>(
+            return await conn.ExecuteScalarAsync<int>(
                 "dbo.sp_ProductConfiguration_Manage",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
         }
-        public async Task<int> CheckDuplicateNodeAsync(int productId, int? parentNodeId, string nodeName)
+
+        public async Task<int> DeleteJsonByProductAsync(int productId, string deletedBy)
         {
             using var conn = GetConnection();
 
             DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "CHECKDUPLICATE");
+            parameters.Add("Flag", "DELETEJSONBYPRODUCT");
             parameters.Add("ProductId", productId);
-            parameters.Add("ParentNodeId", parentNodeId);
-            parameters.Add("NodeName", nodeName);
-
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-        }
-        public async Task<int> AddAsync(ProductConfiguration model)
-        {
-            using var conn = GetConnection();
-
-            int? sortOrderValue = null;
-
-            if (model.SortOrder > 0)
-            {
-                sortOrderValue = model.SortOrder;
-            }
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "ADD");
-            parameters.Add("ProductId", model.ProductId);
-            parameters.Add("ParentNodeId", model.ParentNodeId);
-            parameters.Add("NodeName", model.NodeName);
-            parameters.Add("NodeType", model.NodeType);
-            parameters.Add("InputType", model.InputType);
-            parameters.Add("SortOrder", sortOrderValue);
-            parameters.Add("IsActive", model.IsActive);
-            parameters.Add("CreatedBy", model.CreatedBy);
-
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-        }
-
-        public async Task<int> UpdateNodeAsync(ProductConfiguration model)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "UPDATENODE");
-            parameters.Add("NodeId", model.NodeId);
-            parameters.Add("NodeName", model.NodeName);
-            parameters.Add("NodeType", model.NodeType);
-            parameters.Add("InputType", model.InputType);
-
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-        }
-
-        public async Task<int> DeleteByProductAsync(int productId, string deletedBy)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "DELETEBYPRODUCT");
-            parameters.Add("ProductId", productId);
-            parameters.Add("DeletedBy", deletedBy);
-
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-        }
-
-        public async Task<int> DeleteNodeAsync(int nodeId, string deletedBy)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "DELETENODE");
-            parameters.Add("NodeId", nodeId);
             parameters.Add("DeletedBy", deletedBy);
 
             return await conn.ExecuteScalarAsync<int>(

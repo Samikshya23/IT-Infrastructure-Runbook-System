@@ -11,29 +11,22 @@
 
 <div class="modal-body">
     <div id="msgArea"></div>
+
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
             <div class="row align-items-end">
-
                 <div class="col-md-11">
                     <label class="font-weight-bold mb-1">Product</label>
-
-                    <select id="ProductId"
-                            class="form-control form-control-sm"
-                            asp-items="ViewBag.ProductList">
+                    <select id="ProductId" class="form-control form-control-sm" asp-items="ViewBag.ProductList">
                         <option value="">Select Product</option>
                     </select>
                 </div>
+
                 <div class="col-md-1 text-right">
-                    <button type="button"
-                            id="btnAddRoot"
-                            class="btn btn-outline-primary btn-sm px-2 py-0"
-                            title="Add Label"
-                            style="display:none;">
+                    <button type="button" id="btnAddRoot" class="btn btn-outline-primary btn-sm px-2 py-0" title="Add Parent" style="display:none;">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -47,55 +40,32 @@
             <div id="nodeContainer">
                 <div class="text-muted text-center py-3" id="emptyMessage">
                     Select product first, then click plus to add structure.
-                 </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
 <div class="modal-footer">
-    <button type="button"
-            id="btnFooterClose"
-            class="btn btn-secondary btn-sm">
-        Close
-    </button>
-    <button type="button"
-            id="btnSave"
-            class="btn btn-primary btn-sm">
-        Save Structure
-    </button>
+    <button type="button" id="btnFooterClose" class="btn btn-secondary btn-sm">Close</button>
+    <button type="button" id="btnSave" class="btn btn-primary btn-sm">Save Structure</button>
 </div>
-<div class="modal fade"
-     id="confirmCloseModal"
-     tabindex="-1"
-     role="dialog"
-     data-backdrop="static"
-     data-keyboard="false">
+
+<div class="modal fade" id="confirmCloseModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-
             <div class="modal-header bg-white border-bottom">
                 <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
             </div>
 
             <div class="modal-body text-center py-4">
-                <div class="font-weight-bold">
-                    Do you want to close this form?
-                </div>
+                <div class="font-weight-bold">Do you want to close this form?</div>
             </div>
 
             <div class="modal-footer justify-content-center bg-light">
-                <button type="button"
-                        id="btnContinueEditing"
-                        class="btn btn-secondary btn-sm px-3">
-                    Continue Editing
-                </button>
-                <button type="button"
-                        id="btnConfirmClose"
-                        class="btn btn-danger btn-sm px-3">
-                    Yes, Close
-                </button>
+                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-3">Continue Editing</button>
+                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-3">Yes, Close</button>
             </div>
-
         </div>
     </div>
 </div>
@@ -104,6 +74,7 @@
     $(document).ready(function () {
 
         var selectedProductId = @selectedProductId;
+        var existingData = @Html.Raw(string.IsNullOrWhiteSpace(existingJson) ? "[]" : existingJson);
 
         var modalParent = $("#ProductId").closest(".modal");
 
@@ -118,12 +89,23 @@
         });
 
         if (selectedProductId > 0) {
-            $("#ProductId").val(selectedProductId).trigger("change");
+            $("#ProductId").val(selectedProductId);
             $("#btnAddRoot").show();
+            $("#emptyMessage").remove();
 
-            $("#nodeContainer").html(
-                '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
-            );
+            if (existingData != null && existingData.length > 0) {
+                for (var i = 0; i < existingData.length; i++) {
+                    addExistingRow($("#nodeContainer"), existingData[i], 0);
+                }
+
+                refreshHeading();
+                refreshDeleteButtons();
+            }
+            else {
+                $("#nodeContainer").html(
+                    '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
+                );
+            }
         }
 
         $("#btnFooterClose").off("click").on("click", function (e) {
@@ -187,12 +169,28 @@
             saveData();
         });
 
+        function addExistingRow(container, node, level) {
+
+            addRow(container, level);
+
+            var current = container.children(".node-row").last();
+
+            current.find("> .row .node-name").val(node.nodeName);
+            current.find("> .row .input-type").val(node.inputType);
+
+            if (node.children != null && node.children.length > 0) {
+                for (var i = 0; i < node.children.length; i++) {
+                    addExistingRow(current.children(".child-area"), node.children[i], level + 1);
+                }
+            }
+        }
+
         function addRow(container, level) {
 
-            var margin = level * 30;
+            var marginValue = level * 30;
             var html = "";
 
-            html += '<div class="node-row mb-2" style="margin-left:' + margin + 'px;">';
+            html += '<div class="node-row mb-2" style="margin-left:' + marginValue + 'px;">';
             html += '<div class="row align-items-center">';
 
             html += '<div class="col-md-1 text-center">';
@@ -200,14 +198,11 @@
             html += '</div>';
 
             html += '<div class="col-md-5">';
-            html += '<input type="text" class="form-control form-control-sm node-name" placeholder="Type label/level name">';
+            html += '<input type="text" maxlength="50" class="form-control form-control-sm node-name" placeholder="Type label/level name">';
             html += '</div>';
 
             html += '<div class="col-md-4">';
-            html += '<select class="form-control form-control-sm input-type">';
-            html += '<option value="Text" selected>Text</option>';
-            html += '<option value="Date">Date</option>';
-            html += '</select>';
+            html += '<select class="form-control form-control-sm input-type"></select>';
             html += '</div>';
 
             html += '<div class="col-md-2 text-right">';
@@ -227,6 +222,8 @@
             container.append(html);
 
             var current = container.children(".node-row").last();
+
+            setInputTypeDropdown(current, level);
 
             current.find(".btn-plus").off("click").on("click", function () {
 
@@ -254,6 +251,7 @@
                 clearMessage();
 
                 if (current.children(".child-area").children(".node-row").length > 0) {
+                    showError("Please remove child rows first.");
                     return;
                 }
 
@@ -271,6 +269,22 @@
             current.find(".node-name, .input-type").off("input change").on("input change", function () {
                 clearMessage();
             });
+        }
+
+        function setInputTypeDropdown(row, level) {
+
+            var dropdown = row.find("> .row .input-type");
+
+            dropdown.empty();
+
+            if (level === 0) {
+                dropdown.append('<option value="Text">Text</option>');
+                dropdown.append('<option value="Date">Date</option>');
+            }
+            else {
+                dropdown.append('<option value="Single">Single</option>');
+                dropdown.append('<option value="Multiple">Multiple</option>');
+            }
         }
 
         function canAddNewRow(container) {
@@ -392,6 +406,12 @@
                     valid = false;
                     return false;
                 }
+
+                if ($.trim(nodeName).length > 50) {
+                    showError("Label/level name cannot be more than 50 characters.");
+                    valid = false;
+                    return false;
+                }
             });
 
             return valid;
@@ -410,7 +430,6 @@
 
                 data.push({
                     nodeName: $.trim(nodeName),
-                    nodeType: "Block",
                     inputType: $.trim(inputType),
                     children: collectRows(row.children(".child-area"))
                 });

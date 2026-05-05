@@ -7,15 +7,15 @@ namespace EmployeeAccessSystem.Repositories
     public interface IProductConfigurationRepository
     {
         Task<IEnumerable<ProductConfiguration>> GetAllAsync();
-        Task<IEnumerable<ProductConfiguration>> GetByProductIdAsync(int productId);
-        Task<ProductConfiguration> GetNodeByIdAsync(int nodeId);
 
-        Task<IEnumerable<string>> GetNodeNameOptionsAsync(int productId);
-        Task<int> CheckDuplicateNodeAsync(int productId, int? parentNodeId, string nodeName);
+        Task<ProductConfiguration> GetJsonByProductIdAsync(int productId);
 
-        Task<int> AddAsync(ProductConfiguration model);
-        Task<int> UpdateNodeAsync(ProductConfiguration model);
-        Task<int> DeleteByProductAsync(int productId, string deletedBy);
-        Task<int> DeleteNodeAsync(int nodeId, string deletedBy);
+        Task<int> SaveOrUpdateJsonAsync(
+            int productId,
+            string configurationJson,
+            string createdBy
+        );
+
+        Task<int> DeleteJsonByProductAsync(int productId, string deletedBy);
     }
 }

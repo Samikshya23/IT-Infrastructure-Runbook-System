@@ -5,6 +5,7 @@ namespace EmployeeAccessSystem.Models
     public class ProductSetupConfigurationSaveRequest
     {
         public int ProductId { get; set; }
+
         public List<ProductSetupConfigurationNodeRequest> Nodes { get; set; }
 
         public ProductSetupConfigurationSaveRequest()
@@ -16,8 +17,11 @@ namespace EmployeeAccessSystem.Models
     public class ProductSetupConfigurationNodeRequest
     {
         public string NodeValue { get; set; }
+
         public bool IsFieldValue { get; set; }
+
         public string FieldType { get; set; }
+
         public int? ConfigurationNodeId { get; set; }
 
         public List<ProductSetupConfigurationNodeRequest> Children { get; set; }
