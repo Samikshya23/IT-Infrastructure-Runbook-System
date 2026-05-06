@@ -102,10 +102,13 @@ namespace EmployeeAccessSystem.Controllers
                 List<ProductConfiguration> existingNodes =
                     await _service.GetTreeByProductIdAsync(productId.Value);
 
-                JsonSerializerOptions options = new JsonSerializerOptions();
-                options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                if (existingNodes != null && existingNodes.Count > 0)
+                {
+                    JsonSerializerOptions options = new JsonSerializerOptions();
+                    options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-                existingJson = JsonSerializer.Serialize(existingNodes, options);
+                    existingJson = JsonSerializer.Serialize(existingNodes, options);
+                }
             }
 
             ViewBag.ExistingJson = existingJson;
@@ -119,14 +122,7 @@ namespace EmployeeAccessSystem.Controllers
         {
             try
             {
-                string userName = "System";
-
-                if (User != null &&
-                    User.Identity != null &&
-                    User.Identity.IsAuthenticated)
-                {
-                    userName = User.Identity.Name;
-                }
+                string userName = GetCurrentUserName();
 
                 var result = await _service.SaveStructureAsync(request, userName);
 
@@ -158,14 +154,7 @@ namespace EmployeeAccessSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int productId)
         {
-            string userName = "System";
-
-            if (User != null &&
-                User.Identity != null &&
-                User.Identity.IsAuthenticated)
-            {
-                userName = User.Identity.Name;
-            }
+            string userName = GetCurrentUserName();
 
             var result = await _service.DeleteByProductAsync(productId, userName);
 
@@ -179,6 +168,21 @@ namespace EmployeeAccessSystem.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        private string GetCurrentUserName()
+        {
+            string userName = "System";
+
+            if (User != null &&
+                User.Identity != null &&
+                User.Identity.IsAuthenticated &&
+                !string.IsNullOrWhiteSpace(User.Identity.Name))
+            {
+                userName = User.Identity.Name;
+            }
+
+            return userName;
         }
     }
 }

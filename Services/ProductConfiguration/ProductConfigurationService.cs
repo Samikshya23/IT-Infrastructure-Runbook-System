@@ -18,7 +18,6 @@ namespace EmployeeAccessSystem.Services
         public async Task<List<ProductConfigurationIndexItem>> GetIndexAsync()
         {
             List<ProductConfigurationIndexItem> result = new List<ProductConfigurationIndexItem>();
-
             IEnumerable<ProductConfiguration> data = await _repository.GetAllAsync();
 
             foreach (ProductConfiguration item in data)
@@ -29,7 +28,6 @@ namespace EmployeeAccessSystem.Services
                 }
 
                 ProductConfigurationIndexItem indexItem = new ProductConfigurationIndexItem();
-
                 indexItem.ProductId = item.ProductId;
                 indexItem.ProductName = item.ProductName;
 
@@ -57,12 +55,7 @@ namespace EmployeeAccessSystem.Services
 
             ProductConfiguration data = await _repository.GetJsonByProductIdAsync(productId);
 
-            if (data == null)
-            {
-                return new List<ProductConfiguration>();
-            }
-
-            if (string.IsNullOrWhiteSpace(data.ConfigurationJson))
+            if (data == null || string.IsNullOrWhiteSpace(data.ConfigurationJson))
             {
                 return new List<ProductConfiguration>();
             }
@@ -84,9 +77,9 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Please select product.");
             }
 
-            if (request.Nodes == null || request.Nodes.Count == 0)
+            if (request.Nodes == null)
             {
-                return (false, "Please add at least one structure.");
+                request.Nodes = new List<ProductConfigurationNodeRequest>();
             }
 
             string validationMessage = ValidateNodes(request.Nodes, true);
@@ -96,11 +89,34 @@ namespace EmployeeAccessSystem.Services
                 return (false, validationMessage);
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
-            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            options.WriteIndented = false;
+            ProductConfigurationJsonModel jsonModel = new ProductConfigurationJsonModel();
 
-            string json = JsonSerializer.Serialize(request.Nodes, options);
+            string productName = "";
+
+            IEnumerable<ProductConfiguration> allProducts = await _repository.GetAllAsync();
+
+            foreach (ProductConfiguration item in allProducts)
+            {
+                if (item.ProductId == request.ProductId)
+                {
+                    productName = item.ProductName;
+                    break;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(productName))
+            {
+                productName = "Product";
+            }
+
+            jsonModel.Product = productName;
+            jsonModel.Structure = BuildJsonStructure(request.Nodes);
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.WriteIndented = false;
+            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+
+            string json = JsonSerializer.Serialize(jsonModel, options);
 
             int result = await _repository.SaveOrUpdateJsonAsync(
                 request.ProductId,
@@ -139,9 +155,9 @@ namespace EmployeeAccessSystem.Services
             List<ProductConfigurationNodeRequest> nodes,
             bool isRootLevel)
         {
-            if (nodes == null || nodes.Count == 0)
+            if (nodes == null)
             {
-                return "Please add at least one structure.";
+                return "";
             }
 
             foreach (ProductConfigurationNodeRequest node in nodes)
@@ -151,30 +167,38 @@ namespace EmployeeAccessSystem.Services
                     return "Invalid structure found.";
                 }
 
+                if (string.IsNullOrWhiteSpace(node.Heading))
+                {
+                    return "Heading is required.";
+                }
+
                 if (string.IsNullOrWhiteSpace(node.NodeName))
                 {
                     return "Node name is required.";
                 }
 
-                string nodeName = node.NodeName.Trim();
-
-                if (nodeName.Length > 50)
+                if (node.NodeName.Trim().Length > 50)
                 {
                     return "Node name cannot be more than 50 characters.";
+                }
+
+                if (string.IsNullOrWhiteSpace(node.InputType))
+                {
+                    return "Input type is required.";
                 }
 
                 if (isRootLevel)
                 {
                     if (node.InputType != "Text" && node.InputType != "Date")
                     {
-                        return "Parent node input type must be Text or Date.";
+                        return "Parent input type must be Text or Date.";
                     }
                 }
                 else
                 {
                     if (node.InputType != "Single" && node.InputType != "Multiple")
                     {
-                        return "Child node type must be Single or Multiple.";
+                        return "Child input type must be Single or Multiple.";
                     }
                 }
 
@@ -204,8 +228,28 @@ namespace EmployeeAccessSystem.Services
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.PropertyNameCaseInsensitive = true;
 
-            List<ProductConfigurationNodeRequest> nodes =
-                JsonSerializer.Deserialize<List<ProductConfigurationNodeRequest>>(json, options);
+            ProductConfigurationJsonModel model =
+                JsonSerializer.Deserialize<ProductConfigurationJsonModel>(json, options);
+
+            if (model == null || model.Structure == null)
+            {
+                return result;
+            }
+
+            foreach (ProductConfigurationJsonNode node in model.Structure)
+            {
+                ProductConfiguration convertedNode = ConvertJsonNodeToTree(node);
+                result.Add(convertedNode);
+            }
+
+            return result;
+        }
+
+        private List<ProductConfigurationJsonNode> BuildJsonStructure(
+            List<ProductConfigurationNodeRequest> nodes)
+        {
+            List<ProductConfigurationJsonNode> result =
+                new List<ProductConfigurationJsonNode>();
 
             if (nodes == null)
             {
@@ -214,32 +258,36 @@ namespace EmployeeAccessSystem.Services
 
             foreach (ProductConfigurationNodeRequest node in nodes)
             {
-                ProductConfiguration convertedNode =
-                    ConvertRequestNodeToProductConfiguration(node);
+                ProductConfigurationJsonNode item =
+                    new ProductConfigurationJsonNode();
 
-                result.Add(convertedNode);
+                item.Heading = node.Heading;
+                item.Label = node.NodeName;
+                item.ValueType = node.InputType;
+                item.Children = BuildJsonStructure(node.Children);
+
+                result.Add(item);
             }
 
             return result;
         }
 
-        private ProductConfiguration ConvertRequestNodeToProductConfiguration(
-            ProductConfigurationNodeRequest requestNode)
+        private ProductConfiguration ConvertJsonNodeToTree(
+            ProductConfigurationJsonNode jsonNode)
         {
             ProductConfiguration node = new ProductConfiguration();
 
-            node.NodeName = requestNode.NodeName;
-            node.InputType = requestNode.InputType;
+            node.Heading = jsonNode.Heading;
+            node.NodeName = jsonNode.Label;
+            node.InputType = jsonNode.ValueType;
             node.IsActive = true;
             node.Children = new List<ProductConfiguration>();
 
-            if (requestNode.Children != null && requestNode.Children.Count > 0)
+            if (jsonNode.Children != null && jsonNode.Children.Count > 0)
             {
-                foreach (ProductConfigurationNodeRequest child in requestNode.Children)
+                foreach (ProductConfigurationJsonNode child in jsonNode.Children)
                 {
-                    ProductConfiguration childNode =
-                        ConvertRequestNodeToProductConfiguration(child);
-
+                    ProductConfiguration childNode = ConvertJsonNodeToTree(child);
                     node.Children.Add(childNode);
                 }
             }

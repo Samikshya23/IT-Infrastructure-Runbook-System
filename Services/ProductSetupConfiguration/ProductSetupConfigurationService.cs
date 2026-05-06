@@ -108,7 +108,8 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Please add setup data.");
             }
 
-            string validationMessage = ValidateSetupNodes(request.Nodes);
+            string validationMessage =
+                ValidateSetupNodes(request.Nodes);
 
             if (!string.IsNullOrWhiteSpace(validationMessage))
             {
@@ -119,13 +120,15 @@ namespace EmployeeAccessSystem.Services
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             options.WriteIndented = false;
 
-            string json = JsonSerializer.Serialize(request.Nodes, options);
+            string json =
+                JsonSerializer.Serialize(request.Nodes, options);
 
-            int result = await _setupRepository.SaveOrUpdateJsonAsync(
-                request.ProductId,
-                json,
-                createdBy
-            );
+            int result =
+                await _setupRepository.SaveOrUpdateJsonAsync(
+                    request.ProductId,
+                    json,
+                    createdBy
+                );
 
             if (result > 0)
             {
@@ -145,7 +148,10 @@ namespace EmployeeAccessSystem.Services
             }
 
             int result =
-                await _setupRepository.DeleteJsonByProductAsync(productId, deletedBy);
+                await _setupRepository.DeleteJsonByProductAsync(
+                    productId,
+                    deletedBy
+                );
 
             if (result > 0)
             {
@@ -170,19 +176,37 @@ namespace EmployeeAccessSystem.Services
                     return "Invalid setup data.";
                 }
 
-                if (string.IsNullOrWhiteSpace(node.NodeValue))
+                if (string.IsNullOrWhiteSpace(node.Value))
                 {
                     return "Setup value is required.";
                 }
 
-                if (node.NodeValue.Trim().Length > 100)
+                if (node.Value.Trim().Length > 100)
                 {
                     return "Setup value cannot be more than 100 characters.";
                 }
 
-                if (node.Children != null && node.Children.Count > 0)
+                if (string.IsNullOrWhiteSpace(node.Label))
                 {
-                    string childMessage = ValidateSetupNodes(node.Children);
+                    return "Invalid setup label.";
+                }
+
+                if (string.IsNullOrWhiteSpace(node.ValueType))
+                {
+                    return "Invalid setup value type.";
+                }
+
+                if (node.ConfigurationNodeId == null ||
+                    node.ConfigurationNodeId.Value <= 0)
+                {
+                    return "Invalid configuration node.";
+                }
+
+                if (node.Children != null &&
+                    node.Children.Count > 0)
+                {
+                    string childMessage =
+                        ValidateSetupNodes(node.Children);
 
                     if (!string.IsNullOrWhiteSpace(childMessage))
                     {
@@ -197,7 +221,8 @@ namespace EmployeeAccessSystem.Services
         private async Task<List<ProductConfiguration>> GetConfigurationTreeFromJsonAsync(
             int productId)
         {
-            List<ProductConfiguration> result = new List<ProductConfiguration>();
+            List<ProductConfiguration> result =
+                new List<ProductConfiguration>();
 
             if (productId <= 0)
             {
@@ -216,20 +241,20 @@ namespace EmployeeAccessSystem.Services
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.PropertyNameCaseInsensitive = true;
 
-            List<ProductConfigurationNodeRequest> nodes =
-                JsonSerializer.Deserialize<List<ProductConfigurationNodeRequest>>(
+            ProductConfigurationJsonModel model =
+                JsonSerializer.Deserialize<ProductConfigurationJsonModel>(
                     configuration.ConfigurationJson,
                     options
                 );
 
-            if (nodes == null)
+            if (model == null || model.Structure == null)
             {
                 return result;
             }
 
             int nodeCounter = 1;
 
-            foreach (ProductConfigurationNodeRequest node in nodes)
+            foreach (ProductConfigurationJsonNode node in model.Structure)
             {
                 ConvertConfigurationNode(
                     node,
@@ -243,7 +268,7 @@ namespace EmployeeAccessSystem.Services
         }
 
         private void ConvertConfigurationNode(
-            ProductConfigurationNodeRequest requestNode,
+            ProductConfigurationJsonNode requestNode,
             int? parentNodeId,
             List<ProductConfiguration> result,
             ref int nodeCounter)
@@ -253,15 +278,18 @@ namespace EmployeeAccessSystem.Services
                 return;
             }
 
-            ProductConfiguration node = new ProductConfiguration();
+            ProductConfiguration node =
+                new ProductConfiguration();
 
             node.NodeId = nodeCounter;
             node.ParentNodeId = parentNodeId;
-            node.NodeName = requestNode.NodeName;
-            node.InputType = requestNode.InputType;
+            node.Heading = requestNode.Heading;
+            node.NodeName = requestNode.Label;
+            node.InputType = requestNode.ValueType;
             node.Children = new List<ProductConfiguration>();
 
             int currentNodeId = nodeCounter;
+
             nodeCounter++;
 
             result.Add(node);
@@ -269,7 +297,7 @@ namespace EmployeeAccessSystem.Services
             if (requestNode.Children != null &&
                 requestNode.Children.Count > 0)
             {
-                foreach (ProductConfigurationNodeRequest child
+                foreach (ProductConfigurationJsonNode child
                     in requestNode.Children)
                 {
                     ConvertConfigurationNode(
@@ -313,7 +341,11 @@ namespace EmployeeAccessSystem.Services
             foreach (ProductSetupConfigurationNodeRequest node in nodes)
             {
                 ProductSetupConfiguration converted =
-                    ConvertSetupNode(node, productId, ref nodeCounter);
+                    ConvertSetupNode(
+                        node,
+                        productId,
+                        ref nodeCounter
+                    );
 
                 result.Add(converted);
             }
@@ -332,13 +364,23 @@ namespace EmployeeAccessSystem.Services
             node.NodeId = nodeCounter;
             node.ProductId = productId;
 
-            node.NodeValue = requestNode.NodeValue;
-            node.FieldType = requestNode.FieldType;
-            node.IsFieldValue = requestNode.IsFieldValue;
-            node.ConfigurationNodeId = requestNode.ConfigurationNodeId;
+            node.ConfigurationNodeId =
+                requestNode.ConfigurationNodeId;
 
+            node.ConfigurationNodeName =
+                requestNode.Label;
+
+            node.NodeValue =
+                requestNode.Value;
+
+            node.FieldType =
+                requestNode.FieldType;
+
+            node.IsFieldValue = false;
             node.IsActive = true;
-            node.Children = new List<ProductSetupConfiguration>();
+
+            node.Children =
+                new List<ProductSetupConfiguration>();
 
             nodeCounter++;
 
@@ -349,7 +391,11 @@ namespace EmployeeAccessSystem.Services
                     in requestNode.Children)
                 {
                     ProductSetupConfiguration childNode =
-                        ConvertSetupNode(child, productId, ref nodeCounter);
+                        ConvertSetupNode(
+                            child,
+                            productId,
+                            ref nodeCounter
+                        );
 
                     node.Children.Add(childNode);
                 }

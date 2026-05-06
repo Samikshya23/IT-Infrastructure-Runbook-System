@@ -16,9 +16,13 @@ namespace EmployeeAccessSystem.Models
 
     public class ProductSetupConfigurationNodeRequest
     {
-        public string NodeValue { get; set; }
+        public string Heading { get; set; }
 
-        public bool IsFieldValue { get; set; }
+        public string Label { get; set; }
+
+        public string ValueType { get; set; }
+
+        public string Value { get; set; }
 
         public string FieldType { get; set; }
 

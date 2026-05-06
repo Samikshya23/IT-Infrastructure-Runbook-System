@@ -10,14 +10,8 @@ namespace EmployeeAccessSystem.Services
 
         Task<List<ProductConfiguration>> GetTreeByProductIdAsync(int productId);
 
-        Task<(bool Success, string Message)> SaveStructureAsync(
-            ProductConfigurationSaveRequest request,
-            string createdBy
-        );
+        Task<(bool Success, string Message)> SaveStructureAsync( ProductConfigurationSaveRequest request, string createdBy  );
 
-        Task<(bool Success, string Message)> DeleteByProductAsync(
-            int productId,
-            string deletedBy
-        );
+        Task<(bool Success, string Message)> DeleteByProductAsync( int productId,  string deletedBy  );
     }
 }

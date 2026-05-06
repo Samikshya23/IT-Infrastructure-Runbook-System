@@ -17,20 +17,12 @@
 
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
-
             <div class="row align-items-end">
-
                 <div class="col-md-12">
-                    <label class="font-weight-bold mb-1">
-                        Product
-                    </label>
+                    <label class="font-weight-bold mb-1">Product</label>
 
-                    <select id="ProductId"
-                            class="form-control form-control-sm">
-
-                        <option value="">
-                            Select Product
-                        </option>
+                    <select id="ProductId" class="form-control form-control-sm">
+                        <option value="">Select Product</option>
 
                         @if (products != null)
                         {
@@ -50,17 +42,13 @@
                                 }
                             }
                         }
-
                     </select>
                 </div>
-
             </div>
-
         </div>
     </div>
 
-    <div class="card card-outline card-secondary">
-
+    <div class="card">
         <div class="card-header py-2">
             <h3 class="card-title font-weight-bold">
                 Generated Setup Form
@@ -68,42 +56,28 @@
         </div>
 
         <div class="card-body p-2">
-
             <div id="nodeContainer">
-
-                <div class="text-muted text-center py-3"
-                     id="emptyMessage">
-
+                <div class="text-muted text-center py-3" id="emptyMessage">
                     Select product to load setup form.
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
 </div>
 
 <div class="modal-footer">
-
     <button type="button"
             id="btnFooterClose"
             class="btn btn-secondary btn-sm">
-
         Close
-
     </button>
 
     <button type="button"
             id="btnSave"
             class="btn btn-primary btn-sm">
-
         Save
-
     </button>
-
 </div>
 
 <div class="modal fade"
@@ -114,23 +88,18 @@
      data-keyboard="false">
 
     <div class="modal-dialog modal-sm modal-dialog-centered">
-
         <div class="modal-content border-0 shadow">
 
             <div class="modal-header bg-white border-bottom">
-
                 <h5 class="modal-title font-weight-bold">
                     Unsaved Changes
                 </h5>
-
             </div>
 
             <div class="modal-body text-center py-4">
-
                 <div class="font-weight-bold">
                     Do you want to close this form?
                 </div>
-
             </div>
 
             <div class="modal-footer justify-content-center bg-light">
@@ -138,25 +107,19 @@
                 <button type="button"
                         id="btnContinueEditing"
                         class="btn btn-secondary btn-sm px-3">
-
                     Continue Editing
-
                 </button>
 
                 <button type="button"
                         id="btnConfirmClose"
                         class="btn btn-danger btn-sm px-3">
-
                     Yes, Close
-
                 </button>
 
             </div>
 
         </div>
-
     </div>
-
 </div>
 
 <script>
@@ -187,6 +150,9 @@
             loadGeneratedForm(productId);
 
         });
+
+
+       
 
         function loadGeneratedForm(productId) {
 
@@ -236,12 +202,8 @@
                 });
 
         }
-
-        function addConfiguredRow(
-            container,
-            level,
-            configNode,
-            isRootLevel) {
+        //
+        function addConfiguredRow(container, level, configNode, isRootLevel) {
 
             var margin = level * 30;
 
@@ -250,6 +212,7 @@
             html += '<div class="node-row mb-2" ';
             html += 'data-level="' + level + '" ';
             html += 'data-config-id="' + configNode.id + '" ';
+            html += 'data-heading="' + encodeHtml(configNode.heading) + '" ';
             html += 'data-label-name="' + encodeHtml(configNode.name) + '" ';
             html += 'data-input-type="' + configNode.inputType + '" ';
             html += 'data-root="' + isRootLevel + '" ';
@@ -274,7 +237,7 @@
 
                 html += '<div class="col-md-2">';
                 html += '<select class="form-control form-control-sm field-type">';
-
+                html += '<option value="">Select</option>';
                 html += '<option value="Percentage">Percentage</option>';
                 html += '<option value="Tick/Untick">Tick/Untick</option>';
                 html += '<option value="Check/Unchecked">Check/Unchecked</option>';
@@ -282,7 +245,6 @@
                 html += '<option value="Value">Value</option>';
                 html += '<option value="Text">Text</option>';
                 html += '<option value="Date">Date</option>';
-
                 html += '</select>';
                 html += '</div>';
 
@@ -290,30 +252,33 @@
             else {
 
                 html += '<div class="col-md-2">';
-                html += '<span class="badge badge-secondary">';
-                html += encodeHtml(configNode.inputType);
-                html += '</span>';
                 html += '</div>';
 
             }
 
             html += '<div class="col-md-2 text-right">';
 
-            html += '<button type="button" ';
-            html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1" ';
-            html += 'title="Add same level">';
+            if (isRootLevel === true ||
+                configNode.inputType === "Multiple") {
 
-            html += '<i class="fas fa-plus"></i>';
+                html += '<button type="button" ';
+                html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1" ';
+                html += 'title="Add same level">';
+                html += '<i class="fas fa-plus"></i>';
+                html += '</button>';
 
-            html += '</button>';
+            }
 
-            html += '<button type="button" ';
-            html += 'class="btn btn-outline-danger btn-sm btn-remove-row" ';
-            html += 'title="Remove">';
+            if (isRootLevel === true ||
+                configNode.inputType === "Multiple") {
 
-            html += '<i class="fas fa-minus"></i>';
+                html += '<button type="button" ';
+                html += 'class="btn btn-outline-danger btn-sm btn-remove-row" ';
+                html += 'title="Remove">';
+                html += '<i class="fas fa-minus"></i>';
+                html += '</button>';
 
-            html += '</button>';
+            }
 
             html += '</div>';
 
@@ -336,8 +301,7 @@
 
             var productId = $("#ProductId").val();
 
-            var configId =
-                parentRow.attr("data-config-id");
+            var configId =   parentRow.attr("data-config-id");
 
             var childArea =
                 parentRow.children(".child-area");
@@ -413,37 +377,11 @@
             var isRootLevel =
                 currentRow.attr("data-root") === "true";
 
-            var inputType =
-                currentRow.attr("data-input-type");
-
-            if (isRootLevel === true) {
-
-                addConfiguredRow(
-                    parentContainer,
-                    level,
-                    configNode,
-                    true
-                );
-
-                refreshDeleteButtons();
-
-                return;
-            }
-
-            if (inputType === "Single") {
-
-                showError(
-                    "Only one value is allowed for this level."
-                );
-
-                return;
-            }
-
             addConfiguredRow(
                 parentContainer,
                 level,
                 configNode,
-                false
+                isRootLevel
             );
 
             refreshDeleteButtons();
@@ -489,6 +427,7 @@
 
             return {
                 id: row.attr("data-config-id"),
+                heading: row.attr("data-heading"),
                 name: row.attr("data-label-name"),
                 inputType: row.attr("data-input-type")
             };
@@ -518,22 +457,42 @@
 
                     var row = $(this);
 
+                    var inputType =
+                        row.attr("data-input-type");
+
+                    var isRootLevel =
+                        row.attr("data-root") === "true";
+
                     var childCount =
                         row.children(".child-area")
                             .children(".node-row")
                             .length;
 
-                    if (childCount > 0) {
+                    if (inputType === "Single") {
 
-                        row.find("> .row .btn-remove-row")
-                            .hide();
+                        row.find("> .row .btn-remove-row").hide();
+                        row.find("> .row .btn-add-same").hide();
 
                     }
                     else {
 
-                        row.find("> .row .btn-remove-row")
-                            .show();
+                        if (childCount > 0) {
 
+                            row.find("> .row .btn-remove-row").hide();
+
+                        }
+                        else {
+
+                            row.find("> .row .btn-remove-row").show();
+
+                        }
+
+                        if (isRootLevel === true ||
+                            inputType === "Multiple") {
+
+                            row.find("> .row .btn-add-same").show();
+
+                        }
                     }
 
                 });
@@ -625,13 +584,26 @@
 
                 if ($.trim(nodeValue) === "") {
 
-                    showError(
-                        "Please type value for all rows."
-                    );
+                    showError("Please type value for all rows.");
 
                     valid = false;
 
                     return false;
+                }
+
+                if (row.find("> .row .field-type").length > 0) {
+
+                    var fieldType =
+                        row.find("> .row .field-type").val();
+
+                    if (fieldType === "") {
+
+                        showError("Please select field type.");
+
+                        valid = false;
+
+                        return false;
+                    }
                 }
 
             });
@@ -664,12 +636,30 @@
                 }
 
                 data.push({
-                    nodeValue: $.trim(nodeValue),
-                    fieldType: fieldType,
-                    configurationNodeId: configurationNodeId,
-                    children: collectRows(
-                        row.children(".child-area")
-                    )
+
+                    heading:
+                        row.attr("data-heading"),
+
+                    label:
+                        row.attr("data-label-name"),
+
+                    valueType:
+                        row.attr("data-input-type"),
+
+                    value:
+                        $.trim(nodeValue),
+
+                    fieldType:
+                        fieldType,
+
+                    configurationNodeId:
+                        parseInt(configurationNodeId),
+
+                    children:
+                        collectRows(
+                            row.children(".child-area")
+                        )
+
                 });
 
             });

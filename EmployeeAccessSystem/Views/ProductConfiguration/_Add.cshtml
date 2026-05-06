@@ -12,18 +12,26 @@
 <div class="modal-body">
     <div id="msgArea"></div>
 
+    @Html.AntiForgeryToken()
+
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
             <div class="row align-items-end">
                 <div class="col-md-11">
                     <label class="font-weight-bold mb-1">Product</label>
-                    <select id="ProductId" class="form-control form-control-sm" asp-items="ViewBag.ProductList">
+                    <select id="ProductId"
+                            class="form-control form-control-sm"
+                            asp-items="ViewBag.ProductList">
                         <option value="">Select Product</option>
                     </select>
                 </div>
 
                 <div class="col-md-1 text-right">
-                    <button type="button" id="btnAddRoot" class="btn btn-outline-primary btn-sm px-2 py-0" title="Add Parent" style="display:none;">
+                    <button type="button"
+                            id="btnAddRoot"
+                            class="btn btn-outline-primary btn-sm px-2 py-0"
+                            title="Add Parent"
+                            style="display:none;">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -47,11 +55,25 @@
 </div>
 
 <div class="modal-footer">
-    <button type="button" id="btnFooterClose" class="btn btn-secondary btn-sm">Close</button>
-    <button type="button" id="btnSave" class="btn btn-primary btn-sm">Save Structure</button>
+    <button type="button"
+            id="btnFooterClose"
+            class="btn btn-secondary btn-sm">
+        Close
+    </button>
+
+    <button type="button"
+            id="btnSave"
+            class="btn btn-primary btn-sm">
+        Save Structure
+    </button>
 </div>
 
-<div class="modal fade" id="confirmCloseModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+<div class="modal fade"
+     id="confirmCloseModal"
+     tabindex="-1"
+     role="dialog"
+     data-backdrop="static"
+     data-keyboard="false">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-white border-bottom">
@@ -59,12 +81,23 @@
             </div>
 
             <div class="modal-body text-center py-4">
-                <div class="font-weight-bold">Do you want to close this form?</div>
+                <div class="font-weight-bold">
+                    Do you want to close this form?
+                </div>
             </div>
 
             <div class="modal-footer justify-content-center bg-light">
-                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-3">Continue Editing</button>
-                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-3">Yes, Close</button>
+                <button type="button"
+                        id="btnContinueEditing"
+                        class="btn btn-secondary btn-sm px-3">
+                    Continue Editing
+                </button>
+
+                <button type="button"
+                        id="btnConfirmClose"
+                        class="btn btn-danger btn-sm px-3">
+                    Yes, Close
+                </button>
             </div>
         </div>
     </div>
@@ -76,54 +109,7 @@
         var selectedProductId = @selectedProductId;
         var existingData = @Html.Raw(string.IsNullOrWhiteSpace(existingJson) ? "[]" : existingJson);
 
-        var modalParent = $("#ProductId").closest(".modal");
-
-        if (modalParent.length === 0) {
-            modalParent = $(".modal.show");
-        }
-
-        $("#ProductId").select2({
-            theme: "bootstrap4",
-            width: "100%",
-            dropdownParent: modalParent
-        });
-
-        if (selectedProductId > 0) {
-            $("#ProductId").val(selectedProductId);
-            $("#btnAddRoot").show();
-            $("#emptyMessage").remove();
-
-            if (existingData != null && existingData.length > 0) {
-                for (var i = 0; i < existingData.length; i++) {
-                    addExistingRow($("#nodeContainer"), existingData[i], 0);
-                }
-
-                refreshHeading();
-                refreshDeleteButtons();
-            }
-            else {
-                $("#nodeContainer").html(
-                    '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
-                );
-            }
-        }
-
-        $("#btnFooterClose").off("click").on("click", function (e) {
-            e.preventDefault();
-            $("#confirmCloseModal").modal("show");
-        });
-
-        $("#btnContinueEditing").off("click").on("click", function () {
-            $("#confirmCloseModal").modal("hide");
-        });
-
-        $("#btnConfirmClose").off("click").on("click", function () {
-            $("#confirmCloseModal").modal("hide");
-
-            setTimeout(function () {
-                modalParent.modal("hide");
-            }, 200);
-        });
+        loadInitialData();
 
         $("#ProductId").off("change").on("change", function () {
 
@@ -139,7 +125,7 @@
                 return;
             }
 
-            $.get("/ProductConfiguration/Add?productId=" + productId, function (data) {
+            $.get("/ProductConfiguration/Add", { productId: productId }, function (data) {
                 $("#configurationModalContent").html(data);
             });
         });
@@ -161,6 +147,7 @@
             $("#emptyMessage").remove();
 
             addRow($("#nodeContainer"), 0);
+
             refreshHeading();
             refreshDeleteButtons();
         });
@@ -169,18 +156,79 @@
             saveData();
         });
 
+        $("#btnFooterClose").off("click").on("click", function (e) {
+            e.preventDefault();
+            $("#confirmCloseModal").modal("show");
+        });
+
+        $("#btnContinueEditing").off("click").on("click", function () {
+            $("#confirmCloseModal").modal("hide");
+        });
+
+        $("#btnConfirmClose").off("click").on("click", function () {
+            $("#confirmCloseModal").modal("hide");
+
+            setTimeout(function () {
+                $("#configurationModal").modal("hide");
+            }, 200);
+        });
+
+        function loadInitialData() {
+
+            if (selectedProductId > 0) {
+                $("#ProductId").val(selectedProductId);
+                $("#btnAddRoot").css("display", "inline-block");
+                $("#emptyMessage").remove();
+
+                var structureData = [];
+
+                if (existingData != null && existingData.structure != null) {
+                    structureData = existingData.structure;
+                }
+                else if (existingData != null && Array.isArray(existingData)) {
+                    structureData = existingData;
+                }
+
+                if (structureData.length > 0) {
+                    for (var i = 0; i < structureData.length; i++) {
+                        addExistingRow($("#nodeContainer"), structureData[i], 0);
+                    }
+
+                    refreshHeading();
+                    refreshDeleteButtons();
+                }
+                else {
+                    $("#nodeContainer").html(
+                        '<div class="text-muted text-center py-3" id="emptyMessage">Click plus to add structure.</div>'
+                    );
+                }
+            }
+        }
+
         function addExistingRow(container, node, level) {
 
             addRow(container, level);
 
             var current = container.children(".node-row").last();
 
-            current.find("> .row .node-name").val(node.nodeName);
-            current.find("> .row .input-type").val(node.inputType);
+            var label = node.label || node.nodeName || "";
+            var valueType = node.valueType || node.inputType || "";
+            var heading = node.heading || "";
+
+            current.find("> .row .node-name").val(label);
+            current.find("> .row .input-type").val(valueType);
+
+            if (heading !== "") {
+                current.find("> .row .heading-label").text(heading);
+            }
 
             if (node.children != null && node.children.length > 0) {
                 for (var i = 0; i < node.children.length; i++) {
-                    addExistingRow(current.children(".child-area"), node.children[i], level + 1);
+                    addExistingRow(
+                        current.children(".child-area"),
+                        node.children[i],
+                        level + 1
+                    );
                 }
             }
         }
@@ -194,7 +242,7 @@
             html += '<div class="row align-items-center">';
 
             html += '<div class="col-md-1 text-center">';
-            html += '<span class="heading-label text-dark"></span>';
+            html += '<span class="heading-label text-dark font-weight-bold"></span>';
             html += '</div>';
 
             html += '<div class="col-md-5">';
@@ -206,6 +254,7 @@
             html += '</div>';
 
             html += '<div class="col-md-2 text-right">';
+
             html += '<button type="button" class="btn btn-outline-primary btn-sm px-2 py-0 btn-plus mr-1" title="Add Child">';
             html += '<i class="fas fa-plus"></i>';
             html += '</button>';
@@ -213,9 +262,10 @@
             html += '<button type="button" class="btn btn-outline-danger btn-sm px-2 py-0 btn-minus" title="Remove">';
             html += '<i class="fas fa-minus"></i>';
             html += '</button>';
-            html += '</div>';
 
             html += '</div>';
+            html += '</div>';
+
             html += '<div class="child-area mt-2"></div>';
             html += '</div>';
 
@@ -242,6 +292,7 @@
                 }
 
                 addRow(current.children(".child-area"), level + 1);
+
                 refreshHeading();
                 refreshDeleteButtons();
             });
@@ -250,12 +301,8 @@
 
                 clearMessage();
 
-                if (current.children(".child-area").children(".node-row").length > 0) {
-                    showError("Please remove child rows first.");
-                    return;
-                }
-
                 current.remove();
+
                 refreshHeading();
                 refreshDeleteButtons();
 
@@ -308,9 +355,7 @@
         function refreshHeading() {
 
             $("#nodeContainer").children(".node-row").each(function (i) {
-
                 var headingNumber = i + 1;
-
                 setHeading($(this), headingNumber.toString());
             });
         }
@@ -320,9 +365,7 @@
             row.find("> .row .heading-label").text("H" + number);
 
             row.children(".child-area").children(".node-row").each(function (i) {
-
                 var childNumber = number + "." + (i + 1);
-
                 setHeading($(this), childNumber);
             });
         }
@@ -332,7 +375,11 @@
             $("#nodeContainer").find(".node-row").each(function () {
 
                 var row = $(this);
-                var childCount = row.children(".child-area").children(".node-row").length;
+
+                var childCount =
+                    row.children(".child-area")
+                        .children(".node-row")
+                        .length;
 
                 if (childCount > 0) {
                     row.find("> .row .btn-minus").hide();
@@ -355,11 +402,33 @@
             }
 
             if ($("#nodeContainer").children(".node-row").length === 0) {
-                showError("Please add structure.");
+
+                if (!confirm("Are you sure you want to delete this configuration?")) {
+                    return;
+                }
+
+                var token = $('input[name="__RequestVerificationToken"]').val();
+
+                $.ajax({
+                    url: "/ProductConfiguration/Delete",
+                    type: "POST",
+                    data: {
+                        productId: parseInt(productId),
+                        __RequestVerificationToken: token
+                    },
+                    success: function () {
+                        window.location.href = "/ProductConfiguration";
+                    },
+                    error: function () {
+                        showError("Delete failed. Please try again.");
+                    }
+                });
+
                 return;
             }
 
-            if (!validateRows($("#nodeContainer"))) {
+            if (!canAddNewRow($("#nodeContainer"))) {
+                showError("Please fill all label/level names.");
                 return;
             }
 
@@ -392,31 +461,6 @@
             });
         }
 
-        function validateRows(container) {
-
-            var valid = true;
-
-            container.find(".node-row").each(function () {
-
-                var row = $(this);
-                var nodeName = row.find("> .row .node-name").val();
-
-                if (nodeName == null || $.trim(nodeName) === "") {
-                    showError("Please type label/level name for all rows.");
-                    valid = false;
-                    return false;
-                }
-
-                if ($.trim(nodeName).length > 50) {
-                    showError("Label/level name cannot be more than 50 characters.");
-                    valid = false;
-                    return false;
-                }
-            });
-
-            return valid;
-        }
-
         function collectRows(container) {
 
             var data = [];
@@ -425,10 +469,12 @@
 
                 var row = $(this);
 
+                var heading = row.find("> .row .heading-label").text();
                 var nodeName = row.find("> .row .node-name").val();
                 var inputType = row.find("> .row .input-type").val();
 
                 data.push({
+                    heading: $.trim(heading),
                     nodeName: $.trim(nodeName),
                     inputType: $.trim(inputType),
                     children: collectRows(row.children(".child-area"))

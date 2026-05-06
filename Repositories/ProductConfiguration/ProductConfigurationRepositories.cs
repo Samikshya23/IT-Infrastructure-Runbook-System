@@ -51,10 +51,7 @@ namespace EmployeeAccessSystem.Repositories
             );
         }
 
-        public async Task<int> SaveOrUpdateJsonAsync(
-            int productId,
-            string configurationJson,
-            string createdBy)
+        public async Task<int> SaveOrUpdateJsonAsync(int productId, string configurationJson, string createdBy)
         {
             using var conn = GetConnection();
 

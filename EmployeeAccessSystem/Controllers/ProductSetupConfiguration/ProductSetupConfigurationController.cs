@@ -27,8 +27,7 @@ namespace EmployeeAccessSystem.Controllers
             ViewBag.SelectedProductId = 0;
             ViewBag.SuccessMessage = successMessage;
 
-            if (selectedProductId != null &&
-                selectedProductId.Value > 0)
+            if (selectedProductId != null && selectedProductId.Value > 0)
             {
                 ViewBag.SelectedProductId = selectedProductId.Value;
 
@@ -49,8 +48,7 @@ namespace EmployeeAccessSystem.Controllers
             ViewBag.Products = products;
             ViewBag.SelectedProductId = 0;
 
-            if (productId != null &&
-                productId.Value > 0)
+            if (productId != null && productId.Value > 0)
             {
                 ViewBag.SelectedProductId = productId.Value;
             }
@@ -70,6 +68,7 @@ namespace EmployeeAccessSystem.Controllers
                 data.Add(new
                 {
                     id = item.NodeId,
+                    heading = item.Heading,
                     name = item.NodeName,
                     inputType = item.InputType
                 });
@@ -99,6 +98,7 @@ namespace EmployeeAccessSystem.Controllers
                 data.Add(new
                 {
                     id = item.NodeId,
+                    heading = item.Heading,
                     name = item.NodeName,
                     inputType = item.InputType
                 });

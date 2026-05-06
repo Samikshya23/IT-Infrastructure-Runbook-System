@@ -15,8 +15,6 @@ namespace EmployeeAccessSystem.Models
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
         public string DeletedBy { get; set; }
-
-        // JSON display fields only
         public int? ConfigurationNodeId { get; set; }
 
         public string NodeValue { get; set; }

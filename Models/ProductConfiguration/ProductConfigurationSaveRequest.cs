@@ -16,10 +16,9 @@ namespace EmployeeAccessSystem.Models
 
     public class ProductConfigurationNodeRequest
     {
-        public string NodeName { get; set; }
+        public string Heading { get; set; }
 
-        // Keep temporarily because old service still references it
-        public string NodeType { get; set; }
+        public string NodeName { get; set; }
 
         public string InputType { get; set; }
 
