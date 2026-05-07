@@ -24,19 +24,9 @@ namespace EmployeeAccessSystem.Controllers
             int? selectedProductId,
             string successMessage)
         {
-            ViewBag.SelectedProductId = 0;
+            ViewBag.SelectedProductId = selectedProductId ?? 0;
             ViewBag.SuccessMessage = successMessage;
-
-            if (selectedProductId != null && selectedProductId.Value > 0)
-            {
-                ViewBag.SelectedProductId = selectedProductId.Value;
-
-                List<ProductSetupConfiguration> tree =
-                    await _setupConfigurationService
-                        .GetTreeByProductIdAsync(selectedProductId.Value);
-
-                return View(tree);
-            }
+            ViewBag.Products = await _productSetupService.GetAllAsync();
 
             return View(new List<ProductSetupConfiguration>());
         }
@@ -46,14 +36,17 @@ namespace EmployeeAccessSystem.Controllers
             var products = await _productSetupService.GetAllAsync();
 
             ViewBag.Products = products;
-            ViewBag.SelectedProductId = 0;
-
-            if (productId != null && productId.Value > 0)
-            {
-                ViewBag.SelectedProductId = productId.Value;
-            }
+            ViewBag.SelectedProductId = productId ?? 0;
 
             return PartialView("_Add");
+        }
+
+        public async Task<IActionResult> ShowTable(int productId)
+        {
+            List<ProductSetupConfiguration> tree =
+                await _setupConfigurationService.GetTreeByProductIdAsync(productId);
+
+            return PartialView("_ShowTable", tree);
         }
 
         public async Task<IActionResult> GetRootLevels(int productId)
@@ -88,8 +81,7 @@ namespace EmployeeAccessSystem.Controllers
             List<ProductConfiguration> children =
                 await _setupConfigurationService.GetChildLevelsAsync(
                     productId,
-                    parentConfigurationNodeId
-                );
+                    parentConfigurationNodeId);
 
             List<object> data = new List<object>();
 
@@ -124,11 +116,9 @@ namespace EmployeeAccessSystem.Controllers
                 });
             }
 
-            var result =
-                await _setupConfigurationService.SaveDataAsync(
-                    request,
-                    GetCurrentUser()
-                );
+            var result = await _setupConfigurationService.SaveDataAsync(
+                request,
+                GetCurrentUser());
 
             return Json(new
             {
@@ -141,11 +131,9 @@ namespace EmployeeAccessSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int productId)
         {
-            var result =
-                await _setupConfigurationService.DeleteByProductAsync(
-                    productId,
-                    GetCurrentUser()
-                );
+            var result = await _setupConfigurationService.DeleteByProductAsync(
+                productId,
+                GetCurrentUser());
 
             if (result.Success)
             {
@@ -156,10 +144,7 @@ namespace EmployeeAccessSystem.Controllers
                 TempData["Error"] = result.Message;
             }
 
-            return RedirectToAction(
-                "Index",
-                new { selectedProductId = productId }
-            );
+            return RedirectToAction("Index");
         }
 
         private string GetCurrentUser()

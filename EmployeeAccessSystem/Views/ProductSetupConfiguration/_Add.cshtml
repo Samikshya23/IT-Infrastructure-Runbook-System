@@ -4,17 +4,10 @@
     int selectedProductId = ViewBag.SelectedProductId;
     var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
 }
-
 <div class="modal-header bg-white border-bottom">
-    <h5 class="modal-title font-weight-bold">
-        Product Setup Configuration
-    </h5>
+    <h5 class="modal-title font-weight-bold">Product Setup Configuration</h5>
 </div>
-
 <div class="modal-body">
-
-    <div id="msgArea"></div>
-
     <div class="card card-outline card-secondary mb-2">
         <div class="card-body p-2">
             <div class="row align-items-end">
@@ -48,11 +41,9 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card card-outline card-secondary">
         <div class="card-header py-2">
-            <h3 class="card-title font-weight-bold">
-                Generated Setup Form
-            </h3>
+            <h3 class="card-title font-weight-bold">Generated Setup Form</h3>
         </div>
 
         <div class="card-body p-2">
@@ -67,15 +58,11 @@
 </div>
 
 <div class="modal-footer">
-    <button type="button"
-            id="btnFooterClose"
-            class="btn btn-secondary btn-sm">
+    <button type="button" id="btnFooterClose" class="btn btn-secondary btn-sm">
         Close
     </button>
 
-    <button type="button"
-            id="btnSave"
-            class="btn btn-primary btn-sm">
+    <button type="button" id="btnSave" class="btn btn-primary btn-sm">
         Save
     </button>
 </div>
@@ -91,9 +78,7 @@
         <div class="modal-content border-0 shadow">
 
             <div class="modal-header bg-white border-bottom">
-                <h5 class="modal-title font-weight-bold">
-                    Unsaved Changes
-                </h5>
+                <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
             </div>
 
             <div class="modal-body text-center py-4">
@@ -103,19 +88,13 @@
             </div>
 
             <div class="modal-footer justify-content-center bg-light">
-
-                <button type="button"
-                        id="btnContinueEditing"
-                        class="btn btn-secondary btn-sm px-3">
+                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-3">
                     Continue Editing
                 </button>
 
-                <button type="button"
-                        id="btnConfirmClose"
-                        class="btn btn-danger btn-sm px-3">
+                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-3">
                     Yes, Close
                 </button>
-
             </div>
 
         </div>
@@ -123,20 +102,16 @@
 </div>
 
 <script>
-
     $(document).ready(function () {
 
         var selectedProductId = @selectedProductId;
 
+        // Load setup form when product is already selected.
         if (selectedProductId > 0) {
-
             $("#ProductId").val(selectedProductId);
-
             loadGeneratedForm(selectedProductId);
         }
-
         $("#ProductId").off("change").on("change", function () {
-
             var productId = $(this).val();
 
             $("#nodeContainer").html(
@@ -148,65 +123,39 @@
             }
 
             loadGeneratedForm(productId);
-
         });
-
-
-       
-
+        // Load root levels from ProductConfiguration JSON.
         function loadGeneratedForm(productId) {
-
-            clearMessage();
-
             $("#nodeContainer").html(
                 '<div class="text-muted text-center py-3">Loading setup form...</div>'
             );
-
             $.get(
                 "/ProductSetupConfiguration/GetRootLevels",
-                {
-                    productId: productId
-                },
+                { productId: productId },
                 function (response) {
-
                     if (!response.success) {
-                        showError(response.message);
+                        showToastMessage("error", response.message);
                         return;
                     }
 
-                    if (response.data == null ||
-                        response.data.length === 0) {
-
+                    if (response.data == null || response.data.length === 0) {
                         $("#nodeContainer").html(
                             '<div class="text-muted text-center py-3">No Product Configuration found for this product.</div>'
                         );
-
                         return;
                     }
-
                     $("#nodeContainer").html("");
 
                     for (var i = 0; i < response.data.length; i++) {
-
-                        addConfiguredRow(
-                            $("#nodeContainer"),
-                            0,
-                            response.data[i],
-                            true
-                        );
-
+                        addConfiguredRow($("#nodeContainer"), 0, response.data[i], true);
                     }
-
-                    refreshDeleteButtons();
-
-                });
-
+                    refreshActionButtons();
+                }
+            );
         }
-        //
+        // Create setup row from configuration node.
         function addConfiguredRow(container, level, configNode, isRootLevel) {
-
             var margin = level * 30;
-
             var html = "";
 
             html += '<div class="node-row mb-2" ';
@@ -227,14 +176,12 @@
             html += '</div>';
 
             html += '<div class="col-md-5">';
-            html += '<input type="text" ';
-            html += 'maxlength="100" ';
+            html += '<input type="text" maxlength="100" ';
             html += 'class="form-control form-control-sm node-value" ';
             html += 'placeholder="Enter ' + encodeHtml(configNode.name) + '">';
             html += '</div>';
 
             if (isRootLevel === true) {
-
                 html += '<div class="col-md-2">';
                 html += '<select class="form-control form-control-sm field-type">';
                 html += '<option value="">Select</option>';
@@ -247,67 +194,45 @@
                 html += '<option value="Date">Date</option>';
                 html += '</select>';
                 html += '</div>';
-
             }
             else {
-
-                html += '<div class="col-md-2">';
-                html += '</div>';
-
+                html += '<div class="col-md-2"></div>';
             }
 
             html += '<div class="col-md-2 text-right">';
 
-            if (isRootLevel === true ||
-                configNode.inputType === "Multiple") {
+            html += '<button type="button" ';
+            html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1" ';
+            html += 'title="Add same level">';
+            html += '<i class="fas fa-plus"></i>';
+            html += '</button>';
 
-                html += '<button type="button" ';
-                html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1" ';
-                html += 'title="Add same level">';
-                html += '<i class="fas fa-plus"></i>';
-                html += '</button>';
-
-            }
-
-            if (isRootLevel === true ||
-                configNode.inputType === "Multiple") {
-
-                html += '<button type="button" ';
-                html += 'class="btn btn-outline-danger btn-sm btn-remove-row" ';
-                html += 'title="Remove">';
-                html += '<i class="fas fa-minus"></i>';
-                html += '</button>';
-
-            }
+            html += '<button type="button" ';
+            html += 'class="btn btn-outline-danger btn-sm btn-remove-row" ';
+            html += 'title="Remove">';
+            html += '<i class="fas fa-minus"></i>';
+            html += '</button>';
 
             html += '</div>';
 
             html += '</div>';
-
             html += '<div class="child-area mt-2"></div>';
-
             html += '</div>';
 
             container.append(html);
 
-            var currentRow =
-                container.children(".node-row").last();
+            var currentRow = container.children(".node-row").last();
 
+            // Child levels are generated automatically from ProductConfiguration.
             loadDefaultChildren(currentRow);
-
         }
 
+        // Load child levels for selected configuration node.
         function loadDefaultChildren(parentRow) {
-
             var productId = $("#ProductId").val();
-
-            var configId =   parentRow.attr("data-config-id");
-
-            var childArea =
-                parentRow.children(".child-area");
-
-            var level =
-                getLevel(parentRow);
+            var configId = parentRow.attr("data-config-id");
+            var childArea = parentRow.children(".child-area");
+            var level = getLevel(parentRow);
 
             $.get(
                 "/ProductSetupConfiguration/GetChildLevels",
@@ -316,214 +241,125 @@
                     parentConfigurationNodeId: configId
                 },
                 function (response) {
-
                     if (!response.success) {
-                        showError(response.message);
+                        showToastMessage("error", response.message);
                         return;
                     }
 
-                    if (response.data == null ||
-                        response.data.length === 0) {
+                    if (response.data == null || response.data.length === 0) {
+                        refreshActionButtons();
                         return;
                     }
 
                     for (var i = 0; i < response.data.length; i++) {
-
-                        var child = response.data[i];
-
-                        addConfiguredRow(
-                            childArea,
-                            level + 1,
-                            child,
-                            false
-                        );
-
+                        addConfiguredRow(childArea, level + 1, response.data[i], false);
                     }
 
-                    refreshDeleteButtons();
-
-                });
-
+                    refreshActionButtons();
+                }
+            );
         }
 
         $(document).off("click", ".btn-add-same");
-
         $(document).on("click", ".btn-add-same", function () {
-
-            clearMessage();
-
-            var currentRow =
-                $(this).closest(".node-row");
-
-            var currentValue =
-                currentRow.find("> .row .node-value").val();
+            var currentRow = $(this).closest(".node-row");
+            var currentValue = currentRow.find("> .row .node-value").val();
 
             if ($.trim(currentValue) === "") {
-
-                showError("Please type value first.");
-
+                showToastMessage("error", "Please type value first.");
                 return;
             }
 
-            var parentContainer =
-                currentRow.parent();
+            var parentContainer = currentRow.parent();
+            var configNode = getConfigFromRow(currentRow);
+            var level = getLevel(currentRow);
+            var isRootLevel = currentRow.attr("data-root") === "true";
 
-            var configNode =
-                getConfigFromRow(currentRow);
-
-            var level =
-                getLevel(currentRow);
-
-            var isRootLevel =
-                currentRow.attr("data-root") === "true";
-
-            addConfiguredRow(
-                parentContainer,
-                level,
-                configNode,
-                isRootLevel
-            );
-
-            refreshDeleteButtons();
-
+            addConfiguredRow(parentContainer, level, configNode, isRootLevel);
+            refreshActionButtons();
         });
 
         $(document).off("click", ".btn-remove-row");
-
         $(document).on("click", ".btn-remove-row", function () {
+            var currentRow = $(this).closest(".node-row");
 
-            clearMessage();
-
-            var currentRow =
-                $(this).closest(".node-row");
-
-            if (currentRow
-                .children(".child-area")
-                .children(".node-row")
-                .length > 0) {
-
-                showError("Remove child rows first.");
-
-                return;
-            }
-
+            // In setup form, removing parent also removes its child setup values.
             currentRow.remove();
-
-            if ($("#nodeContainer")
-                .children(".node-row")
-                .length === 0) {
-
+            if ($("#nodeContainer").children(".node-row").length === 0) {
                 $("#nodeContainer").html(
                     '<div class="text-muted text-center py-3" id="emptyMessage">Select product to load setup form.</div>'
                 );
-
             }
-
-            refreshDeleteButtons();
-
+            refreshActionButtons();
         });
 
         function getConfigFromRow(row) {
-
             return {
                 id: row.attr("data-config-id"),
                 heading: row.attr("data-heading"),
                 name: row.attr("data-label-name"),
                 inputType: row.attr("data-input-type")
             };
-
         }
-
         function getLevel(row) {
-
             var level = row.attr("data-level");
 
-            if (level === undefined ||
-                level === null ||
-                level === "") {
-
+            if (level === undefined || level === null || level === "") {
                 return 0;
             }
 
             return parseInt(level);
-
         }
+        // Controls plus/minus buttons for Root, Single, and Multiple.
+        function refreshActionButtons() {
+            $("#nodeContainer").find(".node-row").each(function () {
+                var row = $(this);
+                var inputType = row.attr("data-input-type");
+                var isRootLevel = row.attr("data-root") === "true";
 
-        function refreshDeleteButtons() {
+                row.find("> .row .btn-add-same").hide();
+                row.find("> .row .btn-remove-row").hide();
 
-            $("#nodeContainer")
-                .find(".node-row")
-                .each(function () {
+                // Root/Product level: allow + and -.
+                if (isRootLevel === true) {
+                    row.find("> .row .btn-add-same").show();
+                    row.find("> .row .btn-remove-row").show();
+                    return;
+                }
 
-                    var row = $(this);
+                // Single level: no -, but - is allowed.
+                 // Single level is compulsory, so no + and no -.
+    if (inputType === "Single") {
+        return;
+    }
 
-                    var inputType =
-                        row.attr("data-input-type");
-
-                    var isRootLevel =
-                        row.attr("data-root") === "true";
-
-                    var childCount =
-                        row.children(".child-area")
-                            .children(".node-row")
-                            .length;
-
-                    if (inputType === "Single") {
-
-                        row.find("> .row .btn-remove-row").hide();
-                        row.find("> .row .btn-add-same").hide();
-
-                    }
-                    else {
-
-                        if (childCount > 0) {
-
-                            row.find("> .row .btn-remove-row").hide();
-
-                        }
-                        else {
-
-                            row.find("> .row .btn-remove-row").show();
-
-                        }
-
-                        if (isRootLevel === true ||
-                            inputType === "Multiple") {
-
-                            row.find("> .row .btn-add-same").show();
-
-                        }
+                // Multiple level: only last sibling shows +, all rows show -.
+                if (inputType === "Multiple") {
+                    var siblingRows = row.parent().children(".node-row");
+                    var isLastRow = row.is(siblingRows.last());
+                    if (isLastRow) {
+                        row.find("> .row .btn-add-same").show();
                     }
 
-                });
-
+                    row.find("> .row .btn-remove-row").show();
+                }
+            });
         }
 
         $("#btnSave").off("click").on("click", function () {
-
             saveData();
-
         });
 
         function saveData() {
-
-            clearMessage();
-
             var productId = $("#ProductId").val();
 
             if (productId === "") {
-
-                showError("Please select product.");
-
+                showToastMessage("error", "Please select product.");
                 return;
             }
 
-            if ($("#nodeContainer")
-                .children(".node-row")
-                .length === 0) {
-
-                showError("Please add setup data.");
-
+            if ($("#nodeContainer").children(".node-row").length === 0) {
+                showToastMessage("error", "Please add setup data.");
                 return;
             }
 
@@ -531,8 +367,7 @@
                 return;
             }
 
-            var nodes =
-                collectRows($("#nodeContainer"));
+            var nodes = collectRows($("#nodeContainer"));
 
             $.ajax({
                 url: "/ProductSetupConfiguration/SaveData",
@@ -543,188 +378,131 @@
                     nodes: nodes
                 }),
                 success: function (response) {
-
                     if (response.success) {
-
                         window.location.href =
                             "/ProductSetupConfiguration?selectedProductId=" +
                             productId +
                             "&successMessage=" +
                             encodeURIComponent(response.message);
-
                     }
                     else {
-
-                        showError(response.message);
-
+                        showToastMessage("error", response.message);
                     }
-
                 },
                 error: function () {
-
-                    showError(
-                        "Error while saving setup configuration."
-                    );
-
+                    showToastMessage("error", "Error while saving setup configuration.");
                 }
             });
-
         }
 
+        // Validate setup values before sending to backend.
         function validateRows(container) {
-
             var valid = true;
 
             container.find(".node-row").each(function () {
-
                 var row = $(this);
-
-                var nodeValue =
-                    row.find("> .row .node-value").val();
+                var nodeValue = row.find("> .row .node-value").val();
 
                 if ($.trim(nodeValue) === "") {
-
-                    showError("Please type value for all rows.");
-
+                    showToastMessage("error", "Please type value for all rows.");
                     valid = false;
-
                     return false;
                 }
 
                 if (row.find("> .row .field-type").length > 0) {
-
-                    var fieldType =
-                        row.find("> .row .field-type").val();
+                    var fieldType = row.find("> .row .field-type").val();
 
                     if (fieldType === "") {
-
-                        showError("Please select field type.");
-
+                        showToastMessage("error", "Please select field type.");
                         valid = false;
-
                         return false;
                     }
                 }
-
             });
 
             return valid;
-
         }
 
+        // Collect setup data in same hierarchy as ProductConfiguration.
         function collectRows(container) {
-
             var data = [];
 
             container.children(".node-row").each(function () {
-
                 var row = $(this);
-
-                var nodeValue =
-                    row.find("> .row .node-value").val();
-
-                var configurationNodeId =
-                    row.attr("data-config-id");
-
+                var nodeValue = row.find("> .row .node-value").val();
+                var configurationNodeId = row.attr("data-config-id");
                 var fieldType = null;
 
                 if (row.find("> .row .field-type").length > 0) {
-
-                    fieldType =
-                        row.find("> .row .field-type").val();
-
+                    fieldType = row.find("> .row .field-type").val();
                 }
 
                 data.push({
-
-                    heading:
-                        row.attr("data-heading"),
-
-                    label:
-                        row.attr("data-label-name"),
-
-                    valueType:
-                        row.attr("data-input-type"),
-
-                    value:
-                        $.trim(nodeValue),
-
-                    fieldType:
-                        fieldType,
-
-                    configurationNodeId:
-                        parseInt(configurationNodeId),
-
-                    children:
-                        collectRows(
-                            row.children(".child-area")
-                        )
-
+                    heading: row.attr("data-heading"),
+                    label: row.attr("data-label-name"),
+                    valueType: row.attr("data-input-type"),
+                    value: $.trim(nodeValue),
+                    fieldType: fieldType,
+                    configurationNodeId: parseInt(configurationNodeId),
+                    children: collectRows(row.children(".child-area"))
                 });
-
             });
 
             return data;
-
         }
 
         $("#btnFooterClose").off("click").on("click", function () {
-
             $("#confirmCloseModal").modal("show");
-
         });
 
         $("#btnContinueEditing").off("click").on("click", function () {
-
             $("#confirmCloseModal").modal("hide");
-
         });
 
         $("#btnConfirmClose").off("click").on("click", function () {
-
             $("#confirmCloseModal").modal("hide");
-
             $("#setupConfigurationModal").modal("hide");
-
         });
 
-        function showError(message) {
-
-            $("#msgArea").html(
-                '<div class="alert alert-danger alert-dismissible fade show mb-2">' +
-                message +
-                '<button type="button" class="close" data-dismiss="alert">' +
-                '<span>&times;</span>' +
-                '</button>' +
-                '</div>'
-            );
-
-            setTimeout(function () {
-
-                $("#msgArea").html("");
-
-            }, 3000);
-
-        }
-
-        function clearMessage() {
-
-            $("#msgArea").html("");
-
-        }
-
         function encodeHtml(value) {
-
-            if (value === null ||
-                value === undefined) {
-
+            if (value === null || value === undefined) {
                 return "";
             }
 
             return $("<div/>").text(value).html();
-
         }
 
-    });
+        // Common notification function.
+        function showToastMessage(type, message) {
+            if (typeof toastr === "undefined") {
+                alert(message);
+                return;
+            }
 
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                newestOnTop: true,
+                positionClass: "toast-top-right",
+                preventDuplicates: true,
+                timeOut: "3000"
+            };
+
+            if (type === "success") {
+                toastr.success(message);
+            }
+
+            if (type === "error") {
+                toastr.error(message);
+            }
+
+            if (type === "warning") {
+                toastr.warning(message);
+            }
+
+            if (type === "info") {
+                toastr.info(message);
+            }
+        }
+    });
 </script>

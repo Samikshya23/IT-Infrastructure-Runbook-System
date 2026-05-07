@@ -31,8 +31,7 @@ namespace EmployeeAccessSystem.Services
             ProductSetupConfiguration savedData =
                 await _setupRepository.GetJsonByProductIdAsync(productId);
 
-            if (savedData == null ||
-                string.IsNullOrWhiteSpace(savedData.SetupJson))
+            if (savedData == null || string.IsNullOrWhiteSpace(savedData.SetupJson))
             {
                 return result;
             }
@@ -108,8 +107,7 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Please add setup data.");
             }
 
-            string validationMessage =
-                ValidateSetupNodes(request.Nodes);
+            string validationMessage = ValidateSetupNodes(request.Nodes);
 
             if (!string.IsNullOrWhiteSpace(validationMessage))
             {
@@ -120,15 +118,12 @@ namespace EmployeeAccessSystem.Services
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             options.WriteIndented = false;
 
-            string json =
-                JsonSerializer.Serialize(request.Nodes, options);
+            string json = JsonSerializer.Serialize(request.Nodes, options);
 
-            int result =
-                await _setupRepository.SaveOrUpdateJsonAsync(
-                    request.ProductId,
-                    json,
-                    createdBy
-                );
+            int result = await _setupRepository.SaveOrUpdateJsonAsync(
+                request.ProductId,
+                json,
+                createdBy);
 
             if (result > 0)
             {
@@ -147,11 +142,9 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Invalid product setup configuration.");
             }
 
-            int result =
-                await _setupRepository.DeleteJsonByProductAsync(
-                    productId,
-                    deletedBy
-                );
+            int result = await _setupRepository.DeleteJsonByProductAsync(
+                productId,
+                deletedBy);
 
             if (result > 0)
             {
@@ -161,8 +154,7 @@ namespace EmployeeAccessSystem.Services
             return (false, "Product setup configuration delete failed.");
         }
 
-        private string ValidateSetupNodes(
-            List<ProductSetupConfigurationNodeRequest> nodes)
+        private string ValidateSetupNodes(List<ProductSetupConfigurationNodeRequest> nodes)
         {
             if (nodes == null || nodes.Count == 0)
             {
@@ -196,17 +188,14 @@ namespace EmployeeAccessSystem.Services
                     return "Invalid setup value type.";
                 }
 
-                if (node.ConfigurationNodeId == null ||
-                    node.ConfigurationNodeId.Value <= 0)
+                if (node.ConfigurationNodeId == null || node.ConfigurationNodeId.Value <= 0)
                 {
                     return "Invalid configuration node.";
                 }
 
-                if (node.Children != null &&
-                    node.Children.Count > 0)
+                if (node.Children != null && node.Children.Count > 0)
                 {
-                    string childMessage =
-                        ValidateSetupNodes(node.Children);
+                    string childMessage = ValidateSetupNodes(node.Children);
 
                     if (!string.IsNullOrWhiteSpace(childMessage))
                     {
@@ -218,11 +207,9 @@ namespace EmployeeAccessSystem.Services
             return "";
         }
 
-        private async Task<List<ProductConfiguration>> GetConfigurationTreeFromJsonAsync(
-            int productId)
+        private async Task<List<ProductConfiguration>> GetConfigurationTreeFromJsonAsync(int productId)
         {
-            List<ProductConfiguration> result =
-                new List<ProductConfiguration>();
+            List<ProductConfiguration> result = new List<ProductConfiguration>();
 
             if (productId <= 0)
             {
@@ -232,8 +219,7 @@ namespace EmployeeAccessSystem.Services
             ProductConfiguration configuration =
                 await _configurationRepository.GetJsonByProductIdAsync(productId);
 
-            if (configuration == null ||
-                string.IsNullOrWhiteSpace(configuration.ConfigurationJson))
+            if (configuration == null || string.IsNullOrWhiteSpace(configuration.ConfigurationJson))
             {
                 return result;
             }
@@ -244,8 +230,7 @@ namespace EmployeeAccessSystem.Services
             ProductConfigurationJsonModel model =
                 JsonSerializer.Deserialize<ProductConfigurationJsonModel>(
                     configuration.ConfigurationJson,
-                    options
-                );
+                    options);
 
             if (model == null || model.Structure == null)
             {
@@ -256,12 +241,7 @@ namespace EmployeeAccessSystem.Services
 
             foreach (ProductConfigurationJsonNode node in model.Structure)
             {
-                ConvertConfigurationNode(
-                    node,
-                    null,
-                    result,
-                    ref nodeCounter
-                );
+                ConvertConfigurationNode(node, null, result, ref nodeCounter);
             }
 
             return result;
@@ -278,8 +258,7 @@ namespace EmployeeAccessSystem.Services
                 return;
             }
 
-            ProductConfiguration node =
-                new ProductConfiguration();
+            ProductConfiguration node = new ProductConfiguration();
 
             node.NodeId = nodeCounter;
             node.ParentNodeId = parentNodeId;
@@ -289,33 +268,22 @@ namespace EmployeeAccessSystem.Services
             node.Children = new List<ProductConfiguration>();
 
             int currentNodeId = nodeCounter;
-
             nodeCounter++;
 
             result.Add(node);
 
-            if (requestNode.Children != null &&
-                requestNode.Children.Count > 0)
+            if (requestNode.Children != null && requestNode.Children.Count > 0)
             {
-                foreach (ProductConfigurationJsonNode child
-                    in requestNode.Children)
+                foreach (ProductConfigurationJsonNode child in requestNode.Children)
                 {
-                    ConvertConfigurationNode(
-                        child,
-                        currentNodeId,
-                        result,
-                        ref nodeCounter
-                    );
+                    ConvertConfigurationNode(child, currentNodeId, result, ref nodeCounter);
                 }
             }
         }
 
-        private List<ProductSetupConfiguration> ConvertSetupJsonToTree(
-            string json,
-            int productId)
+        private List<ProductSetupConfiguration> ConvertSetupJsonToTree(string json, int productId)
         {
-            List<ProductSetupConfiguration> result =
-                new List<ProductSetupConfiguration>();
+            List<ProductSetupConfiguration> result = new List<ProductSetupConfiguration>();
 
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -328,8 +296,7 @@ namespace EmployeeAccessSystem.Services
             List<ProductSetupConfigurationNodeRequest> nodes =
                 JsonSerializer.Deserialize<List<ProductSetupConfigurationNodeRequest>>(
                     json,
-                    options
-                );
+                    options);
 
             if (nodes == null)
             {
@@ -341,11 +308,7 @@ namespace EmployeeAccessSystem.Services
             foreach (ProductSetupConfigurationNodeRequest node in nodes)
             {
                 ProductSetupConfiguration converted =
-                    ConvertSetupNode(
-                        node,
-                        productId,
-                        ref nodeCounter
-                    );
+                    ConvertSetupNode(node, productId, ref nodeCounter);
 
                 result.Add(converted);
             }
@@ -358,44 +321,26 @@ namespace EmployeeAccessSystem.Services
             int productId,
             ref int nodeCounter)
         {
-            ProductSetupConfiguration node =
-                new ProductSetupConfiguration();
+            ProductSetupConfiguration node = new ProductSetupConfiguration();
 
             node.NodeId = nodeCounter;
             node.ProductId = productId;
-
-            node.ConfigurationNodeId =
-                requestNode.ConfigurationNodeId;
-
-            node.ConfigurationNodeName =
-                requestNode.Label;
-
-            node.NodeValue =
-                requestNode.Value;
-
-            node.FieldType =
-                requestNode.FieldType;
-
+            node.ConfigurationNodeId = requestNode.ConfigurationNodeId;
+            node.ConfigurationNodeName = requestNode.Label;
+            node.NodeValue = requestNode.Value;
+            node.FieldType = requestNode.FieldType;
             node.IsFieldValue = false;
             node.IsActive = true;
-
-            node.Children =
-                new List<ProductSetupConfiguration>();
+            node.Children = new List<ProductSetupConfiguration>();
 
             nodeCounter++;
 
-            if (requestNode.Children != null &&
-                requestNode.Children.Count > 0)
+            if (requestNode.Children != null && requestNode.Children.Count > 0)
             {
-                foreach (ProductSetupConfigurationNodeRequest child
-                    in requestNode.Children)
+                foreach (ProductSetupConfigurationNodeRequest child in requestNode.Children)
                 {
                     ProductSetupConfiguration childNode =
-                        ConvertSetupNode(
-                            child,
-                            productId,
-                            ref nodeCounter
-                        );
+                        ConvertSetupNode(child, productId, ref nodeCounter);
 
                     node.Children.Add(childNode);
                 }

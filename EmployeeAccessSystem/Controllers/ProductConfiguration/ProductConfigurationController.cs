@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
@@ -38,45 +37,14 @@ namespace EmployeeAccessSystem.Controllers
                 TempData["Error"] = errorMessage;
             }
 
-            var products = await _productRepo.GetActiveAsync();
-
-            ViewBag.ProductList = new SelectList(
-                products,
-                "ProductId",
-                "ProductName",
-                selectedProductId
-            );
-
-            ViewBag.SelectedProductId = selectedProductId ?? 0;
-
             List<ProductConfigurationIndexItem> model =
                 new List<ProductConfigurationIndexItem>();
 
+            // Normal page open: show empty message.
+            // After save: selectedProductId comes, then show all saved configurations.
             if (selectedProductId.HasValue && selectedProductId.Value > 0)
             {
-                List<ProductConfiguration> nodes =
-                    await _service.GetTreeByProductIdAsync(selectedProductId.Value);
-
-                if (nodes != null && nodes.Count > 0)
-                {
-                    ProductConfigurationIndexItem item =
-                        new ProductConfigurationIndexItem();
-
-                    item.ProductId = selectedProductId.Value;
-                    item.ProductName = "";
-
-                    foreach (var product in products)
-                    {
-                        if (product.ProductId == selectedProductId.Value)
-                        {
-                            item.ProductName = product.ProductName;
-                            break;
-                        }
-                    }
-
-                    item.Nodes = nodes;
-                    model.Add(item);
-                }
+                model = await _service.GetIndexAsync();
             }
 
             return View(model);
@@ -120,34 +88,24 @@ namespace EmployeeAccessSystem.Controllers
         public async Task<IActionResult> SaveStructure(
             [FromBody] ProductConfigurationSaveRequest request)
         {
-            try
+            string userName = GetCurrentUserName();
+
+            var result =
+                await _service.SaveStructureAsync(request, userName);
+
+            int productId = 0;
+
+            if (request != null)
             {
-                string userName = GetCurrentUserName();
-
-                var result = await _service.SaveStructureAsync(request, userName);
-
-                int productId = 0;
-
-                if (request != null)
-                {
-                    productId = request.ProductId;
-                }
-
-                return Json(new
-                {
-                    success = result.Success,
-                    message = result.Message,
-                    productId = productId
-                });
+                productId = request.ProductId;
             }
-            catch (Exception ex)
+
+            return Json(new
             {
-                return Json(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
-            }
+                success = result.Success,
+                message = result.Message,
+                productId = productId
+            });
         }
 
         [HttpPost]
@@ -156,7 +114,8 @@ namespace EmployeeAccessSystem.Controllers
         {
             string userName = GetCurrentUserName();
 
-            var result = await _service.DeleteByProductAsync(productId, userName);
+            var result =
+                await _service.DeleteByProductAsync(productId, userName);
 
             if (result.Success)
             {
