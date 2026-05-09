@@ -13,62 +13,35 @@ namespace EmployeeAccessSystem.Controllers
     {
         private readonly IProductConfigurationService _service;
         private readonly IProductSetupRepositories _productRepo;
-
-        public ProductConfigurationController(
-            IProductConfigurationService service,
-            IProductSetupRepositories productRepo)
+        public ProductConfigurationController(IProductConfigurationService service,IProductSetupRepositories productRepo)
         {
             _service = service;
             _productRepo = productRepo;
         }
-
-        public async Task<IActionResult> Index(
-            int? selectedProductId,
-            string successMessage,
-            string errorMessage)
+        public async Task<IActionResult> Index(int? selectedProductId,string successMessage,string errorMessage)
         {
             if (!string.IsNullOrWhiteSpace(successMessage))
             {
                 TempData["Success"] = successMessage;
             }
-
             if (!string.IsNullOrWhiteSpace(errorMessage))
             {
                 TempData["Error"] = errorMessage;
             }
-
-            List<ProductConfigurationIndexItem> model =
-                new List<ProductConfigurationIndexItem>();
-
-            // Normal page open: show empty message.
-            // After save: selectedProductId comes, then show all saved configurations.
-            if (selectedProductId.HasValue && selectedProductId.Value > 0)
-            {
-                model = await _service.GetIndexAsync();
-            }
-
+            List<ProductConfigurationIndexItem> model = await _service.GetIndexAsync();
+            ViewBag.SelectedProductId = selectedProductId ?? 0;
             return View(model);
         }
-
         public async Task<IActionResult> Add(int? productId)
         {
             var products = await _productRepo.GetActiveAsync();
-
-            ViewBag.ProductList = new SelectList(
-                products,
-                "ProductId",
-                "ProductName",
-                productId
-            );
-
+            ViewBag.ProductList = new SelectList( products, "ProductId","ProductName",productId);
             ViewBag.SelectedProductId = productId ?? 0;
-
             string existingJson = "[]";
 
             if (productId.HasValue && productId.Value > 0)
             {
-                List<ProductConfiguration> existingNodes =
-                    await _service.GetTreeByProductIdAsync(productId.Value);
+                List<ProductConfiguration> existingNodes = await _service.GetTreeByProductIdAsync(productId.Value);
 
                 if (existingNodes != null && existingNodes.Count > 0)
                 {
@@ -78,23 +51,16 @@ namespace EmployeeAccessSystem.Controllers
                     existingJson = JsonSerializer.Serialize(existingNodes, options);
                 }
             }
-
             ViewBag.ExistingJson = existingJson;
-
             return PartialView("_Add");
         }
-
         [HttpPost]
         public async Task<IActionResult> SaveStructure(
             [FromBody] ProductConfigurationSaveRequest request)
         {
             string userName = GetCurrentUserName();
-
-            var result =
-                await _service.SaveStructureAsync(request, userName);
-
+            var result =await _service.SaveStructureAsync(request, userName);
             int productId = 0;
-
             if (request != null)
             {
                 productId = request.ProductId;
@@ -107,36 +73,23 @@ namespace EmployeeAccessSystem.Controllers
                 productId = productId
             });
         }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int productId)
         {
             string userName = GetCurrentUserName();
+            var result =await _service.DeleteByProductAsync(productId, userName);
 
-            var result =
-                await _service.DeleteByProductAsync(productId, userName);
-
-            if (result.Success)
+            return RedirectToAction("Index", new
             {
-                TempData["Success"] = result.Message;
-            }
-            else
-            {
-                TempData["Error"] = result.Message;
-            }
-
-            return RedirectToAction("Index");
+                successMessage = result.Success ? result.Message : "",
+                errorMessage = result.Success ? "" : result.Message
+            });
         }
-
         private string GetCurrentUserName()
         {
             string userName = "System";
-
-            if (User != null &&
-                User.Identity != null &&
-                User.Identity.IsAuthenticated &&
-                !string.IsNullOrWhiteSpace(User.Identity.Name))
+            if (User != null && User.Identity != null && User.Identity.IsAuthenticated && !string.IsNullOrWhiteSpace(User.Identity.Name))
             {
                 userName = User.Identity.Name;
             }

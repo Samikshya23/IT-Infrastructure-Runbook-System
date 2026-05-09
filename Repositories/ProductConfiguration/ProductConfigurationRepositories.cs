@@ -11,12 +11,10 @@ namespace EmployeeAccessSystem.Repositories
     public class ProductConfigurationRepository : IProductConfigurationRepository
     {
         private readonly string _connectionString;
-
         public ProductConfigurationRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
-
         private SqlConnection GetConnection()
         {
             return new SqlConnection(_connectionString);

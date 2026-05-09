@@ -1,56 +1,55 @@
 ﻿@{
     Layout = null;
-
     int selectedProductId = ViewBag.SelectedProductId;
+    int rootIndex = ViewBag.RootIndex;
     var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
 }
+
 <div class="modal-header bg-white border-bottom">
-    <h5 class="modal-title font-weight-bold">Product Setup Configuration</h5>
+    <h5 class="modal-title font-weight-bold">
+        @(rootIndex >= 0 ? "Edit Product Setup Configuration" : "Product Setup Configuration")
+    </h5>
 </div>
+
 <div class="modal-body">
-    <div class="card card-outline card-secondary mb-2">
+
+    <input type="hidden" id="RootIndex" value="@rootIndex" />
+
+    <div class="card mb-2 shadow-none">
         <div class="card-body p-2">
-            <div class="row align-items-end">
-                <div class="col-md-12">
-                    <label class="font-weight-bold mb-1">Product</label>
+            <div class="form-group mb-0">
+                <label class="font-weight-bold mb-1">Product</label>
 
-                    <select id="ProductId" class="form-control form-control-sm">
-                        <option value="">Select Product</option>
+                <select id="ProductId" class="form-control form-control-sm" @(rootIndex >= 0 ? "disabled" : "")>
+                    <option value="">Select Product</option>
 
-                        @if (products != null)
+                    @if (products != null)
+                    {
+                        foreach (var product in products)
                         {
-                            foreach (var product in products)
+                            if (selectedProductId == product.ProductId)
                             {
-                                if (selectedProductId == product.ProductId)
-                                {
-                                    <option value="@product.ProductId" selected>
-                                        @product.ProductName
-                                    </option>
-                                }
-                                else
-                                {
-                                    <option value="@product.ProductId">
-                                        @product.ProductName
-                                    </option>
-                                }
+                                <option value="@product.ProductId" selected>
+                                    @product.ProductName
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@product.ProductId">
+                                    @product.ProductName
+                                </option>
                             }
                         }
-                    </select>
-                </div>
+                    }
+                </select>
             </div>
         </div>
     </div>
 
-    <div class="card card-outline card-secondary">
-        <div class="card-header py-2">
-            <h3 class="card-title font-weight-bold">Generated Setup Form</h3>
-        </div>
-
-        <div class="card-body p-2">
-            <div id="nodeContainer">
-                <div class="text-muted text-center py-3" id="emptyMessage">
-                    Select product to load setup form.
-                </div>
+    <div id="generatedSetupArea" style="display:none;">
+        <div class="card shadow-none">
+            <div class="card-body p-2">
+                <div id="nodeContainer"></div>
             </div>
         </div>
     </div>
@@ -103,20 +102,25 @@
 
 <script>
     $(document).ready(function () {
-
         var selectedProductId = @selectedProductId;
+        var editRootIndex = @rootIndex;
 
-        // Load setup form when product is already selected.
         if (selectedProductId > 0) {
             $("#ProductId").val(selectedProductId);
-            loadGeneratedForm(selectedProductId);
+
+            if (editRootIndex >= 0) {
+                loadRootForEdit(selectedProductId, editRootIndex);
+            }
+            else {
+                loadGeneratedForm(selectedProductId);
+            }
         }
+
         $("#ProductId").off("change").on("change", function () {
             var productId = $(this).val();
 
-            $("#nodeContainer").html(
-                '<div class="text-muted text-center py-3" id="emptyMessage">Select product to load setup form.</div>'
-            );
+            $("#nodeContainer").html("");
+            $("#generatedSetupArea").hide();
 
             if (productId === "") {
                 return;
@@ -124,17 +128,18 @@
 
             loadGeneratedForm(productId);
         });
-        // Load root levels from ProductConfiguration JSON.
+
         function loadGeneratedForm(productId) {
-            $("#nodeContainer").html(
-                '<div class="text-muted text-center py-3">Loading setup form...</div>'
-            );
+            $("#generatedSetupArea").show();
+            $("#nodeContainer").html('<div class="text-muted text-center py-3">Loading setup form...</div>');
+
             $.get(
                 "/ProductSetupConfiguration/GetRootLevels",
                 { productId: productId },
                 function (response) {
                     if (!response.success) {
                         showToastMessage("error", response.message);
+                        $("#generatedSetupArea").hide();
                         return;
                     }
 
@@ -144,16 +149,43 @@
                         );
                         return;
                     }
+
                     $("#nodeContainer").html("");
 
                     for (var i = 0; i < response.data.length; i++) {
                         addConfiguredRow($("#nodeContainer"), 0, response.data[i], true);
                     }
+
                     refreshActionButtons();
                 }
             );
         }
-        // Create setup row from configuration node.
+
+        function loadRootForEdit(productId, rootIndex) {
+            $("#generatedSetupArea").show();
+            $("#nodeContainer").html('<div class="text-muted text-center py-3">Loading saved setup...</div>');
+
+            $.get(
+                "/ProductSetupConfiguration/GetRootForEdit",
+                {
+                    productId: productId,
+                    rootIndex: rootIndex
+                },
+                function (response) {
+                    if (!response.success) {
+                        $("#nodeContainer").html(
+                            '<div class="text-danger text-center py-3">' + encodeHtml(response.message) + '</div>'
+                        );
+                        return;
+                    }
+
+                    $("#nodeContainer").html("");
+                    addSavedRow($("#nodeContainer"), 0, response.data, true);
+                    refreshActionButtons();
+                }
+            );
+        }
+
         function addConfiguredRow(container, level, configNode, isRootLevel) {
             var margin = level * 30;
             var html = "";
@@ -170,9 +202,7 @@
             html += '<div class="row align-items-center">';
 
             html += '<div class="col-md-3">';
-            html += '<label class="mb-0 font-weight-bold">';
-            html += encodeHtml(configNode.name);
-            html += '</label>';
+            html += '<label class="mb-0 font-weight-bold">' + encodeHtml(configNode.name) + '</label>';
             html += '</div>';
 
             html += '<div class="col-md-5">';
@@ -182,22 +212,120 @@
             html += '</div>';
 
             if (isRootLevel === true) {
-                html += '<div class="col-md-2">';
-                html += '<select class="form-control form-control-sm field-type">';
-                html += '<option value="">Select</option>';
-                html += '<option value="Percentage">Percentage</option>';
-                html += '<option value="Tick/Untick">Tick/Untick</option>';
-                html += '<option value="Check/Unchecked">Check/Unchecked</option>';
-                html += '<option value="Up/Down">Up/Down</option>';
-                html += '<option value="Value">Value</option>';
-                html += '<option value="Text">Text</option>';
-                html += '<option value="Date">Date</option>';
-                html += '</select>';
-                html += '</div>';
+                html += getFieldTypeDropdown("");
             }
             else {
                 html += '<div class="col-md-2"></div>';
             }
+
+            html += getActionButtons();
+
+            html += '</div>';
+            html += '<div class="child-area mt-2"></div>';
+            html += '</div>';
+
+            container.append(html);
+
+            var currentRow = container.children(".node-row").last();
+            loadDefaultChildren(currentRow);
+        }
+
+        function addSavedRow(container, level, savedNode, isRootLevel) {
+            var margin = level * 30;
+            var fieldType = "";
+
+            if (savedNode.fieldType != null) {
+                fieldType = savedNode.fieldType;
+            }
+
+            var valueType = "";
+
+            if (savedNode.valueType != null) {
+                valueType = savedNode.valueType;
+            }
+
+            var html = "";
+
+            html += '<div class="node-row mb-2" ';
+            html += 'data-level="' + level + '" ';
+            html += 'data-config-id="' + savedNode.configurationNodeId + '" ';
+            html += 'data-heading="' + encodeHtml(savedNode.heading) + '" ';
+            html += 'data-label-name="' + encodeHtml(savedNode.label) + '" ';
+            html += 'data-input-type="' + encodeHtml(valueType) + '" ';
+            html += 'data-root="' + isRootLevel + '" ';
+            html += 'style="margin-left:' + margin + 'px;">';
+
+            html += '<div class="row align-items-center">';
+
+            html += '<div class="col-md-3">';
+            html += '<label class="mb-0 font-weight-bold">' + encodeHtml(savedNode.label) + '</label>';
+            html += '</div>';
+
+            html += '<div class="col-md-5">';
+            html += '<input type="text" maxlength="100" ';
+            html += 'class="form-control form-control-sm node-value" ';
+            html += 'value="' + encodeHtml(savedNode.value) + '" ';
+            html += 'placeholder="Enter ' + encodeHtml(savedNode.label) + '">';
+            html += '</div>';
+
+            if (isRootLevel === true) {
+                html += getFieldTypeDropdown(fieldType);
+            }
+            else {
+                html += '<div class="col-md-2"></div>';
+            }
+
+            html += getActionButtons();
+
+            html += '</div>';
+            html += '<div class="child-area mt-2"></div>';
+            html += '</div>';
+
+            container.append(html);
+
+            var currentRow = container.children(".node-row").last();
+
+            if (savedNode.children != null && savedNode.children.length > 0) {
+                for (var i = 0; i < savedNode.children.length; i++) {
+                    addSavedRow(
+                        currentRow.children(".child-area"),
+                        level + 1,
+                        savedNode.children[i],
+                        false
+                    );
+                }
+            }
+        }
+
+        function getFieldTypeDropdown(selectedValue) {
+            var html = "";
+
+            html += '<div class="col-md-2">';
+            html += '<select class="form-control form-control-sm field-type">';
+            html += '<option value="">Select</option>';
+            html += getFieldTypeOption("Percentage", selectedValue);
+            html += getFieldTypeOption("Tick/Untick", selectedValue);
+            html += getFieldTypeOption("Check/Unchecked", selectedValue);
+            html += getFieldTypeOption("Up/Down", selectedValue);
+            html += getFieldTypeOption("Value", selectedValue);
+            html += getFieldTypeOption("Text", selectedValue);
+            html += getFieldTypeOption("Date", selectedValue);
+            html += '</select>';
+            html += '</div>';
+
+            return html;
+        }
+
+        function getFieldTypeOption(value, selectedValue) {
+            if (value === selectedValue) {
+                return '<option value="' + value + '" selected>' + value + '</option>';
+            }
+
+            return '<option value="' + value + '">' + value + '</option>';
+        }
+
+        function getActionButtons() {
+            var html = "";
 
             html += '<div class="col-md-2 text-right">';
 
@@ -215,19 +343,9 @@
 
             html += '</div>';
 
-            html += '</div>';
-            html += '<div class="child-area mt-2"></div>';
-            html += '</div>';
-
-            container.append(html);
-
-            var currentRow = container.children(".node-row").last();
-
-            // Child levels are generated automatically from ProductConfiguration.
-            loadDefaultChildren(currentRow);
+            return html;
         }
 
-        // Load child levels for selected configuration node.
         function loadDefaultChildren(parentRow) {
             var productId = $("#ProductId").val();
             var configId = parentRow.attr("data-config-id");
@@ -283,13 +401,13 @@
         $(document).on("click", ".btn-remove-row", function () {
             var currentRow = $(this).closest(".node-row");
 
-            // In setup form, removing parent also removes its child setup values.
             currentRow.remove();
+
             if ($("#nodeContainer").children(".node-row").length === 0) {
-                $("#nodeContainer").html(
-                    '<div class="text-muted text-center py-3" id="emptyMessage">Select product to load setup form.</div>'
-                );
+                $("#generatedSetupArea").hide();
+                $("#nodeContainer").html("");
             }
+
             refreshActionButtons();
         });
 
@@ -301,6 +419,7 @@
                 inputType: row.attr("data-input-type")
             };
         }
+
         function getLevel(row) {
             var level = row.attr("data-level");
 
@@ -310,7 +429,7 @@
 
             return parseInt(level);
         }
-        // Controls plus/minus buttons for Root, Single, and Multiple.
+
         function refreshActionButtons() {
             $("#nodeContainer").find(".node-row").each(function () {
                 var row = $(this);
@@ -320,23 +439,20 @@
                 row.find("> .row .btn-add-same").hide();
                 row.find("> .row .btn-remove-row").hide();
 
-                // Root/Product level: allow + and -.
                 if (isRootLevel === true) {
                     row.find("> .row .btn-add-same").show();
                     row.find("> .row .btn-remove-row").show();
                     return;
                 }
 
-                // Single level: no -, but - is allowed.
-                 // Single level is compulsory, so no + and no -.
-    if (inputType === "Single") {
-        return;
-    }
+                if (inputType === "Single") {
+                    return;
+                }
 
-                // Multiple level: only last sibling shows +, all rows show -.
                 if (inputType === "Multiple") {
                     var siblingRows = row.parent().children(".node-row");
                     var isLastRow = row.is(siblingRows.last());
+
                     if (isLastRow) {
                         row.find("> .row .btn-add-same").show();
                     }
@@ -375,6 +491,7 @@
                 contentType: "application/json",
                 data: JSON.stringify({
                     productId: parseInt(productId),
+                    rootIndex: editRootIndex,
                     nodes: nodes
                 }),
                 success: function (response) {
@@ -395,7 +512,6 @@
             });
         }
 
-        // Validate setup values before sending to backend.
         function validateRows(container) {
             var valid = true;
 
@@ -423,7 +539,6 @@
             return valid;
         }
 
-        // Collect setup data in same hierarchy as ProductConfiguration.
         function collectRows(container) {
             var data = [];
 
@@ -472,7 +587,6 @@
             return $("<div/>").text(value).html();
         }
 
-        // Common notification function.
         function showToastMessage(type, message) {
             if (typeof toastr === "undefined") {
                 alert(message);

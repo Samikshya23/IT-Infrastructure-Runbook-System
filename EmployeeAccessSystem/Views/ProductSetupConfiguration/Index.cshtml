@@ -7,63 +7,31 @@
     var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
 }
 
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-            <div class="col-sm-6">
-                <h4 class="m-0 font-weight-bold">Product Setup Configuration</h4>
+<section class="content pt-2 pb-0">
+    <div class="container-fluid px-0">
+
+        <input type="hidden" id="successMessage" value="@successMessage" />
+        <input type="hidden" id="tempSuccessMessage" value="@TempData["Success"]" />
+        <input type="hidden" id="tempErrorMessage" value="@TempData["Error"]" />
+
+        <div class="row mb-2 mx-0 align-items-center">
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Product Setup Configuration</h3>
             </div>
 
-            <div class="col-sm-6 text-right">
-                <button type="button"
-                        class="btn btn-info btn-sm mr-2"
-                        id="btnShowPanel">
-                    <i class="fas fa-eye mr-1"></i>
-                    Show Product Setup Configuration
-                </button>
-
+            <div class="col-sm-6 text-right px-0">
                 <button type="button"
                         class="btn btn-primary btn-sm"
                         id="btnAddSetupConfiguration">
-                    <i class="fas fa-plus mr-1"></i>
-                    Add Product Setup Configuration
+                    <i class="fas fa-plus mr-1"></i> Add
                 </button>
             </div>
         </div>
-    </div>
-</div>
 
-<section class="content">
-    <div class="container-fluid">
-
-        @if (!string.IsNullOrWhiteSpace(successMessage))
-        {
-            <div class="alert alert-success alert-dismissible fade show auto-hide-message">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                @successMessage
-            </div>
-        }
-
-        @if (TempData["Success"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show auto-hide-message">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                @TempData["Success"]
-            </div>
-        }
-
-        @if (TempData["Error"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show auto-hide-message">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                @TempData["Error"]
-            </div>
-        }
-
-        <div class="card mb-2" id="showPanel" style="display:none;">
+        <div class="card mb-2 border-left border-right border-bottom shadow-none rounded-0">
             <div class="card-body p-2">
                 <div class="row align-items-end">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label class="font-weight-bold mb-1">Product</label>
 
                         <select id="showProductId" class="form-control form-control-sm">
@@ -89,26 +57,11 @@
                             }
                         </select>
                     </div>
-
-                    <div class="col-md-2">
-                        <button type="button"
-                                class="btn btn-primary btn-sm"
-                                id="btnLoadSetupTable">
-                            Load
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="setupTableContainer">
-            <div class="card">
-                <div class="card-body text-center text-muted py-4">
-                    Click <strong>Add Product Setup Configuration</strong> to create setup configuration.
-                    Or click <strong>Show Product Setup Configuration</strong> to view saved setup.
-                </div>
-            </div>
-        </div>
+        <div id="setupTableContainer"></div>
 
     </div>
 </section>
@@ -128,36 +81,61 @@
     <script>
         $(document).ready(function () {
 
-            setTimeout(function () {
-                $(".auto-hide-message").fadeOut("slow");
-            }, 3000);
+            var successMessage = $("#successMessage").val();
+            var tempSuccessMessage = $("#tempSuccessMessage").val();
+            var tempErrorMessage = $("#tempErrorMessage").val();
+
+            if (successMessage !== "") {
+                showToastMessage("success", successMessage);
+            }
+
+            if (tempSuccessMessage !== "") {
+                showToastMessage("success", tempSuccessMessage);
+            }
+
+            if (tempErrorMessage !== "") {
+                showToastMessage("error", tempErrorMessage);
+            }
 
             if (@selectedProductId > 0) {
-                $("#showPanel").show();
+                $("#showProductId").val(@selectedProductId);
                 loadSetupTable(@selectedProductId);
             }
 
-            $("#btnShowPanel").off("click").on("click", function () {
-                $("#showPanel").slideToggle();
-            });
-
-            $("#btnLoadSetupTable").off("click").on("click", function () {
-                var productId = $("#showProductId").val();
+            $("#showProductId").off("change").on("change", function () {
+                var productId = $(this).val();
 
                 if (productId === "") {
-                    alert("Please select product.");
+                    $("#setupTableContainer").html("");
                     return;
                 }
 
                 loadSetupTable(productId);
             });
 
-            $(document).on("click", "#btnAddSetupConfiguration", function () {
+            $("#btnAddSetupConfiguration").off("click").on("click", function () {
                 var productId = $("#showProductId").val();
 
                 $.get("/ProductSetupConfiguration/Add",
                     {
-                        productId: productId
+                        productId: productId,
+                        rootIndex: -1
+                    },
+                    function (data) {
+                        $("#setupConfigurationModalContent").html(data);
+                        $("#setupConfigurationModal").modal("show");
+                    });
+            });
+
+            $(document).off("click", ".btn-edit-setup");
+            $(document).on("click", ".btn-edit-setup", function () {
+                var productId = $(this).attr("data-product-id");
+                var rootIndex = $(this).attr("data-root-index");
+
+                $.get("/ProductSetupConfiguration/Add",
+                    {
+                        productId: productId,
+                        rootIndex: rootIndex
                     },
                     function (data) {
                         $("#setupConfigurationModalContent").html(data);
@@ -167,12 +145,50 @@
 
             function loadSetupTable(productId) {
                 $("#setupTableContainer").html(
-                    '<div class="card"><div class="card-body text-center text-muted py-4">Loading...</div></div>'
+                    '<div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">' +
+                    '<div class="card-body text-center text-muted py-4">Loading...</div>' +
+                    '</div>'
                 );
 
                 $("#setupTableContainer").load(
                     "/ProductSetupConfiguration/ShowTable?productId=" + productId
                 );
+            }
+
+            function showToastMessage(type, message) {
+                if (message === null || message === undefined || message === "") {
+                    return;
+                }
+
+                if (typeof toastr === "undefined") {
+                    alert(message);
+                    return;
+                }
+
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    newestOnTop: true,
+                    positionClass: "toast-top-right",
+                    preventDuplicates: true,
+                    timeOut: "3000"
+                };
+
+                if (type === "success") {
+                    toastr.success(message);
+                }
+
+                if (type === "error") {
+                    toastr.error(message);
+                }
+
+                if (type === "warning") {
+                    toastr.warning(message);
+                }
+
+                if (type === "info") {
+                    toastr.info(message);
+                }
             }
         });
     </script>

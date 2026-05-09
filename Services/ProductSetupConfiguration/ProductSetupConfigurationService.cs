@@ -11,14 +11,11 @@ namespace EmployeeAccessSystem.Services
         private readonly IProductSetupConfigurationRepository _setupRepository;
         private readonly IProductConfigurationRepository _configurationRepository;
 
-        public ProductSetupConfigurationService(
-            IProductSetupConfigurationRepository setupRepository,
-            IProductConfigurationRepository configurationRepository)
+        public ProductSetupConfigurationService(IProductSetupConfigurationRepository setupRepository,IProductConfigurationRepository configurationRepository)
         {
             _setupRepository = setupRepository;
             _configurationRepository = configurationRepository;
         }
-
         public async Task<List<ProductSetupConfiguration>> GetTreeByProductIdAsync(int productId)
         {
             List<ProductSetupConfiguration> result = new List<ProductSetupConfiguration>();
@@ -27,24 +24,58 @@ namespace EmployeeAccessSystem.Services
             {
                 return result;
             }
-
-            ProductSetupConfiguration savedData =
-                await _setupRepository.GetJsonByProductIdAsync(productId);
+            ProductSetupConfiguration savedData = await _setupRepository.GetJsonByProductIdAsync(productId);
 
             if (savedData == null || string.IsNullOrWhiteSpace(savedData.SetupJson))
             {
                 return result;
             }
-
             return ConvertSetupJsonToTree(savedData.SetupJson, productId);
+        }
+        public async Task<List<ProductSetupConfiguration>> GetGroupedTreeByProductIdAsync(int productId)
+        {
+            List<ProductSetupConfiguration> tree = await GetTreeByProductIdAsync(productId);
+
+            List<ProductSetupConfiguration> grouped =new List<ProductSetupConfiguration>();
+
+            foreach (ProductSetupConfiguration root in tree)
+            {
+                ProductSetupConfiguration existing = null;
+
+                foreach (ProductSetupConfiguration item in grouped)
+                {
+                    if (item.NodeValue == root.NodeValue)
+                    {
+                        existing = item;
+                        break;
+                    }
+                }
+
+                if (existing == null)
+                {
+                    existing = new ProductSetupConfiguration();
+                    existing.NodeId = root.NodeId;
+                    existing.ProductId = root.ProductId;
+                    existing.ConfigurationNodeId = root.ConfigurationNodeId;
+                    existing.ConfigurationNodeName = root.ConfigurationNodeName;
+                    existing.NodeValue = root.NodeValue;
+                    existing.FieldType = root.FieldType;
+                    existing.IsActive = root.IsActive;
+                    existing.Children = new List<ProductSetupConfiguration>()
+                    grouped.Add(existing);
+                }
+
+                AddLeafChildren(root, existing.Children);
+            }
+
+            return grouped;
         }
 
         public async Task<List<ProductConfiguration>> GetRootLevelsAsync(int productId)
         {
-            List<ProductConfiguration> allNodes =
-                await GetConfigurationTreeFromJsonAsync(productId);
+            List<ProductConfiguration> allNodes =await GetConfigurationTreeFromJsonAsync(productId);
 
-            List<ProductConfiguration> roots = new List<ProductConfiguration>();
+            List<ProductConfiguration> roots =new List<ProductConfiguration>();
 
             foreach (ProductConfiguration node in allNodes)
             {
@@ -57,12 +88,9 @@ namespace EmployeeAccessSystem.Services
             return roots;
         }
 
-        public async Task<List<ProductConfiguration>> GetChildLevelsAsync(
-            int productId,
-            int? parentConfigurationNodeId)
+        public async Task<List<ProductConfiguration>> GetChildLevelsAsync( int productId, int? parentConfigurationNodeId)
         {
-            List<ProductConfiguration> allNodes =
-                await GetConfigurationTreeFromJsonAsync(productId);
+            List<ProductConfiguration> allNodes = await GetConfigurationTreeFromJsonAsync(productId);
 
             List<ProductConfiguration> children = new List<ProductConfiguration>();
 
@@ -77,20 +105,15 @@ namespace EmployeeAccessSystem.Services
                 }
                 else
                 {
-                    if (node.ParentNodeId != null &&
-                        node.ParentNodeId.Value == parentConfigurationNodeId.Value)
+                    if (node.ParentNodeId != null && node.ParentNodeId.Value == parentConfigurationNodeId.Value)
                     {
                         children.Add(node);
                     }
                 }
             }
-
             return children;
         }
-
-        public async Task<(bool Success, string Message)> SaveDataAsync(
-            ProductSetupConfigurationSaveRequest request,
-            string createdBy)
+        public async Task<(bool Success, string Message)> SaveDataAsync( ProductSetupConfigurationSaveRequest request, string createdBy)
         {
             if (request == null)
             {
@@ -107,23 +130,40 @@ namespace EmployeeAccessSystem.Services
                 return (false, "Please add setup data.");
             }
 
-            string validationMessage = ValidateSetupNodes(request.Nodes);
+            string validationMessage =
+                ValidateSetupNodes(request.Nodes);
 
             if (!string.IsNullOrWhiteSpace(validationMessage))
             {
                 return (false, validationMessage);
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
-            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            options.WriteIndented = false;
+            List<ProductSetupConfigurationNodeRequest> existingNodes = await GetSetupNodesFromJsonAsync(request.ProductId);
 
-            string json = JsonSerializer.Serialize(request.Nodes, options);
+            if (existingNodes == null)
+            {
+                existingNodes = new List<ProductSetupConfigurationNodeRequest>();
+            }
+            foreach (ProductSetupConfigurationNodeRequest newNode in request.Nodes)
+            {
+                foreach (ProductSetupConfigurationNodeRequest existingNode in existingNodes)
+                {
+                    if (!string.IsNullOrWhiteSpace(existingNode.Value) && !string.IsNullOrWhiteSpace(newNode.Value) &&
+existingNode.Value.Trim().ToLower() == newNode.Value.Trim().ToLower())
+                    {
+                        return (false, "This setup item already exists. Please edit existing item.");
+                    }
+                }
+            }
 
-            int result = await _setupRepository.SaveOrUpdateJsonAsync(
-                request.ProductId,
-                json,
-                createdBy);
+            foreach (ProductSetupConfigurationNodeRequest node in request.Nodes)
+            {
+                existingNodes.Add(node);
+            }
+
+            string json = SerializeSetupNodes(existingNodes);
+
+            int result = await _setupRepository.SaveOrUpdateJsonAsync( request.ProductId, json, createdBy);
 
             if (result > 0)
             {
@@ -133,28 +173,258 @@ namespace EmployeeAccessSystem.Services
             return (false, "Product setup configuration save failed.");
         }
 
-        public async Task<(bool Success, string Message)> DeleteByProductAsync(
-            int productId,
-            string deletedBy)
+        public async Task<(bool Success, string Message)> DeleteByProductAsync( int productId, string deletedBy)
+        {
+            if (productId <= 0)
+            {
+                return (false, "Invalid product setup configuration.");
+            }
+            int result = await _setupRepository.DeleteJsonByProductAsync(productId,deletedBy);
+
+            if (result > 0)
+            {
+                return (true, "Product setup configuration deleted successfully.");
+            }
+            return (false, "Product setup configuration delete failed.");
+        }
+
+        public async Task<(bool Success, string Message, ProductSetupConfigurationNodeRequest Data)>
+            GetRootForEditAsync( int productId, int rootIndex)
+        {
+            if (productId <= 0)
+            {
+                return (false, "Invalid product.", null);
+            }
+
+            if (rootIndex < 0)
+            {
+                return (false, "Invalid setup item.", null);
+            }
+
+            List<ProductSetupConfigurationNodeRequest> nodes =
+                await GetSetupNodesFromJsonAsync(productId);
+
+            if (nodes == null || nodes.Count == 0)
+            {
+                return (false, "No setup data found.", null);
+            }
+
+            if (rootIndex >= nodes.Count)
+            {
+                return (false, "Setup item not found.", null);
+            }
+
+            return (true, "Setup item loaded successfully.", nodes[rootIndex]);
+        }
+        public async Task<(bool Success, string Message)> SaveRootDataAsync( ProductSetupConfigurationSaveRequest request, string modifiedBy)
+        {
+            if (request == null)
+            {
+                return (false, "Invalid request.");
+            }
+
+            if (request.ProductId <= 0)
+            {
+                return (false, "Please select product.");
+            }
+
+            if (request.RootIndex < 0)
+            {
+                return (false, "Invalid setup item.");
+            }
+
+            if (request.Nodes == null || request.Nodes.Count == 0)
+            {
+                return (false, "Please add setup data.");
+            }
+
+            string validationMessage =
+                ValidateSetupNodes(request.Nodes);
+
+            if (!string.IsNullOrWhiteSpace(validationMessage))
+            {
+                return (false, validationMessage);
+            }
+
+            List<ProductSetupConfigurationNodeRequest> existingNodes =await GetSetupNodesFromJsonAsync(request.ProductId);
+
+            if (existingNodes == null || existingNodes.Count == 0)
+            {
+                return (false, "No setup data found.");
+            }
+
+            if (request.RootIndex >= existingNodes.Count)
+            {
+                return (false, "Setup item not found.");
+            }
+
+            string newValue = request.Nodes[0].Value;
+
+            for (int i = 0; i < existingNodes.Count; i++)
+            {
+                if (i == request.RootIndex)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(existingNodes[i].Value) &&
+                    !string.IsNullOrWhiteSpace(newValue) &&
+                    existingNodes[i].Value.Trim().ToLower() == newValue.Trim().ToLower())
+                {
+                    return (false, "This setup item already exists.");
+                }
+            }
+
+            existingNodes[request.RootIndex] = request.Nodes[0];
+
+            string json =SerializeSetupNodes(existingNodes);
+
+            int result =await _setupRepository.SaveOrUpdateJsonAsync( request.ProductId, json, modifiedBy);
+
+            if (result > 0)
+            {
+                return (true, "Product setup configuration updated successfully.");
+            }
+            return (false, "Product setup configuration update failed.");
+        }
+
+        public async Task<(bool Success, string Message)> DeleteRootAsync( int productId, int rootIndex, string deletedBy)
         {
             if (productId <= 0)
             {
                 return (false, "Invalid product setup configuration.");
             }
 
-            int result = await _setupRepository.DeleteJsonByProductAsync(
-                productId,
-                deletedBy);
+            if (rootIndex < 0)
+            {
+                return (false, "Invalid setup item.");
+            }
+
+            List<ProductSetupConfigurationNodeRequest> existingNodes = await GetSetupNodesFromJsonAsync(productId);
+
+            if (existingNodes == null || existingNodes.Count == 0)
+            {
+                return (false, "No setup data found.");
+            }
+
+            if (rootIndex >= existingNodes.Count)
+            {
+                return (false, "Setup item not found.");
+            }
+
+            existingNodes.RemoveAt(rootIndex);
+
+            if (existingNodes.Count == 0)
+            {
+                int deleteResult =
+                    await _setupRepository.DeleteJsonByProductAsync(
+                        productId,
+                        deletedBy);
+
+                if (deleteResult > 0)
+                {
+                    return (true, "Product setup configuration deleted successfully.");
+                }
+
+                return (false, "Delete failed.");
+            }
+
+            string json =
+                SerializeSetupNodes(existingNodes);
+
+            int result =
+                await _setupRepository.SaveOrUpdateJsonAsync(
+                    productId,
+                    json,
+                    deletedBy);
 
             if (result > 0)
             {
-                return (true, "Product setup configuration deleted successfully.");
+                return (true, "Setup item deleted successfully.");
             }
 
-            return (false, "Product setup configuration delete failed.");
+            return (false, "Delete failed.");
         }
 
-        private string ValidateSetupNodes(List<ProductSetupConfigurationNodeRequest> nodes)
+        private async Task<List<ProductSetupConfigurationNodeRequest>>
+            GetSetupNodesFromJsonAsync(int productId)
+        {
+            List<ProductSetupConfigurationNodeRequest> result =
+                new List<ProductSetupConfigurationNodeRequest>();
+
+            if (productId <= 0)
+            {
+                return result;
+            }
+
+            ProductSetupConfiguration savedData =
+                await _setupRepository.GetJsonByProductIdAsync(productId);
+
+            if (savedData == null ||
+                string.IsNullOrWhiteSpace(savedData.SetupJson))
+            {
+                return result;
+            }
+
+            JsonSerializerOptions options =
+                new JsonSerializerOptions();
+
+            options.PropertyNameCaseInsensitive = true;
+
+            result =
+                JsonSerializer.Deserialize<List<ProductSetupConfigurationNodeRequest>>(
+                    savedData.SetupJson,
+                    options);
+
+            if (result == null)
+            {
+                result = new List<ProductSetupConfigurationNodeRequest>();
+            }
+
+            return result;
+        }
+
+        private string SerializeSetupNodes(
+            List<ProductSetupConfigurationNodeRequest> nodes)
+        {
+            JsonSerializerOptions options =
+                new JsonSerializerOptions();
+
+            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            options.WriteIndented = false;
+
+            return JsonSerializer.Serialize(nodes, options);
+        }
+
+        private void AddLeafChildren(
+            ProductSetupConfiguration node,
+            List<ProductSetupConfiguration> children)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            if (node.Children == null || node.Children.Count == 0)
+            {
+                return;
+            }
+
+            foreach (ProductSetupConfiguration child in node.Children)
+            {
+                if (child.Children == null || child.Children.Count == 0)
+                {
+                    children.Add(child);
+                }
+                else
+                {
+                    AddLeafChildren(child, children);
+                }
+            }
+        }
+
+        private string ValidateSetupNodes(
+            List<ProductSetupConfigurationNodeRequest> nodes)
         {
             if (nodes == null || nodes.Count == 0)
             {
@@ -188,14 +458,16 @@ namespace EmployeeAccessSystem.Services
                     return "Invalid setup value type.";
                 }
 
-                if (node.ConfigurationNodeId == null || node.ConfigurationNodeId.Value <= 0)
+                if (node.ConfigurationNodeId == null ||
+                    node.ConfigurationNodeId.Value <= 0)
                 {
                     return "Invalid configuration node.";
                 }
 
                 if (node.Children != null && node.Children.Count > 0)
                 {
-                    string childMessage = ValidateSetupNodes(node.Children);
+                    string childMessage =
+                        ValidateSetupNodes(node.Children);
 
                     if (!string.IsNullOrWhiteSpace(childMessage))
                     {
@@ -207,9 +479,11 @@ namespace EmployeeAccessSystem.Services
             return "";
         }
 
-        private async Task<List<ProductConfiguration>> GetConfigurationTreeFromJsonAsync(int productId)
+        private async Task<List<ProductConfiguration>>
+            GetConfigurationTreeFromJsonAsync(int productId)
         {
-            List<ProductConfiguration> result = new List<ProductConfiguration>();
+            List<ProductConfiguration> result =
+                new List<ProductConfiguration>();
 
             if (productId <= 0)
             {
@@ -219,12 +493,15 @@ namespace EmployeeAccessSystem.Services
             ProductConfiguration configuration =
                 await _configurationRepository.GetJsonByProductIdAsync(productId);
 
-            if (configuration == null || string.IsNullOrWhiteSpace(configuration.ConfigurationJson))
+            if (configuration == null ||
+                string.IsNullOrWhiteSpace(configuration.ConfigurationJson))
             {
                 return result;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
+            JsonSerializerOptions options =
+                new JsonSerializerOptions();
+
             options.PropertyNameCaseInsensitive = true;
 
             ProductConfigurationJsonModel model =
@@ -241,7 +518,11 @@ namespace EmployeeAccessSystem.Services
 
             foreach (ProductConfigurationJsonNode node in model.Structure)
             {
-                ConvertConfigurationNode(node, null, result, ref nodeCounter);
+                ConvertConfigurationNode(
+                    node,
+                    null,
+                    result,
+                    ref nodeCounter);
             }
 
             return result;
@@ -258,7 +539,8 @@ namespace EmployeeAccessSystem.Services
                 return;
             }
 
-            ProductConfiguration node = new ProductConfiguration();
+            ProductConfiguration node =
+                new ProductConfiguration();
 
             node.NodeId = nodeCounter;
             node.ParentNodeId = parentNodeId;
@@ -272,25 +554,35 @@ namespace EmployeeAccessSystem.Services
 
             result.Add(node);
 
-            if (requestNode.Children != null && requestNode.Children.Count > 0)
+            if (requestNode.Children != null &&
+                requestNode.Children.Count > 0)
             {
                 foreach (ProductConfigurationJsonNode child in requestNode.Children)
                 {
-                    ConvertConfigurationNode(child, currentNodeId, result, ref nodeCounter);
+                    ConvertConfigurationNode(
+                        child,
+                        currentNodeId,
+                        result,
+                        ref nodeCounter);
                 }
             }
         }
 
-        private List<ProductSetupConfiguration> ConvertSetupJsonToTree(string json, int productId)
+        private List<ProductSetupConfiguration> ConvertSetupJsonToTree(
+            string json,
+            int productId)
         {
-            List<ProductSetupConfiguration> result = new List<ProductSetupConfiguration>();
+            List<ProductSetupConfiguration> result =
+                new List<ProductSetupConfiguration>();
 
             if (string.IsNullOrWhiteSpace(json))
             {
                 return result;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
+            JsonSerializerOptions options =
+                new JsonSerializerOptions();
+
             options.PropertyNameCaseInsensitive = true;
 
             List<ProductSetupConfigurationNodeRequest> nodes =
@@ -308,20 +600,23 @@ namespace EmployeeAccessSystem.Services
             foreach (ProductSetupConfigurationNodeRequest node in nodes)
             {
                 ProductSetupConfiguration converted =
-                    ConvertSetupNode(node, productId, ref nodeCounter);
+                    ConvertSetupNode(
+                        node,
+                        productId,
+                        ref nodeCounter);
 
                 result.Add(converted);
             }
 
             return result;
         }
-
         private ProductSetupConfiguration ConvertSetupNode(
             ProductSetupConfigurationNodeRequest requestNode,
             int productId,
             ref int nodeCounter)
         {
-            ProductSetupConfiguration node = new ProductSetupConfiguration();
+            ProductSetupConfiguration node =
+                new ProductSetupConfiguration();
 
             node.NodeId = nodeCounter;
             node.ProductId = productId;
@@ -335,12 +630,16 @@ namespace EmployeeAccessSystem.Services
 
             nodeCounter++;
 
-            if (requestNode.Children != null && requestNode.Children.Count > 0)
+            if (requestNode.Children != null &&
+                requestNode.Children.Count > 0)
             {
                 foreach (ProductSetupConfigurationNodeRequest child in requestNode.Children)
                 {
                     ProductSetupConfiguration childNode =
-                        ConvertSetupNode(child, productId, ref nodeCounter);
+                        ConvertSetupNode(
+                            child,
+                            productId,
+                            ref nodeCounter);
 
                     node.Children.Add(childNode);
                 }

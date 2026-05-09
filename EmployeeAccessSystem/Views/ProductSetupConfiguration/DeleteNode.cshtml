@@ -1,18 +1,14 @@
 ﻿@model EmployeeAccessSystem.Models.ProductSetupConfiguration
-
 @{
     Layout = null;
 }
-
 <div class="modal-header bg-white border-bottom">
     <h5 class="modal-title font-weight-bold text-danger">
         Delete Setup Node
     </h5>
 </div>
-
 <form asp-action="DeleteConfirmed" method="post">
     <div class="modal-body">
-
         <input type="hidden" name="nodeId" value="@Model.NodeId" />
         <input type="hidden" name="productId" value="@Model.ProductId" />
 
@@ -40,14 +36,11 @@
                 <strong class="ml-2">@Model.NodeValue</strong>
             </div>
         </div>
-
     </div>
-
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
             Cancel
         </button>
-
         <button type="submit" class="btn btn-danger btn-sm">
             Delete
         </button>

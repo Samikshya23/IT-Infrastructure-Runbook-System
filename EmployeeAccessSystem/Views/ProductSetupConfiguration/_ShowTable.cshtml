@@ -1,182 +1,209 @@
 ﻿@model List<EmployeeAccessSystem.Models.ProductSetupConfiguration>
 
-@functions {
-    public class DisplayRow
-    {
-        public List<string> Values { get; set; }
-        public bool IsFirstRow { get; set; }
-        public int RowSpan { get; set; }
-
-        public DisplayRow()
-        {
-            Values = new List<string>();
-        }
-    }
-
-    public void AddColumns(EmployeeAccessSystem.Models.ProductSetupConfiguration node, List<string> columns)
-    {
-        if (node == null)
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(node.ConfigurationNodeName) &&
-            !columns.Contains(node.ConfigurationNodeName))
-        {
-            columns.Add(node.ConfigurationNodeName);
-        }
-
-        if (node.Children != null && node.Children.Count > 0)
-        {
-            foreach (var child in node.Children)
-            {
-                AddColumns(child, columns);
-            }
-        }
-    }
-
-    public void BuildRows(
-        EmployeeAccessSystem.Models.ProductSetupConfiguration node,
-        List<string> columns,
-        Dictionary<string, string> path,
-        List<DisplayRow> rows)
-    {
-        if (node == null)
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(node.ConfigurationNodeName))
-        {
-            path[node.ConfigurationNodeName] = node.NodeValue;
-        }
-
-        if (node.Children == null || node.Children.Count == 0)
-        {
-            DisplayRow row = new DisplayRow();
-
-            foreach (string column in columns)
-            {
-                if (path.ContainsKey(column))
-                {
-                    row.Values.Add(path[column]);
-                }
-                else
-                {
-                    row.Values.Add("");
-                }
-            }
-
-            rows.Add(row);
-            return;
-        }
-
-        foreach (var child in node.Children)
-        {
-            Dictionary<string, string> childPath =
-                new Dictionary<string, string>(path);
-
-            BuildRows(child, columns, childPath, rows);
-        }
-    }
-}
-
 @{
-    List<string> columns = new List<string>();
-    List<List<DisplayRow>> groupedRows = new List<List<DisplayRow>>();
+    int sn = 1;
 
-    if (Model != null)
+    string firstColumn = "Product";
+    string secondColumn = "Item";
+
+    if (Model != null && Model.Count > 0)
     {
-        foreach (var root in Model)
+        firstColumn = Model[0].ConfigurationNodeName;
+
+        if (Model[0].Children != null && Model[0].Children.Count > 0)
         {
-            AddColumns(root, columns);
-        }
-
-        foreach (var root in Model)
-        {
-            List<DisplayRow> rows = new List<DisplayRow>();
-            Dictionary<string, string> path = new Dictionary<string, string>();
-
-            BuildRows(root, columns, path, rows);
-
-            for (int i = 0; i < rows.Count; i++)
-            {
-                rows[i].IsFirstRow = i == 0;
-                rows[i].RowSpan = rows.Count;
-            }
-
-            groupedRows.Add(rows);
+            secondColumn = Model[0].Children[0].ConfigurationNodeName;
         }
     }
-
-    int sn = 1;
 }
 
-@if (columns.Count > 0 && groupedRows.Count > 0)
+@if (Model != null && Model.Count > 0)
 {
-    <div class="card">
+    <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
+
+        <div class="card-header bg-white border-bottom-0 py-1 px-2 rounded-0">
+            <div class="d-flex justify-content-end">
+                <div style="width:250px;">
+                    <input type="text"
+                           id="customSearch"
+                           class="form-control form-control-sm"
+                           placeholder="Search" />
+                </div>
+            </div>
+        </div>
+
         <div class="card-body p-0">
-            <table class="table table-bordered table-hover table-sm mb-0">
-                <thead class="bg-light">
+
+            <table id="setupDynamicTable"
+                   class="table table-bordered table-hover table-sm mb-0 rounded-0">
+
+                <thead class="bg-light border-bottom">
                     <tr>
-                        <th class="text-center align-middle" style="width:70px;">SN</th>
+                        <th class="text-center align-middle" style="width:70px;">
+                            SN
+                        </th>
 
-                        @foreach (string column in columns)
-                        {
-                            <th class="text-center align-middle">@column</th>
-                        }
+                        <th class="text-center align-middle">
+                            @firstColumn
+                        </th>
 
-                        <th class="text-center align-middle" style="width:110px;">Actions</th>
+                        <th class="text-center align-middle">
+                            @secondColumn
+                        </th>
+
+                        <th class="text-center align-middle" style="width:90px;">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    @foreach (List<DisplayRow> group in groupedRows)
+
+                    @for (int r = 0; r < Model.Count; r++)
                     {
-                        foreach (DisplayRow row in group)
+                        var root = Model[r];
+
+                        int rowCount = 1;
+
+                        if (root.Children != null && root.Children.Count > 0)
+                        {
+                            rowCount = root.Children.Count;
+                        }
+
+                        if (root.Children != null && root.Children.Count > 0)
+                        {
+                            for (int i = 0; i < root.Children.Count; i++)
+                            {
+                                <tr>
+
+                                    @if (i == 0)
+                                    {
+                                        <td class="text-center align-middle"
+                                            rowspan="@rowCount">
+                                            @sn
+                                        </td>
+
+                                        <td class="align-middle px-2"
+                                            rowspan="@rowCount">
+                                            @root.NodeValue
+                                        </td>
+                                    }
+
+                                    <td class="align-middle px-2">
+                                        @root.Children[i].NodeValue
+                                    </td>
+
+                                    @if (i == 0)
+                                    {
+                                        <td class="text-center align-middle"
+                                            rowspan="@rowCount">
+
+                                            <button type="button"
+                                                    class="btn btn-xs btn-light border btnEditSetupConfiguration"
+                                                    data-product-id="@root.ProductId"
+                                                    data-root-index="@r"
+                                                    title="Edit">
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+
+                                        </td>
+
+                                        sn++;
+                                    }
+
+                                </tr>
+                            }
+                        }
+                        else
                         {
                             <tr>
-                                @if (row.IsFirstRow)
-                                {
-                                    <td class="text-center align-middle" rowspan="@row.RowSpan">
-                                        @sn
-                                    </td>
-                                }
 
-                                @for (int i = 0; i < row.Values.Count; i++)
-                                {
-                                    <td class="align-middle">@row.Values[i]</td>
-                                }
+                                <td class="text-center align-middle">
+                                    @sn
+                                </td>
 
-                                @if (row.IsFirstRow)
-                                {
-                                    <td class="text-center align-middle" rowspan="@row.RowSpan">
-                                        <button type="button"
-                                                class="btn btn-xs btn-light border"
-                                                title="Edit">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
+                                <td class="align-middle px-2">
+                                    @root.NodeValue
+                                </td>
 
-                                        <button type="button"
-                                                class="btn btn-xs btn-outline-danger ml-1"
-                                                title="Delete">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </td>
+                                <td class="align-middle px-2"></td>
 
-                                    sn++;
-                                }
+                                <td class="text-center align-middle">
+
+                                    <button type="button"
+                                            class="btn btn-xs btn-light border btnEditSetupConfiguration"
+                                            data-product-id="@root.ProductId"
+                                            data-root-index="@r"
+                                            title="Edit">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+
+                                </td>
+
                             </tr>
+
+                            sn++;
                         }
                     }
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
+
+    <script>
+
+        $(function () {
+
+            if ($.fn.DataTable.isDataTable("#setupDynamicTable")) {
+                $("#setupDynamicTable").DataTable().destroy();
+            }
+
+            var table = $("#setupDynamicTable").DataTable({
+                paging: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                lengthChange: true,
+                pageLength: 10,
+                autoWidth: false,
+                dom: "lrtip"
+            });
+
+            $("#customSearch").off("keyup").on("keyup", function () {
+                table.search(this.value).draw();
+            });
+
+        });
+
+        $(document).off("click", ".btnEditSetupConfiguration");
+
+        $(document).on("click", ".btnEditSetupConfiguration", function () {
+
+            var productId = $(this).data("product-id");
+            var rootIndex = $(this).data("root-index");
+
+            $.get("/ProductSetupConfiguration/Add",
+                {
+                    productId: productId,
+                    rootIndex: rootIndex
+                },
+                function (data) {
+
+                    $("#setupConfigurationModalContent").html(data);
+
+                    $("#setupConfigurationModal").modal("show");
+                });
+        });
+
+    </script>
 }
 else
 {
-    <div class="card">
+    <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
         <div class="card-body text-center text-muted py-4">
             No setup data found for selected product.
         </div>

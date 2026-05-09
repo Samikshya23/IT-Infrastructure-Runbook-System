@@ -21,7 +21,6 @@
                 </button>
             </div>
         </div>
-
         <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
 
             @if (Model != null && Model.Count > 0)
@@ -37,7 +36,6 @@
                     </div>
                 </div>
             }
-
             <div class="card-body p-0">
                 @if (Model != null && Model.Count > 0)
                 {
@@ -183,13 +181,11 @@
                 showToastMessage("error", errorMessage);
             }
         }
-
         function showToastMessage(type, message) {
             if (typeof toastr === "undefined") {
                 alert(message);
                 return;
             }
-
             toastr.options = {
                 closeButton: true,
                 progressBar: true,
