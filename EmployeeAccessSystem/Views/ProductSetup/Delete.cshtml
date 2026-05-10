@@ -1,32 +1,16 @@
 ﻿@model EmployeeAccessSystem.Models.ProductSetup
+
 @{
     Layout = null;
 }
 
-<form asp-action="Delete" method="post" id="deleteProductForm">
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="productId" value="@Model.ProductId" />
-
-    @if (ViewBag.Error != null)
-    {
-        <div class="alert alert-danger">@ViewBag.Error</div>
-    }
-
-    <h5 class="text-center mb-2">
-        Are you sure?
-    </h5>
-
-    <p class="text-center mb-4" style="color:#000;">
-        You want to delete this product
-        <span>"@Model.ProductName"</span>
-    </p>
-
-    <div class="modal-footer justify-content-center border-0 pt-0">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-            Cancel
-        </button>
-        <button type="submit" class="btn btn-danger">
-            Confirm
-        </button>
-    </div>
-</form>
+@await Component.InvokeAsync("DeleteConfirmation", new
+{
+    formId = "deleteProductForm",
+    actionName = "Delete",
+    controllerName = "ProductSetup",
+    hiddenInputName = "productId",
+    hiddenInputValue = Model.ProductId,
+    message = "You want to delete this product",
+    itemName = Model.ProductName
+})

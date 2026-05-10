@@ -15,22 +15,15 @@
         <input type="hidden" id="tempErrorMessage" value="@TempData["Error"]" />
 
         <div class="row mb-2 mx-0 align-items-center">
-            <div class="col-sm-6 px-0">
+            <div class="col-sm-12 px-0">
                 <h3 class="mb-0">Product Setup Configuration</h3>
-            </div>
-
-            <div class="col-sm-6 text-right px-0">
-                <button type="button"
-                        class="btn btn-primary btn-sm"
-                        id="btnAddSetupConfiguration">
-                    <i class="fas fa-plus mr-1"></i> Add
-                </button>
             </div>
         </div>
 
         <div class="card mb-2 border-left border-right border-bottom shadow-none rounded-0">
             <div class="card-body p-2">
-                <div class="row align-items-end">
+                <div class="row align-items-center">
+
                     <div class="col-md-4">
                         <label class="font-weight-bold mb-1">Product</label>
 
@@ -57,6 +50,15 @@
                             }
                         </select>
                     </div>
+
+                    <div class="col-md-8 text-right pt-3">
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                id="btnAddSetupConfiguration">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -127,10 +129,10 @@
                     });
             });
 
-            $(document).off("click", ".btn-edit-setup");
-            $(document).on("click", ".btn-edit-setup", function () {
-                var productId = $(this).attr("data-product-id");
-                var rootIndex = $(this).attr("data-root-index");
+            $(document).off("click", ".btnEditSetupConfiguration");
+            $(document).on("click", ".btnEditSetupConfiguration", function () {
+                var productId = $(this).data("product-id");
+                var rootIndex = $(this).data("root-index");
 
                 $.get("/ProductSetupConfiguration/Add",
                     {
@@ -151,8 +153,39 @@
                 );
 
                 $("#setupTableContainer").load(
-                    "/ProductSetupConfiguration/ShowTable?productId=" + productId
+                    "/ProductSetupConfiguration/ShowTable?productId=" + productId,
+                    function () {
+                        initializeSetupDataTable();
+                    }
                 );
+            }
+
+            function initializeSetupDataTable() {
+                if ($("#setupDynamicTable").length === 0) {
+                    return;
+                }
+
+                if ($.fn.DataTable.isDataTable("#setupDynamicTable")) {
+                    $("#setupDynamicTable").DataTable().destroy();
+                }
+
+                var table = $("#setupDynamicTable").DataTable({
+                    paging: true,
+                    searching: true,
+                    ordering: true,
+                    info: true,
+                    lengthChange: true,
+                    pageLength: 10,
+                    autoWidth: false,
+                    columnDefs: [
+                        { orderable: false, targets: 3 }
+                    ],
+                    dom: "lrtip"
+                });
+
+                $("#customSearch").off("keyup").on("keyup", function () {
+                    table.search(this.value).draw();
+                });
             }
 
             function showToastMessage(type, message) {

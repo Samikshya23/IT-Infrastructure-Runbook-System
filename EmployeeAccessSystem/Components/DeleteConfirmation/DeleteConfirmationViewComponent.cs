@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeAccessSystem.Components.DeleteConfirmation
 {
     public class DeleteConfirmationViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke(
+        public Task<IViewComponentResult> InvokeAsync(
             string formId,
             string actionName,
             string controllerName,
@@ -21,7 +22,10 @@ namespace EmployeeAccessSystem.Components.DeleteConfirmation
             ViewBag.Message = message;
             ViewBag.ItemName = itemName;
 
-            return View();
+            IViewComponentResult result =
+                View("~/Components/DeleteConfirmation/Default.cshtml");
+
+            return Task.FromResult(result);
         }
     }
 }

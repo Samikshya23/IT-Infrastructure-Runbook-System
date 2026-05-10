@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<EmployeeAccessSystem.Models.ProductSetup>
+
 @{
     ViewData["Title"] = "Product Setup";
     int sn = 1;
@@ -11,10 +12,11 @@
             <div class="col-sm-6 px-0">
                 <h3 class="mb-0">Product Setup</h3>
             </div>
+
             <div class="col-sm-6 text-right px-0">
                 <a asp-action="Create"
                    asp-controller="ProductSetup"
-                   class="btn btn-primary rounded-pill open-modal-btn"
+                   class="btn btn-primary btn-sm open-modal-btn"
                    data-title="Add Product Setup">
                     <i class="fas fa-plus mr-1"></i> Add
                 </a>
@@ -55,6 +57,7 @@
 
                                     <td class="align-middle">
                                         @item.ProductName
+
                                         @if (!item.IsActive)
                                         {
                                             <span class="text-muted ml-2">(Inactive)</span>
@@ -75,7 +78,7 @@
                                            asp-controller="ProductSetup"
                                            asp-route-id="@item.ProductId"
                                            class="btn btn-xs btn-outline-danger open-modal-btn ml-1"
-                                           data-title="Delete Product Setup"
+                                           data-title=""
                                            title="Delete">
                                             <i class="fas fa-trash-alt"></i>
                                         </a>
@@ -98,6 +101,7 @@
         <div class="modal-content rounded-0">
             <div class="modal-header">
                 <h5 class="modal-title" id="mainActionModalTitle">Product Setup</h5>
+
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -126,6 +130,7 @@
                         <span>&times;</span>
                     </button>
                 </div>
+
                 <div class="toast-body">
                     @TempData["Success"]
                 </div>
@@ -142,6 +147,7 @@
                         <span>&times;</span>
                     </button>
                 </div>
+
                 <div class="toast-body">
                     @TempData["Error"]
                 </div>
@@ -150,6 +156,7 @@
 
     </div>
 }
+
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -171,19 +178,28 @@
             $('#customSearch').on('keyup', function () {
                 table.search(this.value).draw();
             });
+
             $(document).on('click', '.open-modal-btn', function (e) {
                 e.preventDefault();
 
                 var url = $(this).attr('href');
-                var title = $(this).data('title') || 'Product Setup';
+                var title = $(this).data('title');
 
-                $('#mainActionModalTitle').text(title);
+                if (title) {
+                    $('#mainActionModal .modal-header').show();
+                    $('#mainActionModalTitle').text(title);
+                }
+                else {
+                    $('#mainActionModal .modal-header').hide();
+                }
+
                 $('#mainActionModalBody').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>');
 
                 $('#mainActionModalBody').load(url, function () {
                     $('#mainActionModal').modal('show');
                 });
             });
+
             $(document).on('submit', '#createProductForm, #editProductForm, #deleteProductForm', function (e) {
                 e.preventDefault();
 
@@ -199,19 +215,24 @@
 
                         if (typeof response === 'string' && response.indexOf('success|') === 0) {
                             var successMessage = response.substring(8);
+
                             $('#mainActionModal').modal('hide');
+
                             window.location.href = '@Url.Action("Index", "ProductSetup")?successMessage=' + encodeURIComponent(successMessage);
                             return;
                         }
 
                         if (typeof response === 'string' && response.indexOf('error|') === 0) {
                             var errorMessage = response.substring(6);
+
                             $('#mainActionModal').modal('hide');
+
                             window.location.href = '@Url.Action("Index", "ProductSetup")?errorMessage=' + encodeURIComponent(errorMessage);
                             return;
                         }
 
                         var html = $('<div>').html(response);
+
                         var hasForm =
                             html.find('#createProductForm').length > 0 ||
                             html.find('#editProductForm').length > 0 ||
@@ -219,7 +240,8 @@
 
                         if (hasForm) {
                             $('#mainActionModalBody').html(response);
-                        } else {
+                        }
+                        else {
                             $('#mainActionModal').modal('hide');
                             window.location.href = '@Url.Action("Index", "ProductSetup")';
                         }
@@ -232,6 +254,8 @@
 
             $('#mainActionModal').on('hidden.bs.modal', function () {
                 $('#mainActionModalBody').html('');
+                $('#mainActionModal .modal-header').show();
+                $('#mainActionModalTitle').text('Product Setup');
             });
 
             if ($('#successToast').length) {

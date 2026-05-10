@@ -61,7 +61,7 @@ namespace EmployeeAccessSystem.Services
                     existing.NodeValue = root.NodeValue;
                     existing.FieldType = root.FieldType;
                     existing.IsActive = root.IsActive;
-                    existing.Children = new List<ProductSetupConfiguration>()
+                    existing.Children = new List<ProductSetupConfiguration>();
                     grouped.Add(existing);
                 }
 

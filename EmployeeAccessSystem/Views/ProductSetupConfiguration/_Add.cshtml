@@ -76,23 +76,32 @@
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
 
-            <div class="modal-header bg-white border-bottom">
+          @*   <div class="modal-header border-bottom bg-white">
                 <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
-            </div>
+            </div> *@
 
             <div class="modal-body text-center py-4">
-                <div class="font-weight-bold">
-                    Do you want to close this form?
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-circle text-warning"
+                       style="font-size:50px;"></i>
                 </div>
+
+                <h4 class="font-weight-bold mb-3">
+                    Are you sure?
+                </h4>
+
+                <p class="mb-0">
+                    Do you want to close this form?
+                </p>
             </div>
 
-            <div class="modal-footer justify-content-center bg-light">
-                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-3">
-                    Continue Editing
+            <div class="modal-footer justify-content-center bg-light border-top-0">
+                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-4">
+                    No
                 </button>
 
-                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-3">
-                    Yes, Close
+                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-4">
+                    Yes
                 </button>
             </div>
 
