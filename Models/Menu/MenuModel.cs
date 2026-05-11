@@ -1,4 +1,6 @@
-﻿namespace EmployeeAccessSystem.Models
+﻿using System.Collections.Generic;
+
+namespace EmployeeAccessSystem.Models
 {
     public class MenuModel
     {
@@ -18,6 +20,11 @@
 
         public int SortBy { get; set; }
 
-        public List<MenuModel> Children { get; set; } = new List<MenuModel>();
+        public List<MenuModel> Children { get; set; }
+
+        public MenuModel()
+        {
+            Children = new List<MenuModel>();
+        }
     }
 }

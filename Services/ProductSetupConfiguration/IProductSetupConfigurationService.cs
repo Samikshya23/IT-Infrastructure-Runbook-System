@@ -6,6 +6,9 @@ namespace EmployeeAccessSystem.Services
 {
     public interface IProductSetupConfigurationService
     {
+
+
+        Task<IEnumerable<ProductSetupConfiguration>> GetConfiguredProductsAsync();
         Task<List<ProductSetupConfiguration>> GetTreeByProductIdAsync(int productId);
 
         Task<List<ProductSetupConfiguration>> GetGroupedTreeByProductIdAsync(int productId);

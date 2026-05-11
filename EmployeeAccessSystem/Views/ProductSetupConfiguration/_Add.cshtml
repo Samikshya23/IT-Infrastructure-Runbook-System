@@ -2,7 +2,7 @@
     Layout = null;
     int selectedProductId = ViewBag.SelectedProductId;
     int rootIndex = ViewBag.RootIndex;
-    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
+    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetupConfiguration>;
 }
 
 <div class="modal-header bg-white border-bottom">
@@ -10,11 +10,8 @@
         @(rootIndex >= 0 ? "Edit Product Setup Configuration" : "Product Setup Configuration")
     </h5>
 </div>
-
 <div class="modal-body">
-
     <input type="hidden" id="RootIndex" value="@rootIndex" />
-
     <div class="card mb-2 shadow-none">
         <div class="card-body p-2">
             <div class="form-group mb-0">
@@ -45,7 +42,6 @@
             </div>
         </div>
     </div>
-
     <div id="generatedSetupArea" style="display:none;">
         <div class="card shadow-none">
             <div class="card-body p-2">
@@ -72,39 +68,62 @@
      role="dialog"
      data-backdrop="static"
      data-keyboard="false">
-
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-
-          @*   <div class="modal-header border-bottom bg-white">
-                <h5 class="modal-title font-weight-bold">Unsaved Changes</h5>
-            </div> *@
-
             <div class="modal-body text-center py-4">
                 <div class="mb-3">
                     <i class="fas fa-exclamation-circle text-warning"
                        style="font-size:50px;"></i>
                 </div>
 
-                <h4 class="font-weight-bold mb-3">
-                    Are you sure?
-                </h4>
+                <h4 class="font-weight-bold mb-3">Are you sure?</h4>
 
                 <p class="mb-0">
                     Do you want to close this form?
                 </p>
             </div>
-
             <div class="modal-footer justify-content-center bg-light border-top-0">
                 <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-4">
                     No
                 </button>
-
                 <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-4">
                     Yes
                 </button>
             </div>
+        </div>
+    </div>
+</div>
 
+<div class="modal fade"
+     id="confirmProductChangeModal"
+     tabindex="-1"
+     role="dialog"
+     data-backdrop="static"
+     data-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-circle text-warning"
+                       style="font-size:50px;"></i>
+                </div>
+
+                <h4 class="font-weight-bold mb-3">Are you sure?</h4>
+
+                <p class="mb-0">
+                    Changing product will remove entered setup data.
+                </p>
+            </div>
+
+            <div class="modal-footer justify-content-center bg-light border-top-0">
+                <button type="button" id="btnCancelProductChange" class="btn btn-secondary btn-sm px-4">
+                    No
+                </button>
+
+                <button type="button" id="btnConfirmProductChange" class="btn btn-danger btn-sm px-4">
+                    Yes
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -113,6 +132,9 @@
     $(document).ready(function () {
         var selectedProductId = @selectedProductId;
         var editRootIndex = @rootIndex;
+        var isFormChanged = false;
+        var previousProductId = selectedProductId > 0 ? selectedProductId.toString() : "";
+        var pendingProductId = "";
 
         if (selectedProductId > 0) {
             $("#ProductId").val(selectedProductId);
@@ -125,8 +147,28 @@
             }
         }
 
+        $(document).off("input change", ".node-value, .field-type");
+        $(document).on("input change", ".node-value, .field-type", function () {
+            isFormChanged = true;
+        });
+
         $("#ProductId").off("change").on("change", function () {
             var productId = $(this).val();
+
+            if (isFormChanged === true) {
+                pendingProductId = productId;
+                $("#ProductId").val(previousProductId);
+                $("#confirmProductChangeModal").modal("show");
+                return;
+            }
+
+            changeProduct(productId);
+        });
+
+        function changeProduct(productId) {
+            previousProductId = productId;
+            isFormChanged = false;
+            editRootIndex = -1;
 
             $("#nodeContainer").html("");
             $("#generatedSetupArea").hide();
@@ -136,7 +178,7 @@
             }
 
             loadGeneratedForm(productId);
-        });
+        }
 
         function loadGeneratedForm(productId) {
             $("#generatedSetupArea").show();
@@ -166,6 +208,7 @@
                     }
 
                     refreshActionButtons();
+                    isFormChanged = false;
                 }
             );
         }
@@ -191,6 +234,7 @@
                     $("#nodeContainer").html("");
                     addSavedRow($("#nodeContainer"), 0, response.data, true);
                     refreshActionButtons();
+                    isFormChanged = false;
                 }
             );
         }
@@ -403,6 +447,8 @@
             var isRootLevel = currentRow.attr("data-root") === "true";
 
             addConfiguredRow(parentContainer, level, configNode, isRootLevel);
+
+            isFormChanged = true;
             refreshActionButtons();
         });
 
@@ -411,6 +457,7 @@
             var currentRow = $(this).closest(".node-row");
 
             currentRow.remove();
+            isFormChanged = true;
 
             if ($("#nodeContainer").children(".node-row").length === 0) {
                 $("#generatedSetupArea").hide();
@@ -449,7 +496,13 @@
                 row.find("> .row .btn-remove-row").hide();
 
                 if (isRootLevel === true) {
-                    row.find("> .row .btn-add-same").show();
+                    var rootRows = row.parent().children(".node-row");
+                    var isLastRoot = row.is(rootRows.last());
+
+                    if (isLastRoot) {
+                        row.find("> .row .btn-add-same").show();
+                    }
+
                     row.find("> .row .btn-remove-row").show();
                     return;
                 }
@@ -484,6 +537,12 @@
             }
 
             if ($("#nodeContainer").children(".node-row").length === 0) {
+
+                if (editRootIndex >= 0) {
+                    deleteEditedRoot(productId, editRootIndex);
+                    return;
+                }
+
                 showToastMessage("error", "Please add setup data.");
                 return;
             }
@@ -517,6 +576,26 @@
                 },
                 error: function () {
                     showToastMessage("error", "Error while saving setup configuration.");
+                }
+            });
+        }
+        function deleteEditedRoot(productId, rootIndex) {
+            $.ajax({
+                url: "/ProductSetupConfiguration/Delete",
+                type: "POST",
+                data: {
+                    productId: productId,
+                    rootIndex: rootIndex
+                },
+                success: function () {
+                    window.location.href =
+                        "/ProductSetupConfiguration?selectedProductId=" +
+                        productId +
+                        "&successMessage=" +
+                        encodeURIComponent("Setup configuration removed successfully.");
+                },
+                error: function () {
+                    showToastMessage("error", "Error while removing setup configuration.");
                 }
             });
         }
@@ -576,6 +655,11 @@
         }
 
         $("#btnFooterClose").off("click").on("click", function () {
+            if (isFormChanged === false) {
+                $("#setupConfigurationModal").modal("hide");
+                return;
+            }
+
             $("#confirmCloseModal").modal("show");
         });
 
@@ -586,6 +670,21 @@
         $("#btnConfirmClose").off("click").on("click", function () {
             $("#confirmCloseModal").modal("hide");
             $("#setupConfigurationModal").modal("hide");
+        });
+
+        $("#btnCancelProductChange").off("click").on("click", function () {
+            pendingProductId = "";
+            $("#confirmProductChangeModal").modal("hide");
+        });
+
+        $("#btnConfirmProductChange").off("click").on("click", function () {
+            $("#confirmProductChangeModal").modal("hide");
+
+            $("#ProductId").val(pendingProductId);
+
+            changeProduct(pendingProductId);
+
+            pendingProductId = "";
         });
 
         function encodeHtml(value) {

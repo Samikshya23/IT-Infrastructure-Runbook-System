@@ -19,12 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Menu\MenuRepository.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Menu\MenuRepository.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
 </Project>

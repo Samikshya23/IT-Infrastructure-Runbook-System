@@ -1,0 +1,597 @@
+﻿<div class="modal fade" id="productEntryModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content rounded-0">
+
+            <form asp-action="Save"
+                  asp-controller="ProductEntry"
+                  method="post"
+                  id="productEntryForm">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="EntryGroupId" id="EntryGroupId" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title font-weight-bold">Product Entry</h5>
+
+                    <button type="button"
+                            class="close"
+                            onclick="confirmCloseProductEntry()">
+                        <span>&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold">Product</label>
+                        <select name="ProductId"
+                                id="ProductId"
+                                class="form-control form-control-sm"
+                                asp-items="ViewBag.Products"
+                                onchange="loadProductEntryForm(null)">
+                        </select>
+                    </div>
+
+                    <div id="dynamicEntryArea">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            onclick="confirmCloseProductEntry()">
+                        Close
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Save
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="closeConfirmModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content rounded-0">
+
+            <div class="modal-body text-center">
+
+                <div class="mb-3">
+                    <span class="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center"
+                          style="width:60px;height:60px;">
+                        <i class="fas fa-exclamation text-white fa-2x"></i>
+                    </span>
+                </div>
+
+                <h5 class="font-weight-bold">Are you sure?</h5>
+
+                <p class="text-muted mb-3">
+                    Do you want to close this form?
+                </p>
+
+                <button type="button"
+                        class="btn btn-secondary btn-sm"
+                        data-dismiss="modal">
+                    No
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger btn-sm"
+                        onclick="closeProductEntryModalNow()">
+                    Yes
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    var currentSetupItems = [];
+
+    function openAddEntryModal() {
+        $('#EntryGroupId').val('');
+
+        var selectedProductId = '@ViewBag.SelectedProductId';
+
+        if (selectedProductId !== '') {
+            $('#ProductId').val(selectedProductId);
+        }
+
+        $('#dynamicEntryArea').html('');
+
+        $('#productEntryModal').modal('show');
+
+        loadProductEntryForm(null);
+    }
+
+    function openEditEntryModal(entryGroupId) {
+        $('#EntryGroupId').val(entryGroupId);
+
+        $.ajax({
+            url: '/ProductEntry/GetByGroup',
+            type: 'GET',
+            data: {
+                entryGroupId: entryGroupId
+            },
+            success: function (entries) {
+                if (entries == null || entries.length === 0) {
+                    alert('Entry not found.');
+                    return;
+                }
+
+                var firstEntry = entries[0];
+
+                var productId = firstEntry.productId;
+
+                if (productId == null) {
+                    productId = firstEntry.ProductId;
+                }
+
+                $('#ProductId').val(productId);
+
+                $('#productEntryModal').modal('show');
+
+                loadProductEntryForm(entries);
+            },
+            error: function () {
+                alert('Failed to load entry.');
+            }
+        });
+    }
+
+    function loadProductEntryForm(existingEntries) {
+        var productId = $('#ProductId').val();
+
+        if (productId === '' || productId == null) {
+            $('#dynamicEntryArea').html('');
+            return;
+        }
+
+        $.ajax({
+            url: '/ProductEntry/GetSetupJson',
+            type: 'GET',
+            data: {
+                productId: productId
+            },
+            success: function (setupJson) {
+                if (setupJson == null || setupJson === '') {
+                    $('#dynamicEntryArea').html(
+                        '<div class="alert alert-warning mb-0">No setup configuration found for this product.</div>'
+                    );
+                    return;
+                }
+
+                var setupObject = null;
+
+                try {
+                    setupObject = JSON.parse(setupJson);
+                }
+                catch (e) {
+                    $('#dynamicEntryArea').html(
+                        '<div class="alert alert-danger mb-0">Invalid setup configuration JSON.</div>'
+                    );
+                    return;
+                }
+
+                currentSetupItems = [];
+
+                if (Array.isArray(setupObject)) {
+                    collectSetupItems(setupObject);
+                }
+                else if (setupObject.structure != null) {
+                    collectSetupItems(setupObject.structure);
+                }
+                else if (setupObject.Structure != null) {
+                    collectSetupItems(setupObject.Structure);
+                }
+
+                renderEntryForm(existingEntries);
+            }
+        });
+    }
+
+    function collectSetupItems(nodes) {
+        if (nodes == null) {
+            return;
+        }
+
+        for (var i = 0; i < nodes.length; i++) {
+            var parent = nodes[i];
+
+            var parentName = getNodeValue(parent);
+            var parentFieldType = getNodeFieldType(parent);
+            var children = getNodeChildren(parent);
+
+            if (children == null || children.length === 0) {
+                currentSetupItems.push({
+                    setupNodeId: parentName,
+                    parentPath: parentName,
+                    displayName: parentName,
+                    valueType: parentFieldType
+                });
+            }
+            else {
+                collectChildItems(children, parentName, parentName, parentFieldType);
+            }
+        }
+    }
+
+    function collectChildItems(children, rootName, parentPath, parentFieldType) {
+        if (children == null) {
+            return;
+        }
+
+        for (var j = 0; j < children.length; j++) {
+            var child = children[j];
+
+            var childName = getNodeValue(child);
+            var childFieldType = getNodeFieldType(child);
+
+            if (childFieldType === '') {
+                childFieldType = parentFieldType;
+            }
+
+            var grandChildren = getNodeChildren(child);
+            var currentPath = parentPath + '/' + childName;
+
+            if (grandChildren == null || grandChildren.length === 0) {
+                currentSetupItems.push({
+                    setupNodeId: currentPath,
+                    parentPath: rootName,
+                    displayName: childName,
+                    valueType: childFieldType
+                });
+            }
+            else {
+                collectChildItems(grandChildren, rootName, currentPath, childFieldType);
+            }
+        }
+    }
+
+    function renderEntryForm(existingEntries) {
+        if (currentSetupItems.length === 0) {
+            $('#dynamicEntryArea').html('');
+            return;
+        }
+
+        var html = '';
+
+        html += '<div class="table-responsive mt-3">';
+        html += '<table class="table table-bordered table-sm mb-0" style="table-layout:fixed; width:100%;">';
+        html += '<tbody>';
+
+        var groupedItems = groupSetupItemsByParent();
+
+        var itemIndex = 0;
+
+        for (var groupName in groupedItems) {
+            if (groupedItems.hasOwnProperty(groupName)) {
+                var items = groupedItems[groupName];
+
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i];
+
+                    var oldValue = getExistingValue(existingEntries, item.displayName, item.parentPath);
+
+                    html += '<tr>';
+
+                    if (i === 0) {
+                        html += '<td class="align-middle font-weight-bold bg-light" rowspan="' + items.length + '" style="width:28%;">';
+                        html += '<div class="px-2">';
+                        html += escapeHtml(groupName);
+                        html += '</div>';
+                        html += '</td>';
+                    }
+
+                    html += '<td class="align-middle" style="width:36%;">';
+                    html += '<div class="px-2">';
+                    html += escapeHtml(item.displayName);
+                    html += '</div>';
+
+                    html += '<input type="hidden" name="Items[' + itemIndex + '].SetupNodeId" value="' + escapeAttribute(item.setupNodeId) + '" />';
+                    html += '<input type="hidden" name="Items[' + itemIndex + '].ParentPath" value="' + escapeAttribute(item.parentPath) + '" />';
+                    html += '<input type="hidden" name="Items[' + itemIndex + '].DisplayName" value="' + escapeAttribute(item.displayName) + '" />';
+                    html += '<input type="hidden" name="Items[' + itemIndex + '].ValueType" value="' + escapeAttribute(item.valueType) + '" />';
+
+                    html += '</td>';
+
+                    html += '<td class="align-middle" style="width:36%;">';
+                    html += createValueInput(itemIndex, item.valueType, oldValue);
+                    html += '</td>';
+
+                    html += '</tr>';
+
+                    itemIndex++;
+                }
+            }
+        }
+
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+
+        $('#dynamicEntryArea').html(html);
+    }
+
+    function groupSetupItemsByParent() {
+        var groupedItems = {};
+
+        for (var i = 0; i < currentSetupItems.length; i++) {
+            var item = currentSetupItems[i];
+
+            if (!groupedItems[item.parentPath]) {
+                groupedItems[item.parentPath] = [];
+            }
+
+            groupedItems[item.parentPath].push(item);
+        }
+
+        return groupedItems;
+    }
+
+    function createValueInput(index, valueType, oldValue) {
+        if (oldValue == null) {
+            oldValue = '';
+        }
+
+        if (valueType == null) {
+            valueType = '';
+        }
+
+        var normalizedType = valueType.toLowerCase();
+
+        if (normalizedType === 'percentage') {
+            return '<div class="input-group input-group-sm" style="max-width:150px;">' +
+                '<input type="number" min="0" max="100" step="0.01" class="form-control percentage-input" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" />' +
+                '<div class="input-group-append"><span class="input-group-text">%</span></div>' +
+                '</div>';
+        }
+
+        if (normalizedType === 'tick/untick') {
+            var tickChecked = '';
+            var crossChecked = '';
+
+            if (oldValue === 'Tick' || oldValue === 'Checked' || oldValue === 'true' || oldValue === 'True') {
+                tickChecked = 'checked';
+            }
+
+            if (oldValue === 'Cross' || oldValue === 'Unchecked' || oldValue === 'false' || oldValue === 'False') {
+                crossChecked = 'checked';
+            }
+
+            return '<div class="d-flex align-items-center">' +
+                '<div class="custom-control custom-radio mr-3">' +
+                '<input type="radio" id="tick_' + index + '" name="Items[' + index + '].ResultValue" value="Tick" class="custom-control-input" ' + tickChecked + ' />' +
+                '<label class="custom-control-label" for="tick_' + index + '"><i class="fas fa-check text-success mr-1"></i>Tick</label>' +
+                '</div>' +
+                '<div class="custom-control custom-radio">' +
+                '<input type="radio" id="cross_' + index + '" name="Items[' + index + '].ResultValue" value="Cross" class="custom-control-input" ' + crossChecked + ' />' +
+                '<label class="custom-control-label" for="cross_' + index + '"><i class="fas fa-times text-danger mr-1"></i>Cross</label>' +
+                '</div>' +
+                '</div>';
+        }
+
+        if (normalizedType === 'check/unchecked' ||
+            normalizedType === 'checked/unchecked') {
+
+            var checkedText = '';
+
+            if (oldValue === 'Checked' ||
+                oldValue === 'Tick' ||
+                oldValue === 'true' ||
+                oldValue === 'True') {
+                checkedText = 'checked';
+            }
+
+            return '<div class="custom-control custom-checkbox">' +
+                '<input type="hidden" class="check-hidden" name="Items[' + index + '].ResultValue" value="Unchecked" />' +
+                '<input type="checkbox" class="custom-control-input check-input" id="check_' + index + '" data-index="' + index + '" ' + checkedText + ' />' +
+                '<label class="custom-control-label" for="check_' + index + '">Check</label>' +
+                '</div>';
+        }
+
+        if (normalizedType === 'up/down') {
+            var upSelected = '';
+            var downSelected = '';
+
+            if (oldValue === 'Up') {
+                upSelected = 'selected';
+            }
+
+            if (oldValue === 'Down') {
+                downSelected = 'selected';
+            }
+
+            return '<select class="form-control form-control-sm" name="Items[' + index + '].ResultValue" style="max-width:150px;">' +
+                '<option value="">Select</option>' +
+                '<option value="Up" ' + upSelected + '>Up</option>' +
+                '<option value="Down" ' + downSelected + '>Down</option>' +
+                '</select>';
+        }
+
+        if (normalizedType === 'date') {
+            return '<input type="date" class="form-control form-control-sm" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" style="max-width:170px;" />';
+        }
+
+        return '<input type="text" class="form-control form-control-sm" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" style="max-width:180px;" />';
+    }
+
+    $(document).on('change', '.check-input', function () {
+        var index = $(this).data('index');
+
+        if ($(this).is(':checked')) {
+            $('input[name="Items[' + index + '].ResultValue"]').val('Checked');
+        }
+        else {
+            $('input[name="Items[' + index + '].ResultValue"]').val('Unchecked');
+        }
+    });
+
+    $(document).on('input', '.percentage-input', function () {
+        var value = parseFloat($(this).val());
+
+        if (value > 100) {
+            $(this).val(100);
+        }
+
+        if (value < 0) {
+            $(this).val(0);
+        }
+    });
+
+    $('#productEntryForm').on('submit', function () {
+        var isValid = true;
+
+        $('.percentage-input').each(function () {
+            var value = parseFloat($(this).val());
+
+            if (!isNaN(value) && value > 100) {
+                isValid = false;
+            }
+        });
+
+        if (!isValid) {
+            alert('Percentage value cannot be greater than 100.');
+            return false;
+        }
+
+        return true;
+    });
+
+    function getExistingValue(existingEntries, displayName, parentPath) {
+        if (existingEntries == null) {
+            return '';
+        }
+
+        for (var i = 0; i < existingEntries.length; i++) {
+            var itemDisplayName = existingEntries[i].displayName;
+
+            if (itemDisplayName == null) {
+                itemDisplayName = existingEntries[i].DisplayName;
+            }
+
+            var itemParentPath = existingEntries[i].parentPath;
+
+            if (itemParentPath == null) {
+                itemParentPath = existingEntries[i].ParentPath;
+            }
+
+            var itemResultValue = existingEntries[i].resultValue;
+
+            if (itemResultValue == null) {
+                itemResultValue = existingEntries[i].ResultValue;
+            }
+
+            if (itemDisplayName === displayName &&
+                itemParentPath === parentPath) {
+                return itemResultValue;
+            }
+        }
+
+        return '';
+    }
+
+    function confirmCloseProductEntry() {
+        $('#closeConfirmModal').modal('show');
+    }
+
+    function closeProductEntryModalNow() {
+        $('#closeConfirmModal').modal('hide');
+        $('#productEntryModal').modal('hide');
+    }
+
+    function getNodeValue(node) {
+        var value = node.value;
+
+        if (value == null) {
+            value = node.Value;
+        }
+
+        if (value == null) {
+            value = node.label;
+        }
+
+        if (value == null) {
+            value = node.Label;
+        }
+
+        if (value == null) {
+            value = node.name;
+        }
+
+        if (value == null) {
+            value = node.Name;
+        }
+
+        if (value == null) {
+            value = '';
+        }
+
+        return value;
+    }
+
+    function getNodeFieldType(node) {
+        var fieldType = node.fieldType;
+
+        if (fieldType == null) {
+            fieldType = node.FieldType;
+        }
+
+        if (fieldType == null) {
+            fieldType = node.valueType;
+        }
+
+        if (fieldType == null) {
+            fieldType = node.ValueType;
+        }
+
+        if (fieldType == null) {
+            fieldType = node.type;
+        }
+
+        if (fieldType == null) {
+            fieldType = node.Type;
+        }
+
+        if (fieldType == null) {
+            fieldType = '';
+        }
+
+        return fieldType;
+    }
+
+    function getNodeChildren(node) {
+        var children = node.children;
+
+        if (children == null) {
+            children = node.Children;
+        }
+
+        return children;
+    }
+
+    function escapeHtml(value) {
+        if (value == null) {
+            return '';
+        }
+
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+        return escapeHtml(value);
+    }
+</script>

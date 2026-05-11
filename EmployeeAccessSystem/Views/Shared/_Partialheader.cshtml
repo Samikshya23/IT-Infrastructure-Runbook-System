@@ -1,4 +1,4 @@
-﻿@{
+﻿@* @{
     var isLoggedIn = User.Identity != null && User.Identity.IsAuthenticated;
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
 }
@@ -124,14 +124,7 @@
                                 </a>
                             </li>
 
-                            @* <li class="nav-item">
-                                <a asp-controller="ProductStructure"
-                                   asp-action="Index"
-                                   class="nav-link @(currentController == "ProductStructure" ? "active" : "")">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Product Structure</p>
-                                </a>
-                            </li> *@
+                        
 
                             <li class="nav-item has-treeview @(
                                 currentController == "SMCProduct" ||
@@ -288,4 +281,59 @@
             </ul>
         </nav>
     </div>
+</aside> *@
+
+
+
+
+
+
+@{
+    var isLoggedIn = User.Identity != null && User.Identity.IsAuthenticated;
+
+    var currentController =
+        ViewContext.RouteData.Values["controller"]?.ToString();
+}
+
+<aside class="main-sidebar sidebar-dark-primary elevation-4 sidebar-no-expand">
+
+    <a asp-controller="Home"
+       asp-action="Index"
+       class="brand-link text-center">
+
+        <img src="~/images/swiftlogo.svg"
+             alt="Logo"
+             style="height:70px;
+                    width:150px;
+                    object-fit:contain;" />
+
+    </a>
+
+    <div class="sidebar">
+
+        <nav class="mt-2">
+
+            <ul class="nav nav-pills nav-sidebar flex-column"
+                data-widget="treeview"
+                role="menu"
+                data-accordion="false">
+                <li class="nav-item">
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       class="nav-link @(currentController == "Home" ? "active" : "")">
+                        <p class="mb-0">Home</p>
+                    </a>
+                </li>
+
+                @if (isLoggedIn)
+                {
+                    @await Component.InvokeAsync("Menu")
+                }
+
+            </ul>
+
+        </nav>
+
+    </div>
+
 </aside>

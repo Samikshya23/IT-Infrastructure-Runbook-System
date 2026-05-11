@@ -6,6 +6,8 @@ namespace EmployeeAccessSystem.Repositories
 {
     public interface IProductSetupConfigurationRepository
     {
+        Task<IEnumerable<ProductSetupConfiguration>> GetConfiguredProductsAsync();
+
         Task<IEnumerable<ProductSetupConfiguration>> GetByProductIdAsync(int productId);
 
         Task<ProductSetupConfiguration> GetJsonByProductIdAsync(int productId);

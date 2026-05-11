@@ -11,32 +11,53 @@ namespace EmployeeAccessSystem.Services
         private readonly IProductSetupConfigurationRepository _setupRepository;
         private readonly IProductConfigurationRepository _configurationRepository;
 
-        public ProductSetupConfigurationService(IProductSetupConfigurationRepository setupRepository,IProductConfigurationRepository configurationRepository)
+        public ProductSetupConfigurationService(
+            IProductSetupConfigurationRepository setupRepository,
+            IProductConfigurationRepository configurationRepository)
         {
             _setupRepository = setupRepository;
             _configurationRepository = configurationRepository;
         }
-        public async Task<List<ProductSetupConfiguration>> GetTreeByProductIdAsync(int productId)
+
+        public async Task<IEnumerable<ProductSetupConfiguration>>
+            GetConfiguredProductsAsync()
         {
-            List<ProductSetupConfiguration> result = new List<ProductSetupConfiguration>();
+            return await _setupRepository.GetConfiguredProductsAsync();
+        }
+
+        public async Task<List<ProductSetupConfiguration>>
+            GetTreeByProductIdAsync(int productId)
+        {
+            List<ProductSetupConfiguration> result =
+                new List<ProductSetupConfiguration>();
 
             if (productId <= 0)
             {
                 return result;
             }
-            ProductSetupConfiguration savedData = await _setupRepository.GetJsonByProductIdAsync(productId);
 
-            if (savedData == null || string.IsNullOrWhiteSpace(savedData.SetupJson))
+            ProductSetupConfiguration savedData =
+                await _setupRepository.GetJsonByProductIdAsync(productId);
+
+            if (savedData == null ||
+                string.IsNullOrWhiteSpace(savedData.SetupJson))
             {
                 return result;
             }
-            return ConvertSetupJsonToTree(savedData.SetupJson, productId);
-        }
-        public async Task<List<ProductSetupConfiguration>> GetGroupedTreeByProductIdAsync(int productId)
-        {
-            List<ProductSetupConfiguration> tree = await GetTreeByProductIdAsync(productId);
 
-            List<ProductSetupConfiguration> grouped =new List<ProductSetupConfiguration>();
+            return ConvertSetupJsonToTree(
+                savedData.SetupJson,
+                productId);
+        }
+
+        public async Task<List<ProductSetupConfiguration>>
+            GetGroupedTreeByProductIdAsync(int productId)
+        {
+            List<ProductSetupConfiguration> tree =
+                await GetTreeByProductIdAsync(productId);
+
+            List<ProductSetupConfiguration> grouped =
+                new List<ProductSetupConfiguration>();
 
             foreach (ProductSetupConfiguration root in tree)
             {
@@ -54,6 +75,7 @@ namespace EmployeeAccessSystem.Services
                 if (existing == null)
                 {
                     existing = new ProductSetupConfiguration();
+
                     existing.NodeId = root.NodeId;
                     existing.ProductId = root.ProductId;
                     existing.ConfigurationNodeId = root.ConfigurationNodeId;
@@ -61,11 +83,15 @@ namespace EmployeeAccessSystem.Services
                     existing.NodeValue = root.NodeValue;
                     existing.FieldType = root.FieldType;
                     existing.IsActive = root.IsActive;
-                    existing.Children = new List<ProductSetupConfiguration>();
+                    existing.Children =
+                        new List<ProductSetupConfiguration>();
+
                     grouped.Add(existing);
                 }
 
-                AddLeafChildren(root, existing.Children);
+                AddLeafChildren(
+                    root,
+                    existing.Children);
             }
 
             return grouped;

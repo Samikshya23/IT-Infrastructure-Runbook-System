@@ -1,7 +1,9 @@
 ﻿using EmployeeAccessSystem.Repositories;
+
 using EmployeeAccessSystem.Services;
-using QuestPDF.Infrastructure;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
+using QuestPDF.Infrastructure;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +35,11 @@ builder.Services.AddScoped<IFortigateConfigRepositories, FortigateConfigReposito
 builder.Services.AddScoped<IProductConfigurationRepository, ProductConfigurationRepository>();
 builder.Services.AddScoped<IProductConfigurationService, ProductConfigurationService>();
 builder.Services.AddScoped<IProductSetupConfigurationRepository, ProductSetupConfigurationRepository>();
+builder.Services.AddScoped<IMenuRepository, MenuRepository>();
+builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<IProductEntryRepository, ProductEntryRepository>();
+builder.Services.AddScoped<IProductEntryService, ProductEntryService>();
+
 builder.Services.AddScoped<IProductSetupConfigurationService, ProductSetupConfigurationService>();
 builder.Services.AddScoped<IFortigateConfigService, FortigateConfigService>();
 builder.Services.AddScoped<IFortigateItemService, FortigateItemService>();

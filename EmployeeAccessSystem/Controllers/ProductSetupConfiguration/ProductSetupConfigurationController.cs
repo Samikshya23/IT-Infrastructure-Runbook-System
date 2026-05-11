@@ -24,13 +24,13 @@ namespace EmployeeAccessSystem.Controllers
         {
             ViewBag.SelectedProductId = selectedProductId ?? 0;
             ViewBag.SuccessMessage = successMessage;
-            ViewBag.Products = await _productSetupService.GetAllAsync();
+            ViewBag.Products =await _setupConfigurationService.GetConfiguredProductsAsync();
 
             return View(new List<ProductSetupConfiguration>());
         }
         public async Task<IActionResult> Add( int? productId, int? rootIndex)
         {
-            var products = await _productSetupService.GetAllAsync();
+            var products =await _setupConfigurationService.GetConfiguredProductsAsync();
             ViewBag.Products = products;
             ViewBag.SelectedProductId = productId ?? 0;
             ViewBag.RootIndex = rootIndex ?? -1;

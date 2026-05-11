@@ -21,7 +21,19 @@ namespace EmployeeAccessSystem.Repositories
         {
             return new SqlConnection(_connectionString);
         }
+        public async Task<IEnumerable<ProductSetupConfiguration>> GetConfiguredProductsAsync()
+        {
+            using var conn = GetConnection();
 
+            DynamicParameters parameters = new DynamicParameters();
+            parameters.Add("Flag", "GETCONFIGUREDPRODUCTS");
+
+            return await conn.QueryAsync<ProductSetupConfiguration>(
+                "dbo.sp_ProductSetupConfiguration_Manage",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
         public async Task<IEnumerable<ProductSetupConfiguration>> GetByProductIdAsync(int productId)
         {
             using var conn = GetConnection();

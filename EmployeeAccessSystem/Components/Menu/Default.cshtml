@@ -1,0 +1,93 @@
+﻿@using EmployeeAccessSystem.Models
+@model List<EmployeeAccessSystem.Models.MenuModel>
+
+@{
+    string currentController = "";
+
+    if (ViewContext.RouteData.Values["controller"] != null)
+    {
+        currentController =
+            ViewContext.RouteData.Values["controller"].ToString();
+    }
+}
+
+@foreach (MenuModel menu in Model)
+{
+    bool isParentActive = false;
+
+    if (menu.ControllerName == currentController)
+    {
+        isParentActive = true;
+    }
+    foreach (MenuModel child in menu.Children)
+    {
+        if (child.ControllerName == currentController)
+        {
+            isParentActive = true;
+        }
+    }
+    if (menu.Children.Count > 0)
+    {
+        <li class="nav-item has-treeview @(isParentActive ? "menu-open" : "")">
+
+            <a href="#"
+               class="nav-link @(isParentActive ? "active" : "")">
+
+                <p class="mb-0">
+                    @menu.MenuName
+                    <i class="right fas fa-angle-left"></i>
+                </p>
+
+            </a>
+            <ul class="nav nav-treeview">
+
+                @foreach (MenuModel child in menu.Children)
+                {
+                    bool isChildActive = false;
+
+                    if (child.ControllerName == currentController)
+                    {
+                        isChildActive = true;
+                    }
+
+                    <li class="nav-item">
+
+                        <a href="/@child.ControllerName/@child.ActionName"
+                           class="nav-link px-2 @(isChildActive ? "active" : "")">
+
+                            <p class="mb-0 text-nowrap">
+                                @child.MenuName
+                            </p>
+
+                        </a>
+
+                    </li>
+                }
+
+            </ul>
+
+        </li>
+    }
+    else
+    {
+        bool isMenuActive = false;
+
+        if (menu.ControllerName == currentController)
+        {
+            isMenuActive = true;
+        }
+
+        <li class="nav-item">
+
+            <a href="/@menu.ControllerName/@menu.ActionName"
+               class="nav-link @(isMenuActive ? "active" : "")">
+
+                <p class="mb-0">
+                    @menu.MenuName
+                </p>
+
+            </a>
+
+        </li>
+    }
+}

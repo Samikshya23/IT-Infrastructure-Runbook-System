@@ -1,0 +1,638 @@
+﻿@model IEnumerable<EmployeeAccessSystem.Models.ProductEntryModel>
+@using System
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Product Entry List";
+    int sn = 1;
+
+    string GetGroupName(EmployeeAccessSystem.Models.ProductEntryModel item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.ParentPath))
+        {
+            if (item.ParentPath.Contains("/"))
+            {
+                return item.ParentPath.Split('/')[0].Trim();
+            }
+
+            if (item.ParentPath.Contains(">"))
+            {
+                return item.ParentPath.Split('>')[0].Trim();
+            }
+
+            return item.ParentPath.Trim();
+        }
+
+        return "-";
+    }
+
+    string GetResultText(EmployeeAccessSystem.Models.ProductEntryModel item)
+    {
+        if (string.IsNullOrWhiteSpace(item.ResultValue))
+        {
+            return "-";
+        }
+
+        if (item.ValueType == "Percentage")
+        {
+            return item.ResultValue + "%";
+        }
+
+        return item.ResultValue;
+    }
+
+    var groupedData = new List<dynamic>();
+
+    if (Model != null)
+    {
+        foreach (var entryGroup in Model.GroupBy(x => x.EntryGroupId))
+        {
+            foreach (var group in entryGroup.GroupBy(x => GetGroupName(x)))
+            {
+                groupedData.Add(new
+                {
+                    EntryGroupId = entryGroup.Key,
+                    ProductId = group.First().ProductId,
+                    GroupName = group.Key,
+                    Items = group.ToList()
+                });
+            }
+        }
+    }
+}
+
+<section class="content pt-2 pb-0">
+    <div class="container-fluid px-0">
+
+        <div class="row mb-2 mx-0 align-items-center">
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Product Entry List</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0">
+                <button type="button"
+                        class="btn btn-primary rounded-pill"
+                        onclick="openAddEntryModal()">
+                    <i class="fas fa-plus mr-1"></i> Add
+                </button>
+            </div>
+        </div>
+
+        <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
+
+            <div class="card-header bg-white border-bottom-0 py-2 px-2 rounded-0">
+                <div class="row mx-0 align-items-center">
+
+                    <div class="col-md-4 px-0">
+                        <form asp-action="Index" method="get">
+                            <select name="productId"
+                                    class="form-control form-control-sm"
+                                    onchange="this.form.submit()">
+                                @foreach (var product in ViewBag.Products)
+                                {
+                                    <option value="@product.Value" selected="@product.Selected">
+                                        @product.Text
+                                    </option>
+                                }
+                            </select>
+                        </form>
+                    </div>
+
+                    <div class="col-md-4 px-0 mt-2 mt-md-0">
+                        <div class="d-flex align-items-center justify-content-md-center">
+                            <span class="mr-2">Show</span>
+                            <select id="entriesPerPage" class="custom-select custom-select-sm w-auto">
+                                <option value="10" selected>10</option>
+                                <option value="15">15</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span class="ml-2">entries</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 px-0 mt-2 mt-md-0">
+                        <div class="d-flex justify-content-md-end">
+                            <div style="width:220px;">
+                                <input type="text"
+                                       id="customSearch"
+                                       class="form-control form-control-sm"
+                                       placeholder="Search" />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <table id="productEntryTable"
+                       class="table table-bordered table-hover table-sm mb-0 rounded-0"
+                       style="border-color:#dee2e6; table-layout:fixed; width:100%;">
+
+                    <thead class="bg-light border-bottom">
+                        <tr>
+                            <th class="text-center align-middle sticky-top bg-light sort-header"
+                                data-sort="sn"
+                                style="width:60px; z-index:2; cursor:pointer;">
+                                SN
+                            </th>
+
+                            <th class="text-center align-middle sticky-top bg-light sort-header"
+                                data-sort="product"
+                                style="width:17%; z-index:2; cursor:pointer;">
+                                Product
+                            </th>
+
+                            <th class="text-center align-middle sticky-top bg-light"
+                                style="width:18%; z-index:2;">
+                                Item
+                            </th>
+
+                            <th class="text-center align-middle sticky-top bg-light sort-header"
+                                data-sort="date"
+                                style="width:15%; z-index:2; cursor:pointer;">
+                                Date / Time
+                            </th>
+
+                            <th class="text-center align-middle sticky-top bg-light sort-header"
+                                data-sort="user"
+                                style="width:23%; z-index:2; cursor:pointer;">
+                                User
+                            </th>
+
+                            <th class="text-center align-middle sticky-top bg-light"
+                                style="width:9%; z-index:2;">
+                                Result
+                            </th>
+
+                            <th class="text-center align-middle sticky-top bg-light text-nowrap"
+                                style="width:100px; z-index:2;">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="productEntryTableBody">
+                        @if (groupedData.Any())
+                        {
+                            foreach (var group in groupedData)
+                            {
+                                var items = group.Items;
+                                string groupKey = "group_" + sn;
+
+                                string searchText = group.GroupName;
+
+                                foreach (var item in items)
+                                {
+                                    searchText += " " +
+                                                  item.DisplayName + " " +
+                                                  item.EntryDate.ToString("yyyy-MM-dd hh:mm tt") + " " +
+                                                  item.CreatedBy + " " +
+                                                  GetResultText(item);
+                                }
+
+                                <tr class="group-row"
+                                    data-search="@searchText"
+                                    data-sn="@sn"
+                                    data-product="@group.GroupName"
+                                    data-date="@items[0].EntryDate.ToString("yyyyMMddHHmmss")"
+                                    data-user="@items[0].CreatedBy">
+
+                                    <td class="text-center align-middle p-0 group-sn">
+                                        <div class="d-flex align-items-center justify-content-center px-2 group-sn-wrap"
+                                             style="height:@(items.Count * 34)px;">
+                                            @sn
+                                        </div>
+                                    </td>
+
+                                    <td class="align-middle p-0">
+                                        <div class="d-flex align-items-center px-2 group-product-wrap"
+                                             style="height:@(items.Count * 34)px;">
+                                            @if (items.Count > 4)
+                                            {
+                                                <a href="javascript:void(0);"
+                                                   class="text-dark mr-2 group-toggle-btn"
+                                                   data-group="@groupKey"
+                                                   data-expanded="false"
+                                                   title="Expand">
+                                                    <i class="fas fa-caret-right"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="mr-3"></span>
+                                            }
+
+                                            <span>@group.GroupName</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="p-0 align-top">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed; width:100%;">
+                                            <tbody>
+                                                @for (int i = 0; i < items.Count; i++)
+                                                {
+                                                    string hiddenClass = i >= 4 ? "d-none extra-row " + groupKey : "";
+
+                                                    <tr class="@hiddenClass">
+                                                        <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="d-flex align-items-center px-2" style="height:34px;">
+                                                                @items[i].DisplayName
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+
+                                    <td class="p-0 align-top">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed; width:100%;">
+                                            <tbody>
+                                                @for (int i = 0; i < items.Count; i++)
+                                                {
+                                                    string hiddenClass = i >= 4 ? "d-none extra-row " + groupKey : "";
+
+                                                    <tr class="@hiddenClass">
+                                                        <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="d-flex justify-content-center align-items-center px-2" style="height:34px;">
+                                                                @items[i].EntryDate.ToString("yyyy-MM-dd hh:mm tt")
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+
+                                    <td class="p-0 align-top">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed; width:100%;">
+                                            <tbody>
+                                                @for (int i = 0; i < items.Count; i++)
+                                                {
+                                                    string hiddenClass = i >= 4 ? "d-none extra-row " + groupKey : "";
+                                                    string userText = string.IsNullOrWhiteSpace(items[i].CreatedBy) ? "-" : items[i].CreatedBy;
+
+                                                    <tr class="@hiddenClass">
+                                                        <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="px-2"
+                                                                 style="height:34px; line-height:34px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                                                                 title="@userText">
+                                                                @userText
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+
+                                    <td class="p-0 align-top">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed; width:100%;">
+                                            <tbody>
+                                                @for (int i = 0; i < items.Count; i++)
+                                                {
+                                                    string hiddenClass = i >= 4 ? "d-none extra-row " + groupKey : "";
+                                                    string resultText = GetResultText(items[i]);
+
+                                                    <tr class="@hiddenClass">
+                                                        <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="d-flex justify-content-center align-items-center px-2" style="height:34px;">
+                                                                @if (resultText == "Tick" || resultText == "Checked" || resultText == "Up")
+                                                                {
+                                                                    <i class="fas fa-check text-success"></i>
+                                                                }
+                                                                else if (resultText == "Cross" || resultText == "Unchecked" || resultText == "Down")
+                                                                {
+                                                                    <i class="fas fa-times text-danger"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span>@resultText</span>
+                                                                }
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+
+                                    <td class="p-0 align-top">
+                                        <table class="table table-sm mb-0" style="table-layout:fixed; width:100%;">
+                                            <tbody>
+                                                @for (int i = 0; i < items.Count; i++)
+                                                {
+                                                    string hiddenClass = i >= 4 ? "d-none extra-row " + groupKey : "";
+
+                                                    <tr class="@hiddenClass">
+                                                        <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                            <div class="d-flex justify-content-center align-items-center" style="height:34px; gap:3px;">
+                                                                <button type="button"
+                                                                        class="btn btn-light border p-0"
+                                                                        onclick="openEditEntryModal('@group.EntryGroupId')"
+                                                                        title="Edit"
+                                                                        style="width:24px; height:24px; line-height:22px;">
+                                                                    <i class="fas fa-pen" style="font-size:10px;"></i>
+                                                                </button>
+
+                                                                <form asp-action="Delete" method="post" class="d-inline">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <input type="hidden" name="entryGroupId" value="@group.EntryGroupId" />
+                                                                    <input type="hidden" name="productId" value="@group.ProductId" />
+
+                                                                    <button type="submit"
+                                                                            class="btn btn-outline-danger p-0"
+                                                                            title="Delete"
+                                                                            style="width:24px; height:24px; line-height:22px;">
+                                                                        <i class="fas fa-trash-alt" style="font-size:10px;"></i>
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                sn++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center align-middle">
+                                    No product entry found for today.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row mt-2 mx-0 align-items-center">
+            <div class="col-md-6 px-0">
+                <div id="paginationInfo" class="text-muted"></div>
+            </div>
+
+            <div class="col-md-6 text-right px-0 mt-2 mt-md-0">
+                <nav>
+                    <ul class="pagination pagination-sm justify-content-md-end mb-0" id="customPagination"></ul>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Add")
+
+@if (TempData["Success"] != null || TempData["Error"] != null)
+{
+    <div class="position-fixed" style="top: 15px; right: 15px; z-index: 1055;">
+        @if (TempData["Success"] != null)
+        {
+            <div class="toast bg-success text-white fade" id="successToast" data-delay="3000">
+                <div class="toast-header bg-success text-white border-0">
+                    <strong class="mr-auto">Success</strong>
+                    <small>Now</small>
+                    <button type="button" class="close text-white" data-dismiss="toast">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="toast-body">
+                    @TempData["Success"]
+                </div>
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="toast bg-danger text-white fade" id="errorToast" data-delay="4000">
+                <div class="toast-header bg-danger text-white border-0">
+                    <strong class="mr-auto">Error</strong>
+                    <small>Now</small>
+                    <button type="button" class="close text-white" data-dismiss="toast">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="toast-body">
+                    @TempData["Error"]
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+<script>
+    $(document).ready(function () {
+
+        var rowsPerPage = parseInt($('#entriesPerPage').val());
+        var currentPage = 1;
+        var currentSortColumn = 'sn';
+        var currentSortDirection = 'asc';
+
+        function getFilteredRows() {
+            var searchText = $('#customSearch').val().toLowerCase().trim();
+            var filteredRows = [];
+
+            $('#productEntryTableBody tr.group-row').each(function () {
+                var rowSearchText = ($(this).attr('data-search') || '').toLowerCase();
+
+                if (searchText === '' || rowSearchText.indexOf(searchText) > -1) {
+                    filteredRows.push(this);
+                }
+            });
+
+            return filteredRows;
+        }
+
+        function updateSerialNumbers(filteredRows) {
+            for (var i = 0; i < filteredRows.length; i++) {
+                $(filteredRows[i]).find('.group-sn-wrap').text(i + 1);
+            }
+        }
+
+        function sortRows(rows) {
+            rows.sort(function (a, b) {
+
+                var valueA = $(a).attr('data-' + currentSortColumn) || '';
+                var valueB = $(b).attr('data-' + currentSortColumn) || '';
+
+                if (currentSortColumn === 'sn' || currentSortColumn === 'date') {
+                    valueA = parseInt(valueA);
+                    valueB = parseInt(valueB);
+                } else {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                }
+
+                if (valueA < valueB) {
+                    return currentSortDirection === 'asc' ? -1 : 1;
+                }
+
+                if (valueA > valueB) {
+                    return currentSortDirection === 'asc' ? 1 : -1;
+                }
+
+                return 0;
+            });
+
+            return rows;
+        }
+
+        function syncGroupHeights() {
+            $('#productEntryTableBody tr.group-row:visible').each(function () {
+                var row = $(this);
+                var visibleCount = 0;
+
+                row.find('td:eq(2) tbody tr').each(function () {
+                    if (!$(this).hasClass('d-none')) {
+                        visibleCount++;
+                    }
+                });
+
+                if (visibleCount < 1) {
+                    visibleCount = 1;
+                }
+
+                var height = visibleCount * 34;
+
+                row.find('.group-sn-wrap').css('height', height + 'px');
+                row.find('.group-product-wrap').css('height', height + 'px');
+            });
+        }
+
+        function renderPagination() {
+            var filteredRows = getFilteredRows();
+            filteredRows = sortRows(filteredRows);
+
+            var totalRows = filteredRows.length;
+            var totalPages = Math.ceil(totalRows / rowsPerPage);
+
+            $('#productEntryTableBody tr.group-row').hide();
+
+            if (totalRows === 0) {
+                $('#paginationInfo').text('No matching entries found.');
+                $('#customPagination').html('');
+                return;
+            }
+
+            updateSerialNumbers(filteredRows);
+
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+
+            var startIndex = (currentPage - 1) * rowsPerPage;
+            var endIndex = startIndex + rowsPerPage;
+
+            for (var i = startIndex; i < endIndex && i < totalRows; i++) {
+                $(filteredRows[i]).show();
+            }
+
+            var fromRecord = startIndex + 1;
+            var toRecord = endIndex;
+
+            if (toRecord > totalRows) {
+                toRecord = totalRows;
+            }
+
+            $('#paginationInfo').text('Showing ' + fromRecord + ' to ' + toRecord + ' of ' + totalRows + ' grouped entries');
+
+            var paginationHtml = '';
+
+            if (currentPage > 1) {
+                paginationHtml += '<li class="page-item"><a href="#" class="page-link pagination-link" data-page="' + (currentPage - 1) + '">Previous</a></li>';
+            } else {
+                paginationHtml += '<li class="page-item disabled"><span class="page-link">Previous</span></li>';
+            }
+
+            for (var page = 1; page <= totalPages; page++) {
+                if (page === currentPage) {
+                    paginationHtml += '<li class="page-item active"><span class="page-link">' + page + '</span></li>';
+                } else {
+                    paginationHtml += '<li class="page-item"><a href="#" class="page-link pagination-link" data-page="' + page + '">' + page + '</a></li>';
+                }
+            }
+
+            if (currentPage < totalPages) {
+                paginationHtml += '<li class="page-item"><a href="#" class="page-link pagination-link" data-page="' + (currentPage + 1) + '">Next</a></li>';
+            } else {
+                paginationHtml += '<li class="page-item disabled"><span class="page-link">Next</span></li>';
+            }
+
+            $('#customPagination').html(paginationHtml);
+            syncGroupHeights();
+        }
+
+        $('#customSearch').on('keyup', function () {
+            currentPage = 1;
+            renderPagination();
+        });
+
+        $('#entriesPerPage').on('change', function () {
+            rowsPerPage = parseInt($(this).val());
+            currentPage = 1;
+            renderPagination();
+        });
+
+        $(document).on('click', '.pagination-link', function (e) {
+            e.preventDefault();
+            currentPage = parseInt($(this).data('page'));
+            renderPagination();
+        });
+
+        $(document).on('click', '.sort-header', function () {
+            var clickedColumn = $(this).data('sort');
+
+            if (currentSortColumn === clickedColumn) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = clickedColumn;
+                currentSortDirection = 'asc';
+            }
+
+            currentPage = 1;
+            renderPagination();
+        });
+
+        $(document).on('click', '.group-toggle-btn', function (e) {
+            e.preventDefault();
+
+            var groupKey = $(this).data('group');
+            var isExpanded = $(this).attr('data-expanded') === 'true';
+
+            if (isExpanded) {
+                $('.' + groupKey).addClass('d-none');
+                $(this).attr('data-expanded', 'false');
+                $(this).attr('title', 'Expand');
+                $(this).find('i').removeClass('fa-caret-down').addClass('fa-caret-right');
+            } else {
+                $('.' + groupKey).removeClass('d-none');
+                $(this).attr('data-expanded', 'true');
+                $(this).attr('title', 'Collapse');
+                $(this).find('i').removeClass('fa-caret-right').addClass('fa-caret-down');
+            }
+
+            syncGroupHeights();
+        });
+
+        if ($('#successToast').length) {
+            $('#successToast').toast('show');
+        }
+
+        if ($('#errorToast').length) {
+            $('#errorToast').toast('show');
+        }
+
+        renderPagination();
+    });
+</script>
+}

@@ -8,13 +8,18 @@ namespace EmployeeAccessSystem.Models
 
         public int ProductId { get; set; }
 
+        public string ProductName { get; set; }
+
         public string SetupJson { get; set; }
 
         public bool IsActive { get; set; }
 
         public string CreatedBy { get; set; }
+
         public string ModifiedBy { get; set; }
+
         public string DeletedBy { get; set; }
+
         public int? ConfigurationNodeId { get; set; }
 
         public string NodeValue { get; set; }

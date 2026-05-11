@@ -14,6 +14,7 @@ namespace EmployeeAccessSystem.Controllers
         private readonly IAccountService _accountService;
         private readonly IDepartmentRepositories _departmentRepo;
         private readonly ILogger<AccountController> _logger;
+
         public AccountController(
             IAccountService accountService,
             IDepartmentRepositories departmentRepo,
@@ -23,14 +24,18 @@ namespace EmployeeAccessSystem.Controllers
             _departmentRepo = departmentRepo;
             _logger = logger;
         }
+
         [HttpGet]
         public async Task<IActionResult> Register()
         {
             _logger.LogInformation("Register page opened.");
+
             var departments = await _departmentRepo.GetAllAsync();
             ViewBag.Departments = new SelectList(departments, "DepartmentId", "DepartmentName");
+
             return View();
         }
+
         [HttpPost]
         public async Task<IActionResult> Register(RegisterModel model)
         {
@@ -44,23 +49,31 @@ namespace EmployeeAccessSystem.Controllers
                 _logger.LogWarning("Register validation failed. Email: {Email}", model.Email);
                 return View(model);
             }
+
             string error = await _accountService.RegisterAsync(model);
+
             if (!string.IsNullOrEmpty(error))
             {
                 _logger.LogWarning("Register failed. Email: {Email}, Error: {Error}", model.Email, error);
                 ViewBag.Error = error;
                 return View(model);
             }
+
             _logger.LogInformation("Registration successful. Email: {Email}", model.Email);
+
             TempData["Success"] = "Registration successful. Please login.";
+
             return RedirectToAction("Login");
         }
+
         [HttpGet]
         public IActionResult Login()
         {
             _logger.LogInformation("Login page opened.");
+
             return View();
         }
+
         [HttpPost]
         public async Task<IActionResult> Login(LoginModel model)
         {
@@ -71,33 +84,43 @@ namespace EmployeeAccessSystem.Controllers
                 _logger.LogWarning("Login validation failed. Email: {Email}", model.Email);
                 return View(model);
             }
+
             string error = await _accountService.LoginAsync(model);
+
             if (!string.IsNullOrEmpty(error))
             {
                 _logger.LogWarning("Login failed. Email: {Email}, Error: {Error}", model.Email, error);
                 ViewBag.Error = error;
                 return View(model);
             }
-            Account? account = await _accountService.GetAccountByEmailAsync(model.Email);
+
+            Account account = await _accountService.GetAccountByEmailAsync(model.Email);
+
             if (account == null)
             {
                 _logger.LogWarning("Account not found after successful login. Email: {Email}", model.Email);
                 ViewBag.Error = "Account not found.";
                 return View(model);
             }
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, account.AccountId.ToString()),
-                new Claim(ClaimTypes.Name, account.FullName ?? ""),
-                new Claim(ClaimTypes.Email, account.Email ?? ""),
-                new Claim(ClaimTypes.Role, account.RoleName ?? "")
-            };
-            var claimsIdentity = new ClaimsIdentity( claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true
-            };
+
+            List<Claim> claims = new List<Claim>();
+
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, account.AccountId.ToString()));
+            claims.Add(new Claim(ClaimTypes.Name, account.FullName ?? ""));
+            claims.Add(new Claim(ClaimTypes.Email, account.Email ?? ""));
+            claims.Add(new Claim(ClaimTypes.Role, account.RoleName ?? ""));
+
+            ClaimsIdentity claimsIdentity =
+                new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            ClaimsPrincipal claimsPrincipal =
+                new ClaimsPrincipal(claimsIdentity);
+
+            AuthenticationProperties authProperties =
+                new AuthenticationProperties();
+
+            authProperties.IsPersistent = true;
+
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 claimsPrincipal,
@@ -109,17 +132,20 @@ namespace EmployeeAccessSystem.Controllers
                 account.Email,
                 account.RoleName);
 
-            if (account.RoleName?.Trim().Equals("Admin", StringComparison.OrdinalIgnoreCase) == true)
+            string roleName = "";
+
+            if (account.RoleName != null)
+            {
+                roleName = account.RoleName.Trim();
+            }
+
+            if (roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("Index", "Employee");
             }
-            else if (account.RoleName?.Trim().Equals("Supervisor", StringComparison.OrdinalIgnoreCase) == true)
+            else if (roleName.Equals("User", StringComparison.OrdinalIgnoreCase))
             {
-                return RedirectToAction("PendingRequests", "SupervisorDashboard");
-            }
-            else if (account.RoleName?.Trim().Equals("Employee", StringComparison.OrdinalIgnoreCase) == true)
-            {
-                return RedirectToAction("Index", "EmployeeDashboard");
+                return RedirectToAction("Index", "Employee");
             }
             else
             {

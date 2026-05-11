@@ -6,98 +6,129 @@
 }
 
 <section class="content pt-2 pb-0">
+
     <div class="container-fluid px-0">
 
         <div class="row mb-2 mx-0 align-items-center">
+
             <div class="col-sm-6 px-0">
-                <h3 class="mb-0">Product Configuration</h3>
+
+                <h3 class="mb-0">
+                    Product Configuration
+                </h3>
+
             </div>
 
             <div class="col-sm-6 text-right px-0 pt-1">
+
                 <button type="button"
                         class="btn btn-primary btn-sm"
                         id="btnAddConfiguration">
+
                     <i class="fas fa-plus mr-1"></i> Add
+
                 </button>
+
             </div>
+
         </div>
 
         <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
 
-            @if (Model != null && Model.Count > 0)
-            {
-                <div class="card-header bg-white border-bottom-0 py-1 px-2 rounded-0">
-                    <div class="d-flex justify-content-end">
-                        <div class="col-md-3 px-0">
-                            <input type="text"
-                                   id="customSearch"
-                                   class="form-control form-control-sm"
-                                   placeholder="Search" />
-                        </div>
-                    </div>
-                </div>
-            }
-
             <div class="card-body p-0">
+
                 @if (Model != null && Model.Count > 0)
                 {
+
                     <table id="configurationTable"
                            class="table table-bordered table-hover table-sm mb-0 rounded-0"
                            style="border-color:#dee2e6;">
 
                         <thead class="bg-light border-bottom">
+
                             <tr>
-                                <th class="text-center align-middle" style="width:70px;">
+
+                                <th class="text-center align-middle"
+                                    style="width:70px;">
+
                                     SN
+
                                 </th>
 
                                 <th class="text-center align-middle">
+
                                     Product Name
+
                                 </th>
 
-                                <th class="text-center align-middle" style="width:90px;">
+                                <th class="text-center align-middle"
+                                    style="width:90px;">
+
                                     Actions
+
                                 </th>
+
                             </tr>
+
                         </thead>
 
                         <tbody>
+
                             @foreach (var item in Model)
                             {
+
                                 <tr>
+
                                     <td class="text-center align-middle">
+
                                         @sn
+
                                     </td>
 
                                     <td class="align-middle">
+
                                         @item.ProductName
+
                                     </td>
 
                                     <td class="text-center align-middle">
+
                                         <button type="button"
                                                 class="btn btn-xs btn-light border btnEditConfiguration"
                                                 data-product-id="@item.ProductId"
                                                 title="Edit">
+
                                             <i class="fas fa-pen"></i>
+
                                         </button>
+
                                     </td>
+
                                 </tr>
 
                                 sn++;
                             }
+
                         </tbody>
+
                     </table>
                 }
                 else
                 {
+
                     <div class="text-center text-muted py-4">
+
                         Click <strong>Add</strong> to create product configuration.
+
                     </div>
                 }
+
             </div>
+
         </div>
 
     </div>
+
 </section>
 
 <div class="modal fade"
@@ -107,11 +138,15 @@
      data-backdrop="static"
      data-keyboard="false">
 
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-xl"
+         role="document">
+
         <div class="modal-content rounded-0"
              id="configurationModalContent">
         </div>
+
     </div>
+
 </div>
 
 @section Scripts {
@@ -125,104 +160,164 @@
             if ($("#configurationTable").length) {
 
                 table = $("#configurationTable").DataTable({
+
                     paging: true,
+
                     searching: true,
+
                     ordering: true,
+
                     info: true,
+
                     lengthChange: true,
+
                     pageLength: 10,
+
                     autoWidth: false,
+
                     columnDefs: [
                         {
                             orderable: false,
                             targets: 2
                         }
                     ],
-                    dom: "lrtip"
+
+                    dom:
+                        '<"row px-2 py-2 align-items-center"' +
+                            '<"col-md-6"l>' +
+                            '<"col-md-6 text-right"f>' +
+                        '>' +
+                        'rt' +
+                        '<"row px-2 py-2"' +
+                            '<"col-md-6"i>' +
+                            '<"col-md-6"p>' +
+                        '>',
+
+                    language: {
+
+                        search: "",
+
+                        searchPlaceholder: "Search"
+                    }
                 });
             }
 
-            $("#customSearch").on("keyup", function () {
+            $("#btnAddConfiguration")
+                .off("click")
+                .on("click", function () {
 
-                if (table != null) {
-                    table.search(this.value).draw();
-                }
-            });
+                    $.get("/ProductConfiguration/Add",
+                        function (data) {
 
-            $("#btnAddConfiguration").off("click").on("click", function () {
+                            $("#configurationModalContent").html(data);
 
-                $.get("/ProductConfiguration/Add", function (data) {
-
-                    $("#configurationModalContent").html(data);
-
-                    $("#configurationModal").modal("show");
+                            $("#configurationModal").modal("show");
+                        });
                 });
-            });
 
-            $(document).off("click", ".btnEditConfiguration");
+            $(document)
+                .off("click", ".btnEditConfiguration");
 
-            $(document).on("click", ".btnEditConfiguration", function () {
+            $(document)
+                .on("click", ".btnEditConfiguration", function () {
 
-                var productId = $(this).attr("data-product-id");
+                    var productId =
+                        $(this).attr("data-product-id");
 
-                $.get("/ProductConfiguration/Add?productId=" + productId,
-                    function (data) {
+                    $.get("/ProductConfiguration/Add?productId=" + productId,
+                        function (data) {
 
-                        $("#configurationModalContent").html(data);
+                            $("#configurationModalContent").html(data);
 
-                        $("#configurationModal").modal("show");
-                    });
-            });
+                            $("#configurationModal").modal("show");
+                        });
+                });
 
             showTempMessage();
         });
 
         function showTempMessage() {
 
-            var successMessage = '@TempData["Success"]';
-            var errorMessage = '@TempData["Error"]';
+            var successMessage =
+                '@TempData["Success"]';
+
+            var errorMessage =
+                '@TempData["Error"]';
 
             if (successMessage !== "") {
-                showToastMessage("success", successMessage);
+
+                showToastMessage("success",
+                    successMessage);
             }
 
             if (errorMessage !== "") {
-                showToastMessage("error", errorMessage);
+
+                showToastMessage("error",
+                    errorMessage);
             }
         }
-
         function showToastMessage(type, message) {
 
             if (typeof toastr === "undefined") {
+
                 alert(message);
+
                 return;
             }
 
             toastr.options = {
+
                 closeButton: true,
+
                 progressBar: true,
+
                 newestOnTop: true,
+
                 positionClass: "toast-top-right",
+
                 preventDuplicates: true,
+
                 timeOut: "3000"
             };
 
             if (type === "success") {
+
                 toastr.success(message);
             }
 
             if (type === "error") {
+
                 toastr.error(message);
             }
 
             if (type === "warning") {
+
                 toastr.warning(message);
             }
 
             if (type === "info") {
+
                 toastr.info(message);
             }
         }
 
     </script>
+
+    <style>
+
+        table.dataTable thead .sorting:before,
+        table.dataTable thead .sorting:after,
+        table.dataTable thead .sorting_asc:before,
+        table.dataTable thead .sorting_asc:after,
+        table.dataTable thead .sorting_desc:before,
+        table.dataTable thead .sorting_desc:after {
+            display: none !important;
+        }
+
+        div.dataTables_filter input {
+            width: 220px !important;
+            min-width: 220px !important;
+        }
+
+    </style>
 }

@@ -9,69 +9,137 @@
     <div class="container-fluid px-0">
 
         <div class="row mb-2 mx-0 align-items-center">
+
             <div class="col-sm-6 px-0">
                 <h3 class="mb-0">Product Setup</h3>
             </div>
 
             <div class="col-sm-6 text-right px-0">
+
                 <a asp-action="Create"
                    asp-controller="ProductSetup"
                    class="btn btn-primary btn-sm open-modal-btn"
                    data-title="Add Product Setup">
+
                     <i class="fas fa-plus mr-1"></i> Add
+
                 </a>
+
             </div>
+
         </div>
 
         <div class="card mb-0 border-left border-right border-bottom shadow-none rounded-0">
+
             <div class="card-header bg-white border-bottom-0 py-1 px-2 rounded-0">
-                <div class="d-flex justify-content-end">
-                    <div class="col-md-3 px-0">
-                        <input type="text"
-                               id="customSearch"
-                               class="form-control form-control-sm"
-                               placeholder="Search" />
+
+                <div class="row align-items-center">
+
+                    <div class="col-md-6 d-flex align-items-center">
+
+                        <label class="mb-0 mr-2 font-weight-normal">
+                            Show
+                        </label>
+
+                        <select id="customLength"
+                                class="form-control form-control-sm"
+                                style="width:70px;">
+
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+
+                        </select>
+
+                        <label class="mb-0 ml-2 font-weight-normal">
+                            entries
+                        </label>
+
                     </div>
+
+                    <div class="col-md-6">
+
+                        <div class="d-flex justify-content-end">
+
+                            <input type="text"
+                                   id="customSearch"
+                                   class="form-control form-control-sm"
+                                   placeholder="Search"
+                                   style="width:220px;" />
+
+                        </div>
+
+                    </div>
+
                 </div>
+
             </div>
 
             <div class="card-body p-0">
+
                 <table id="productSetupTable"
                        class="table table-bordered table-hover table-sm mb-0 rounded-0"
                        style="border-color:#dee2e6;">
+
                     <thead class="bg-light border-bottom">
+
                         <tr>
-                            <th class="text-center align-middle" style="width: 70px;">SN</th>
-                            <th class="text-center align-middle">Product Name</th>
-                            <th class="text-center align-middle" style="width: 110px;">Actions</th>
+
+                            <th class="text-center align-middle"
+                                style="width:70px;">
+                                SN
+                            </th>
+
+                            <th class="text-center align-middle">
+                                Product Name
+                            </th>
+
+                            <th class="text-center align-middle"
+                                style="width:110px;">
+                                Actions
+                            </th>
+
                         </tr>
+
                     </thead>
 
                     <tbody>
+
                         @if (Model != null && Model.Any())
                         {
                             foreach (var item in Model)
                             {
                                 <tr>
-                                    <td class="text-center align-middle">@sn</td>
+
+                                    <td class="text-center align-middle">
+                                        @sn
+                                    </td>
 
                                     <td class="align-middle">
+
                                         @item.ProductName
 
                                         @if (!item.IsActive)
                                         {
-                                            <span class="text-muted ml-2">(Inactive)</span>
+                                            <span class="text-muted ml-2">
+                                                (Inactive)
+                                            </span>
                                         }
+
                                     </td>
 
                                     <td class="text-center align-middle">
+
                                         <a asp-action="Edit"
                                            asp-controller="ProductSetup"
                                            asp-route-id="@item.ProductId"
                                            class="btn btn-xs btn-light border open-modal-btn"
                                            data-title="Edit Product Setup"
                                            title="Edit">
+
                                             <i class="fas fa-pen"></i>
+
                                         </a>
 
                                         <a asp-action="Delete"
@@ -80,77 +148,145 @@
                                            class="btn btn-xs btn-outline-danger open-modal-btn ml-1"
                                            data-title=""
                                            title="Delete">
+
                                             <i class="fas fa-trash-alt"></i>
+
                                         </a>
+
                                     </td>
+
                                 </tr>
 
                                 sn++;
                             }
                         }
+
                     </tbody>
+
                 </table>
+
             </div>
+
         </div>
 
     </div>
+
 </section>
 
-<div class="modal fade" id="mainActionModal" tabindex="-1" role="dialog" aria-labelledby="mainActionModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+<div class="modal fade"
+     id="mainActionModal"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="mainActionModalTitle"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered"
+         style="max-width:360px;"
+         role="document">
+
         <div class="modal-content rounded-0">
+
             <div class="modal-header">
-                <h5 class="modal-title" id="mainActionModalTitle">Product Setup</h5>
 
-                <button type="button" class="close" data-dismiss="modal">
+                <h5 class="modal-title"
+                    id="mainActionModalTitle">
+
+                    Product Setup
+
+                </h5>
+
+                <button type="button"
+                        class="close"
+                        data-dismiss="modal">
+
                     <span>&times;</span>
+
                 </button>
+
             </div>
 
-            <div class="modal-body" id="mainActionModalBody">
+            <div class="modal-body"
+                 id="mainActionModalBody">
+
                 <div class="text-center py-3">
-                    <i class="fas fa-spinner fa-spin mr-2"></i> Loading...
+
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    Loading...
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
 @if (TempData["Success"] != null || TempData["Error"] != null)
 {
-    <div class="position-fixed" style="top: 15px; right: 15px; z-index: 1055;">
+    <div class="position-fixed"
+         style="top:15px; right:15px; z-index:1055;">
 
         @if (TempData["Success"] != null)
         {
-            <div class="toast bg-success text-white fade" id="successToast" data-delay="3000">
+            <div class="toast bg-success text-white fade"
+                 id="successToast"
+                 data-delay="3000">
+
                 <div class="toast-header bg-success text-white border-0">
-                    <strong class="mr-auto">Success</strong>
+
+                    <strong class="mr-auto">
+                        Success
+                    </strong>
+
                     <small>Now</small>
-                    <button type="button" class="close text-white" data-dismiss="toast">
+
+                    <button type="button"
+                            class="close text-white"
+                            data-dismiss="toast">
+
                         <span>&times;</span>
+
                     </button>
+
                 </div>
 
                 <div class="toast-body">
                     @TempData["Success"]
                 </div>
+
             </div>
         }
 
         @if (TempData["Error"] != null)
         {
-            <div class="toast bg-danger text-white fade" id="errorToast" data-delay="4000">
+            <div class="toast bg-danger text-white fade"
+                 id="errorToast"
+                 data-delay="4000">
+
                 <div class="toast-header bg-danger text-white border-0">
-                    <strong class="mr-auto">Error</strong>
+
+                    <strong class="mr-auto">
+                        Error
+                    </strong>
+
                     <small>Now</small>
-                    <button type="button" class="close text-white" data-dismiss="toast">
+
+                    <button type="button"
+                            class="close text-white"
+                            data-dismiss="toast">
+
                         <span>&times;</span>
+
                     </button>
+
                 </div>
 
                 <div class="toast-body">
                     @TempData["Error"]
                 </div>
+
             </div>
         }
 
@@ -158,114 +294,178 @@
 }
 
 @section Scripts {
+
     <script>
+
         $(document).ready(function () {
 
             var table = $('#productSetupTable').DataTable({
+
                 paging: true,
                 searching: true,
                 ordering: true,
                 info: true,
-                lengthChange: true,
+                lengthChange: false,
                 pageLength: 10,
                 autoWidth: false,
+
                 columnDefs: [
-                    { orderable: false, targets: 2 }
+                    {
+                        orderable: false,
+                        targets: 2
+                    }
                 ],
-                dom: 'lrtip'
+
+                dom: 'rtip'
+
             });
 
             $('#customSearch').on('keyup', function () {
+
                 table.search(this.value).draw();
+
+            });
+
+            $('#customLength').on('change', function () {
+
+                table.page.len(this.value).draw();
+
             });
 
             $(document).on('click', '.open-modal-btn', function (e) {
+
                 e.preventDefault();
 
                 var url = $(this).attr('href');
                 var title = $(this).data('title');
 
                 if (title) {
+
                     $('#mainActionModal .modal-header').show();
                     $('#mainActionModalTitle').text(title);
+
                 }
                 else {
+
                     $('#mainActionModal .modal-header').hide();
+
                 }
 
-                $('#mainActionModalBody').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>');
+                $('#mainActionModalBody').html(
+                    '<div class="text-center py-3"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>'
+                );
 
                 $('#mainActionModalBody').load(url, function () {
+
                     $('#mainActionModal').modal('show');
+
                 });
+
             });
 
-            $(document).on('submit', '#createProductForm, #editProductForm, #deleteProductForm', function (e) {
-                e.preventDefault();
+            $(document).on('submit',
+                '#createProductForm, #editProductForm, #deleteProductForm',
+                function (e) {
 
-                var form = $(this);
-                var actionUrl = form.attr('action');
-                var formData = form.serialize();
+                    e.preventDefault();
 
-                $.ajax({
-                    type: 'POST',
-                    url: actionUrl,
-                    data: formData,
-                    success: function (response) {
+                    var form = $(this);
+                    var actionUrl = form.attr('action');
+                    var formData = form.serialize();
 
-                        if (typeof response === 'string' && response.indexOf('success|') === 0) {
-                            var successMessage = response.substring(8);
+                    $.ajax({
 
-                            $('#mainActionModal').modal('hide');
+                        type: 'POST',
+                        url: actionUrl,
+                        data: formData,
 
-                            window.location.href = '@Url.Action("Index", "ProductSetup")?successMessage=' + encodeURIComponent(successMessage);
-                            return;
+                        success: function (response) {
+
+                            if (typeof response === 'string'
+                                && response.indexOf('success|') === 0) {
+
+                                var successMessage = response.substring(8);
+
+                                $('#mainActionModal').modal('hide');
+
+                                window.location.href =
+                                    '@Url.Action("Index", "ProductSetup")?successMessage='
+                                    + encodeURIComponent(successMessage);
+
+                                return;
+                            }
+
+                            if (typeof response === 'string'
+                                && response.indexOf('error|') === 0) {
+
+                                var errorMessage = response.substring(6);
+
+                                $('#mainActionModal').modal('hide');
+
+                                window.location.href =
+                                    '@Url.Action("Index", "ProductSetup")?errorMessage='
+                                    + encodeURIComponent(errorMessage);
+
+                                return;
+                            }
+
+                            var html = $('<div>').html(response);
+
+                            var hasForm =
+                                html.find('#createProductForm').length > 0 ||
+                                html.find('#editProductForm').length > 0 ||
+                                html.find('#deleteProductForm').length > 0;
+
+                            if (hasForm) {
+
+                                $('#mainActionModalBody').html(response);
+
+                            }
+                            else {
+
+                                $('#mainActionModal').modal('hide');
+
+                                window.location.href =
+                                    '@Url.Action("Index", "ProductSetup")';
+
+                            }
+
+                        },
+
+                        error: function () {
+
+                            alert('An error occurred while processing your request.');
+
                         }
 
-                        if (typeof response === 'string' && response.indexOf('error|') === 0) {
-                            var errorMessage = response.substring(6);
+                    });
 
-                            $('#mainActionModal').modal('hide');
-
-                            window.location.href = '@Url.Action("Index", "ProductSetup")?errorMessage=' + encodeURIComponent(errorMessage);
-                            return;
-                        }
-
-                        var html = $('<div>').html(response);
-
-                        var hasForm =
-                            html.find('#createProductForm').length > 0 ||
-                            html.find('#editProductForm').length > 0 ||
-                            html.find('#deleteProductForm').length > 0;
-
-                        if (hasForm) {
-                            $('#mainActionModalBody').html(response);
-                        }
-                        else {
-                            $('#mainActionModal').modal('hide');
-                            window.location.href = '@Url.Action("Index", "ProductSetup")';
-                        }
-                    },
-                    error: function () {
-                        alert('An error occurred while processing your request.');
-                    }
                 });
-            });
 
             $('#mainActionModal').on('hidden.bs.modal', function () {
+
                 $('#mainActionModalBody').html('');
+
                 $('#mainActionModal .modal-header').show();
+
                 $('#mainActionModalTitle').text('Product Setup');
+
             });
 
             if ($('#successToast').length) {
+
                 $('#successToast').toast('show');
+
             }
 
             if ($('#errorToast').length) {
+
                 $('#errorToast').toast('show');
+
             }
 
         });
+
     </script>
+
 }

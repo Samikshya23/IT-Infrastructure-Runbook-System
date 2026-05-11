@@ -4,7 +4,7 @@
     ViewData["Title"] = "Product Setup Configuration";
     int selectedProductId = ViewBag.SelectedProductId;
     string successMessage = ViewBag.SuccessMessage;
-    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetup>;
+    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetupConfiguration>;
 }
 
 <section class="content pt-2 pb-0">
@@ -50,7 +50,6 @@
                             }
                         </select>
                     </div>
-
                     <div class="col-md-8 text-right pt-3">
                         <button type="button"
                                 class="btn btn-primary btn-sm"
@@ -160,33 +159,43 @@
                 );
             }
 
-            function initializeSetupDataTable() {
-                if ($("#setupDynamicTable").length === 0) {
-                    return;
-                }
-
-                if ($.fn.DataTable.isDataTable("#setupDynamicTable")) {
-                    $("#setupDynamicTable").DataTable().destroy();
-                }
-
-                var table = $("#setupDynamicTable").DataTable({
-                    paging: true,
-                    searching: true,
-                    ordering: true,
-                    info: true,
-                    lengthChange: true,
-                    pageLength: 10,
-                    autoWidth: false,
-                    columnDefs: [
-                        { orderable: false, targets: 3 }
-                    ],
-                    dom: "lrtip"
-                });
-
-                $("#customSearch").off("keyup").on("keyup", function () {
-                    table.search(this.value).draw();
-                });
+                function initializeSetupDataTable() {
+            if ($("#setupDynamicTable").length === 0) {
+                return;
             }
+
+            if ($.fn.DataTable.isDataTable("#setupDynamicTable")) {
+                $("#setupDynamicTable").DataTable().destroy();
+            }
+
+            $("#setupDynamicTable").DataTable({
+                paging: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                lengthChange: true,
+                pageLength: 10,
+                autoWidth: false,
+                columnDefs: [
+                    { orderable: false, targets: 3 }
+                ],
+                dom:
+                    "<'row mx-0 py-2'<'col-md-6'l><'col-md-6 text-right'f>>" +
+                    "<'row mx-0'<'col-12'tr>>" +
+                    "<'row mx-0 py-2'<'col-md-6'i><'col-md-6 text-right'p>>",
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search"
+                }
+            });
+
+            $(".dataTables_filter input")
+                .addClass("form-control form-control-sm")
+                .css({
+                    "width": "260px",
+                    "display": "inline-block"
+                });
+        }
 
             function showToastMessage(type, message) {
                 if (message === null || message === undefined || message === "") {
@@ -214,11 +223,9 @@
                 if (type === "error") {
                     toastr.error(message);
                 }
-
                 if (type === "warning") {
                     toastr.warning(message);
                 }
-
                 if (type === "info") {
                     toastr.info(message);
                 }
