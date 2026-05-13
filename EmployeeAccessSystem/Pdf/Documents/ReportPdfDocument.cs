@@ -8,11 +8,11 @@ using System.Collections.Generic;
 
 namespace EmployeeAccessSystem.Pdf.Documents
 {
-    public class ReportPdfDocument : IDocument
+    public class ReportModelPdfDocument : IDocument
     {
         private readonly ReportPageViewModel _model;
 
-        public ReportPdfDocument(ReportPageViewModel model)
+        public ReportModelPdfDocument(ReportPageViewModel model)
         {
             _model = model;
         }
@@ -34,7 +34,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
             page.Content().Column(delegate (ColumnDescriptor col)
             {
-                col.Item().AlignCenter().Text(GetReportTitle()).Bold().FontSize(14);
+                col.Item().AlignCenter().Text(GetReportModelTitle()).Bold().FontSize(14);
                 col.Item().AlignCenter().Text("Product: " + GetSelectedProductName());
 
                 if (_model.FromDate.HasValue && _model.ToDate.HasValue)
@@ -53,7 +53,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
         private void BuildTable(IContainer container)
         {
-            if (_model.IsPingReport)
+            if (_model.IsPingReportModel)
             {
                 BuildPingTable(container);
             }
@@ -253,22 +253,22 @@ namespace EmployeeAccessSystem.Pdf.Documents
         {
             List<ReportModel> list = new List<ReportModel>();
 
-            if (_model.ReportData == null)
+            if (_model.ReportModelData == null)
             {
                 return list;
             }
 
             int i = 0;
 
-            while (i < _model.ReportData.Count)
+            while (i < _model.ReportModelData.Count)
             {
                 bool exists = false;
                 int j = 0;
 
                 while (j < list.Count)
                 {
-                    if (list[j].MonitoringTypeName == _model.ReportData[i].MonitoringTypeName &&
-                        list[j].ItemName == _model.ReportData[i].ItemName)
+                    if (list[j].MonitoringTypeName == _model.ReportModelData[i].MonitoringTypeName &&
+                        list[j].ItemName == _model.ReportModelData[i].ItemName)
                     {
                         exists = true;
                         break;
@@ -279,7 +279,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
                 if (!exists)
                 {
-                    list.Add(_model.ReportData[i]);
+                    list.Add(_model.ReportModelData[i]);
                 }
 
                 i++;
@@ -292,22 +292,22 @@ namespace EmployeeAccessSystem.Pdf.Documents
         {
             List<ReportModel> list = new List<ReportModel>();
 
-            if (_model.ReportData == null)
+            if (_model.ReportModelData == null)
             {
                 return list;
             }
 
             int i = 0;
 
-            while (i < _model.ReportData.Count)
+            while (i < _model.ReportModelData.Count)
             {
                 bool exists = false;
                 int j = 0;
 
                 while (j < list.Count)
                 {
-                    if (list[j].IPAddress == _model.ReportData[i].IPAddress &&
-                        list[j].ServerHostName == _model.ReportData[i].ServerHostName)
+                    if (list[j].IPAddress == _model.ReportModelData[i].IPAddress &&
+                        list[j].ServerHostName == _model.ReportModelData[i].ServerHostName)
                     {
                         exists = true;
                         break;
@@ -318,7 +318,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
                 if (!exists)
                 {
-                    list.Add(_model.ReportData[i]);
+                    list.Add(_model.ReportModelData[i]);
                 }
 
                 i++;
@@ -364,16 +364,16 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
         private string GetSmscValue(string type, string item, DateTime date)
         {
-            if (_model.ReportData == null)
+            if (_model.ReportModelData == null)
             {
                 return "-";
             }
 
             int i = 0;
 
-            while (i < _model.ReportData.Count)
+            while (i < _model.ReportModelData.Count)
             {
-                ReportModel data = _model.ReportData[i];
+                ReportModel data = _model.ReportModelData[i];
 
                 if (data.MonitoringTypeName == type &&
                     data.ItemName == item &&
@@ -418,16 +418,16 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
         private string GetPingValue(string ipAddress, string serverHostName, DateTime date)
         {
-            if (_model.ReportData == null)
+            if (_model.ReportModelData == null)
             {
                 return "-";
             }
 
             int i = 0;
 
-            while (i < _model.ReportData.Count)
+            while (i < _model.ReportModelData.Count)
             {
-                ReportModel data = _model.ReportData[i];
+                ReportModel data = _model.ReportModelData[i];
 
                 if (data.IPAddress == ipAddress &&
                     data.ServerHostName == serverHostName &&
@@ -470,14 +470,14 @@ namespace EmployeeAccessSystem.Pdf.Documents
             return "-";
         }
 
-        private string GetReportTitle()
+        private string GetReportModelTitle()
         {
-            if (string.IsNullOrEmpty(_model.ReportTitle))
+            if (string.IsNullOrEmpty(_model.ReportModelTitle))
             {
-                return "Monitoring Report";
+                return "Monitoring ReportModel";
             }
 
-            return _model.ReportTitle;
+            return _model.ReportModelTitle;
         }
 
         private string GetSelectedProductName()

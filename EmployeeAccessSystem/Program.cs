@@ -39,6 +39,8 @@ builder.Services.AddScoped<IMenuRepository, MenuRepository>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IProductEntryRepository, ProductEntryRepository>();
 builder.Services.AddScoped<IProductEntryService, ProductEntryService>();
+builder.Services.AddScoped<IDropdownRepository, DropdownRepository>();
+builder.Services.AddScoped<IDropdownService, DropdownService>();
 
 builder.Services.AddScoped<IProductSetupConfigurationService, ProductSetupConfigurationService>();
 builder.Services.AddScoped<IFortigateConfigService, FortigateConfigService>();
@@ -76,13 +78,11 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}"

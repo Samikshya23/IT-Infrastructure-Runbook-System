@@ -19,5 +19,6 @@ namespace EmployeeAccessSystem.Repositories
         );
 
         Task<int> DeleteJsonByProductAsync(int productId, string deletedBy);
+
     }
 }

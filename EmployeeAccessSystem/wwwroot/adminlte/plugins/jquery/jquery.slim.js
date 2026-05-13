@@ -1306,10 +1306,10 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 	// QSA and matchesSelector support
 
-	// matchesSelector(:active) reports false when true (IE9/Opera 11.5)
+	// matchesSelector(:active) ReportModels false when true (IE9/Opera 11.5)
 	rbuggyMatches = [];
 
-	// qSa(:focus) reports false when true (Chrome 21)
+	// qSa(:focus) ReportModels false when true (Chrome 21)
 	// We allow this because of a bug in IE8/9 that throws an error
 	// whenever `document.activeElement` is accessed on an iframe
 	// So, we allow :focus to pass through QSA all the time to avoid the IE error
@@ -4763,7 +4763,7 @@ function adjustCSS( elem, prop, valueParts, tween ) {
 		// Halve the iteration target value to prevent interference from CSS upper bounds (gh-2144)
 		initial = initial / 2;
 
-		// Trust units reported by jQuery.css
+		// Trust units ReportModeled by jQuery.css
 		unit = unit || initialInUnit[ 3 ];
 
 		// Iteratively approximate from a nonzero starting point
@@ -6463,7 +6463,7 @@ var rboxStyle = new RegExp( cssExpand.join( "|" ), "i" );
 		pixelBoxStylesVal = roundPixelMeasures( divStyle.right ) === 36;
 
 		// Support: IE 9 - 11 only
-		// Detect misreporting of content dimensions for box-sizing:border-box elements
+		// Detect misReportModeling of content dimensions for box-sizing:border-box elements
 		boxSizingReliableVal = roundPixelMeasures( divStyle.width ) === 36;
 
 		// Support: IE 9 only
@@ -6523,8 +6523,8 @@ var rboxStyle = new RegExp( cssExpand.join( "|" ), "i" );
 		},
 
 		// Support: IE 9 - 11+, Edge 15 - 18+
-		// IE/Edge misreport `getComputedStyle` of table rows with width/height
-		// set in CSS while `offset*` properties report correct values.
+		// IE/Edge misReportModel `getComputedStyle` of table rows with width/height
+		// set in CSS while `offset*` properties ReportModel correct values.
 		// Behavior in IE 9 is more subtle than in newer versions & it passes
 		// some versions of this test; make sure not to make it pass there!
 		//
@@ -6803,8 +6803,8 @@ function getWidthOrHeight( elem, dimension, extra ) {
 	if ( ( !support.boxSizingReliable() && isBorderBox ||
 
 		// Support: IE 10 - 11+, Edge 15 - 18+
-		// IE/Edge misreport `getComputedStyle` of table rows with width/height
-		// set in CSS while `offset*` properties report correct values.
+		// IE/Edge misReportModel `getComputedStyle` of table rows with width/height
+		// set in CSS while `offset*` properties ReportModel correct values.
 		// Interestingly, in some cases IE 9 doesn't suffer from this issue.
 		!support.reliableTrDimensions() && nodeName( elem, "tr" ) ||
 
@@ -6813,7 +6813,7 @@ function getWidthOrHeight( elem, dimension, extra ) {
 		val === "auto" ||
 
 		// Support: Android <=4.1 - 4.3 only
-		// Also use offsetWidth/offsetHeight for misreported inline dimensions (gh-3602)
+		// Also use offsetWidth/offsetHeight for misReportModeled inline dimensions (gh-3602)
 		!parseFloat( val ) && jQuery.css( elem, "display", false, styles ) === "inline" ) &&
 
 		// Make sure the element is visible & connected

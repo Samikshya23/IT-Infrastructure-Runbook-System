@@ -2169,7 +2169,7 @@ exports.CI_BRK = CI_BRK = 2; // Indirect break opportunity for combining marks
 exports.CP_BRK = CP_BRK = 3; // Prohibited break for combining marks
 
 exports.PR_BRK = PR_BRK = 4; // Prohibited break
-// Based on example pair table from https://www.unicode.org/reports/tr14/tr14-37.html#Table2
+// Based on example pair table from https://www.unicode.org/ReportModels/tr14/tr14-37.html#Table2
 // - ZWJ special processing for LB8a of Revision 41
 // - CB manually added as per Rule LB20
 // - CL, CP, NS, SY, IS, PR, PO, HY, BA, B2 and RI manually adjusted as per LB22 of Revision 45
@@ -4071,7 +4071,7 @@ exports.kMaxLength = K_MAX_LENGTH;
  * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
  * Opera 11.6+, iOS 4.2+.
  *
- * We report that the browser does not support typed arrays if the are not subclassable
+ * We ReportModel that the browser does not support typed arrays if the are not subclassable
  * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
  * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
  * for __proto__ and has a buggy typed array implementation.
@@ -30339,7 +30339,7 @@ function fill_window(s) {
   } while (s.lookahead < MIN_LOOKAHEAD && s.strm.avail_in !== 0);
 
   /* If the WIN_INIT bytes after the end of the current data have never been
-   * written, then zero those bytes in order to avoid memory check reports of
+   * written, then zero those bytes in order to avoid memory check ReportModels of
    * the use of uninitialized (or uninitialised as Julian writes) bytes by
    * the longest match routines.  Update the high water mark for the next
    * time through here.  WIN_INIT is set to MAX_MATCH since the longest match
@@ -33829,7 +33829,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
     table[table_index++] = (1 << 24) | (64 << 16) | 0;
 
     opts.bits = 1;
-    return 0;     /* no symbols, but wait for decoding to report error */
+    return 0;     /* no symbols, but wait for decoding to ReportModel error */
   }
   for (min = 1; min < max; min++) {
     if (count[min] !== 0) { break; }
@@ -42071,7 +42071,7 @@ var speciesConstructor = __webpack_require__(6707);
 var task = (__webpack_require__(261).set);
 var microtask = __webpack_require__(5948);
 var promiseResolve = __webpack_require__(9478);
-var hostReportErrors = __webpack_require__(842);
+var hostReportModelErrors = __webpack_require__(842);
 var newPromiseCapabilityModule = __webpack_require__(8523);
 var perform = __webpack_require__(2534);
 var InternalStateModule = __webpack_require__(9909);
@@ -42203,7 +42203,7 @@ var dispatchEvent = function (name, promise, reason) {
     global.dispatchEvent(event);
   } else event = { promise: promise, reason: reason };
   if (!NATIVE_REJECTION_EVENT && (handler = global['on' + name])) handler(event);
-  else if (name === UNHANDLED_REJECTION) hostReportErrors('Unhandled promise rejection', reason);
+  else if (name === UNHANDLED_REJECTION) hostReportModelErrors('Unhandled promise rejection', reason);
 };
 
 var onUnhandled = function (state) {
@@ -50900,7 +50900,7 @@ module.exports = function shimFlags() {
       parser.ns = Object.create(rootNS)
     }
 
-    // mostly just for error reporting
+    // mostly just for error ReportModeling
     parser.trackPosition = parser.opt.position !== false
     if (parser.trackPosition) {
       parser.position = parser.line = parser.column = 0
@@ -64818,7 +64818,7 @@ function initialReordering(font, glyphs, plan) {
     } // For old-style Indic script tags, move the first post-base Halant after
     // last consonant.
     //
-    // Reports suggest that in some scripts Uniscribe does this only if there
+    // ReportModels suggest that in some scripts Uniscribe does this only if there
     // is *not* a Halant after last consonant already (eg. Kannada), while it
     // does it unconditionally in other scripts (eg. Malayalam).  We don't
     // currently know about other scripts, so we single out Malayalam for now.

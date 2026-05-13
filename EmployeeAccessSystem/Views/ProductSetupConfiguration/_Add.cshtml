@@ -1,24 +1,49 @@
-﻿@{
+﻿@using System.Text.Json
+
+@{
     Layout = null;
+
     int selectedProductId = ViewBag.SelectedProductId;
     int rootIndex = ViewBag.RootIndex;
-    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetupConfiguration>;
+
+    var products =
+        ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetupConfiguration>;
+
+    var valueTypes =
+        ViewBag.ValueTypes as IEnumerable<EmployeeAccessSystem.Models.DropdownItemModel>;
+
+    string valueTypeJson =
+        JsonSerializer.Serialize(valueTypes);
 }
 
 <div class="modal-header bg-white border-bottom">
     <h5 class="modal-title font-weight-bold">
-        @(rootIndex >= 0 ? "Edit Product Setup Configuration" : "Product Setup Configuration")
+        @(rootIndex >= 0 ? "Edit Setup Configuration" : "Setup Configuration")
     </h5>
 </div>
+
 <div class="modal-body">
-    <input type="hidden" id="RootIndex" value="@rootIndex" />
+
+    <input type="hidden"
+           id="RootIndex"
+           value="@rootIndex" />
+
     <div class="card mb-2 shadow-none">
         <div class="card-body p-2">
-            <div class="form-group mb-0">
-                <label class="font-weight-bold mb-1">Product</label>
 
-                <select id="ProductId" class="form-control form-control-sm" @(rootIndex >= 0 ? "disabled" : "")>
-                    <option value="">Select Product</option>
+            <div class="form-group mb-0">
+
+                <label class="font-weight-bold mb-1">
+                    Select
+                </label>
+
+                <select id="ProductId"
+                        class="form-control form-control-sm"
+                        @(rootIndex >= 0 ? "disabled" : "")>
+
+                    <option value="">
+                        Select
+                    </option>
 
                     @if (products != null)
                     {
@@ -38,28 +63,44 @@
                             }
                         }
                     }
+
                 </select>
+
             </div>
+
         </div>
     </div>
+
     <div id="generatedSetupArea" style="display:none;">
+
         <div class="card shadow-none">
+
             <div class="card-body p-2">
+
                 <div id="nodeContainer"></div>
+
             </div>
+
         </div>
+
     </div>
 
 </div>
 
 <div class="modal-footer">
-    <button type="button" id="btnFooterClose" class="btn btn-secondary btn-sm">
+
+    <button type="button"
+            id="btnFooterClose"
+            class="btn btn-secondary btn-sm">
         Close
     </button>
 
-    <button type="button" id="btnSave" class="btn btn-primary btn-sm">
+    <button type="button"
+            id="btnSave"
+            class="btn btn-primary btn-sm">
         Save
     </button>
+
 </div>
 
 <div class="modal fade"
@@ -68,73 +109,107 @@
      role="dialog"
      data-backdrop="static"
      data-keyboard="false">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+
+    <div class="modal-dialog modal-sm modal-dialog-centered"
+         role="document">
+
         <div class="modal-content border-0 shadow">
+
             <div class="modal-body text-center py-4">
+
                 <div class="mb-3">
                     <i class="fas fa-exclamation-circle text-warning"
                        style="font-size:50px;"></i>
                 </div>
 
-                <h4 class="font-weight-bold mb-3">Are you sure?</h4>
+                <h4 class="font-weight-bold mb-3">
+                    Are you sure?
+                </h4>
 
                 <p class="mb-0">
                     Do you want to close this form?
                 </p>
-            </div>
-            <div class="modal-footer justify-content-center bg-light border-top-0">
-                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-4">
-                    No
-                </button>
-                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-4">
-                    Yes
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="modal fade"
-     id="confirmProductChangeModal"
-     tabindex="-1"
-     role="dialog"
-     data-backdrop="static"
-     data-keyboard="false">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-body text-center py-4">
-                <div class="mb-3">
-                    <i class="fas fa-exclamation-circle text-warning"
-                       style="font-size:50px;"></i>
-                </div>
-
-                <h4 class="font-weight-bold mb-3">Are you sure?</h4>
-
-                <p class="mb-0">
-                    Changing product will remove entered setup data.
-                </p>
             </div>
 
             <div class="modal-footer justify-content-center bg-light border-top-0">
-                <button type="button" id="btnCancelProductChange" class="btn btn-secondary btn-sm px-4">
+
+                <button type="button"
+                        id="btnContinueEditing"
+                        class="btn btn-secondary btn-sm px-4">
                     No
                 </button>
 
-                <button type="button" id="btnConfirmProductChange" class="btn btn-danger btn-sm px-4">
+                <button type="button"
+                        id="btnConfirmClose"
+                        class="btn btn-danger btn-sm px-4">
                     Yes
                 </button>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
 <script>
+    var valueTypeList = @Html.Raw(valueTypeJson);
+
     $(document).ready(function () {
+
         var selectedProductId = @selectedProductId;
         var editRootIndex = @rootIndex;
         var isFormChanged = false;
-        var previousProductId = selectedProductId > 0 ? selectedProductId.toString() : "";
-        var pendingProductId = "";
+
+        function generateSetupNodeId() {
+            return "node_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+        }
+
+        function encodeHtml(value) {
+            if (value == null) {
+                return "";
+            }
+
+            return $("<div/>").text(value).html();
+        }
+
+        function showToastMessage(type, message) {
+            if (message == null || message === "") {
+                return;
+            }
+
+            if (typeof toastr === "undefined") {
+                alert(message);
+                return;
+            }
+
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                newestOnTop: true,
+                positionClass: "toast-top-right",
+                preventDuplicates: true,
+                timeOut: "3000"
+            };
+
+            if (type === "success") {
+                toastr.success(message, "Success");
+            }
+
+            if (type === "error") {
+                toastr.error(message, "Message");
+            }
+
+            if (type === "warning") {
+                toastr.warning(message, "Message");
+            }
+
+            if (type === "info") {
+                toastr.info(message, "Message");
+            }
+        }
 
         if (selectedProductId > 0) {
             $("#ProductId").val(selectedProductId);
@@ -155,21 +230,6 @@
         $("#ProductId").off("change").on("change", function () {
             var productId = $(this).val();
 
-            if (isFormChanged === true) {
-                pendingProductId = productId;
-                $("#ProductId").val(previousProductId);
-                $("#confirmProductChangeModal").modal("show");
-                return;
-            }
-
-            changeProduct(productId);
-        });
-
-        function changeProduct(productId) {
-            previousProductId = productId;
-            isFormChanged = false;
-            editRootIndex = -1;
-
             $("#nodeContainer").html("");
             $("#generatedSetupArea").hide();
 
@@ -178,33 +238,42 @@
             }
 
             loadGeneratedForm(productId);
-        }
+        });
 
         function loadGeneratedForm(productId) {
             $("#generatedSetupArea").show();
-            $("#nodeContainer").html('<div class="text-muted text-center py-3">Loading setup form...</div>');
+
+            $("#nodeContainer").html(
+                '<div class="text-muted text-center py-3">Loading...</div>'
+            );
 
             $.get(
                 "/ProductSetupConfiguration/GetRootLevels",
-                { productId: productId },
+                {
+                    productId: productId
+                },
                 function (response) {
                     if (!response.success) {
                         showToastMessage("error", response.message);
-                        $("#generatedSetupArea").hide();
-                        return;
-                    }
-
-                    if (response.data == null || response.data.length === 0) {
-                        $("#nodeContainer").html(
-                            '<div class="text-muted text-center py-3">No Product Configuration found for this product.</div>'
-                        );
                         return;
                     }
 
                     $("#nodeContainer").html("");
 
+                    if (response.data == null || response.data.length === 0) {
+                        $("#nodeContainer").html(
+                            '<div class="text-muted text-center py-3">No setup structure found.</div>'
+                        );
+                        return;
+                    }
+
                     for (var i = 0; i < response.data.length; i++) {
-                        addConfiguredRow($("#nodeContainer"), 0, response.data[i], true);
+                        addConfiguredRow(
+                            $("#nodeContainer"),
+                            0,
+                            response.data[i],
+                            true
+                        );
                     }
 
                     refreshActionButtons();
@@ -215,7 +284,10 @@
 
         function loadRootForEdit(productId, rootIndex) {
             $("#generatedSetupArea").show();
-            $("#nodeContainer").html('<div class="text-muted text-center py-3">Loading saved setup...</div>');
+
+            $("#nodeContainer").html(
+                '<div class="text-muted text-center py-3">Loading...</div>'
+            );
 
             $.get(
                 "/ProductSetupConfiguration/GetRootForEdit",
@@ -225,14 +297,19 @@
                 },
                 function (response) {
                     if (!response.success) {
-                        $("#nodeContainer").html(
-                            '<div class="text-danger text-center py-3">' + encodeHtml(response.message) + '</div>'
-                        );
+                        showToastMessage("error", response.message);
                         return;
                     }
 
                     $("#nodeContainer").html("");
-                    addSavedRow($("#nodeContainer"), 0, response.data, true);
+
+                    addSavedRow(
+                        $("#nodeContainer"),
+                        0,
+                        response.data,
+                        true
+                    );
+
                     refreshActionButtons();
                     isFormChanged = false;
                 }
@@ -241,31 +318,35 @@
 
         function addConfiguredRow(container, level, configNode, isRootLevel) {
             var margin = level * 30;
+            var setupNodeId = generateSetupNodeId();
             var html = "";
 
             html += '<div class="node-row mb-2" ';
+            html += 'data-setup-node-id="' + setupNodeId + '" ';
             html += 'data-level="' + level + '" ';
             html += 'data-config-id="' + configNode.id + '" ';
             html += 'data-heading="' + encodeHtml(configNode.heading) + '" ';
             html += 'data-label-name="' + encodeHtml(configNode.name) + '" ';
-            html += 'data-input-type="' + configNode.inputType + '" ';
+            html += 'data-input-type="' + encodeHtml(configNode.inputType) + '" ';
             html += 'data-root="' + isRootLevel + '" ';
             html += 'style="margin-left:' + margin + 'px;">';
 
             html += '<div class="row align-items-center">';
 
             html += '<div class="col-md-3">';
-            html += '<label class="mb-0 font-weight-bold">' + encodeHtml(configNode.name) + '</label>';
+            html += '<label class="mb-0 font-weight-bold">';
+            html += encodeHtml(configNode.name);
+            html += '</label>';
             html += '</div>';
 
             html += '<div class="col-md-5">';
             html += '<input type="text" maxlength="100" ';
             html += 'class="form-control form-control-sm node-value" ';
-            html += 'placeholder="Enter ' + encodeHtml(configNode.name) + '">';
+            html += 'placeholder="Enter value">';
             html += '</div>';
 
             if (isRootLevel === true) {
-                html += getFieldTypeDropdown("");
+                html += getFieldTypeDropdown("", "");
             }
             else {
                 html += '<div class="col-md-2"></div>';
@@ -280,26 +361,27 @@
             container.append(html);
 
             var currentRow = container.children(".node-row").last();
+
             loadDefaultChildren(currentRow);
         }
 
         function addSavedRow(container, level, savedNode, isRootLevel) {
             var margin = level * 30;
-            var fieldType = "";
 
-            if (savedNode.fieldType != null) {
-                fieldType = savedNode.fieldType;
+            var setupNodeId = savedNode.id || savedNode.Id;
+
+            if (setupNodeId == null || setupNodeId === "") {
+                setupNodeId = generateSetupNodeId();
             }
 
-            var valueType = "";
-
-            if (savedNode.valueType != null) {
-                valueType = savedNode.valueType;
-            }
+            var fieldType = savedNode.fieldType || "";
+            var fieldTypeId = savedNode.fieldTypeId || "";
+            var valueType = savedNode.valueType || "";
 
             var html = "";
 
             html += '<div class="node-row mb-2" ';
+            html += 'data-setup-node-id="' + setupNodeId + '" ';
             html += 'data-level="' + level + '" ';
             html += 'data-config-id="' + savedNode.configurationNodeId + '" ';
             html += 'data-heading="' + encodeHtml(savedNode.heading) + '" ';
@@ -311,18 +393,20 @@
             html += '<div class="row align-items-center">';
 
             html += '<div class="col-md-3">';
-            html += '<label class="mb-0 font-weight-bold">' + encodeHtml(savedNode.label) + '</label>';
+            html += '<label class="mb-0 font-weight-bold">';
+            html += encodeHtml(savedNode.label);
+            html += '</label>';
             html += '</div>';
 
             html += '<div class="col-md-5">';
             html += '<input type="text" maxlength="100" ';
             html += 'class="form-control form-control-sm node-value" ';
             html += 'value="' + encodeHtml(savedNode.value) + '" ';
-            html += 'placeholder="Enter ' + encodeHtml(savedNode.label) + '">';
+            html += 'placeholder="Enter value">';
             html += '</div>';
 
             if (isRootLevel === true) {
-                html += getFieldTypeDropdown(fieldType);
+                html += getFieldTypeDropdown(fieldType, fieldTypeId);
             }
             else {
                 html += '<div class="col-md-2"></div>';
@@ -350,31 +434,43 @@
             }
         }
 
-        function getFieldTypeDropdown(selectedValue) {
+        function getFieldTypeDropdown(selectedValue, selectedId) {
             var html = "";
 
             html += '<div class="col-md-2">';
             html += '<select class="form-control form-control-sm field-type">';
             html += '<option value="">Select</option>';
-            html += getFieldTypeOption("Percentage", selectedValue);
-            html += getFieldTypeOption("Tick/Untick", selectedValue);
-            html += getFieldTypeOption("Check/Unchecked", selectedValue);
-            html += getFieldTypeOption("Up/Down", selectedValue);
-            html += getFieldTypeOption("Value", selectedValue);
-            html += getFieldTypeOption("Text", selectedValue);
-            html += getFieldTypeOption("Date", selectedValue);
+
+            if (valueTypeList != null) {
+                for (var i = 0; i < valueTypeList.length; i++) {
+                    var item = valueTypeList[i];
+
+                    var id = item.DropdownItemId || item.dropdownItemId;
+                    var text = item.ItemName || item.itemName;
+
+                    html += getFieldTypeOption(
+                        id,
+                        text,
+                        selectedValue,
+                        selectedId
+                    );
+                }
+            }
+
             html += '</select>';
             html += '</div>';
 
             return html;
         }
 
-        function getFieldTypeOption(value, selectedValue) {
-            if (value === selectedValue) {
-                return '<option value="' + value + '" selected>' + value + '</option>';
+        function getFieldTypeOption(id, text, selectedValue, selectedId) {
+            var selected = "";
+
+            if (id == selectedId || text === selectedValue) {
+                selected = " selected";
             }
 
-            return '<option value="' + value + '">' + value + '</option>';
+            return '<option value="' + id + '" data-text="' + encodeHtml(text) + '"' + selected + '>' + encodeHtml(text) + '</option>';
         }
 
         function getActionButtons() {
@@ -383,14 +479,12 @@
             html += '<div class="col-md-2 text-right">';
 
             html += '<button type="button" ';
-            html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1" ';
-            html += 'title="Add same level">';
+            html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1">';
             html += '<i class="fas fa-plus"></i>';
             html += '</button>';
 
             html += '<button type="button" ';
-            html += 'class="btn btn-outline-danger btn-sm btn-remove-row" ';
-            html += 'title="Remove">';
+            html += 'class="btn btn-outline-danger btn-sm btn-remove-row">';
             html += '<i class="fas fa-minus"></i>';
             html += '</button>';
 
@@ -403,7 +497,7 @@
             var productId = $("#ProductId").val();
             var configId = parentRow.attr("data-config-id");
             var childArea = parentRow.children(".child-area");
-            var level = getLevel(parentRow);
+            var level = parseInt(parentRow.attr("data-level"));
 
             $.get(
                 "/ProductSetupConfiguration/GetChildLevels",
@@ -413,7 +507,6 @@
                 },
                 function (response) {
                     if (!response.success) {
-                        showToastMessage("error", response.message);
                         return;
                     }
 
@@ -423,7 +516,12 @@
                     }
 
                     for (var i = 0; i < response.data.length; i++) {
-                        addConfiguredRow(childArea, level + 1, response.data[i], false);
+                        addConfiguredRow(
+                            childArea,
+                            level + 1,
+                            response.data[i],
+                            false
+                        );
                     }
 
                     refreshActionButtons();
@@ -432,31 +530,55 @@
         }
 
         $(document).off("click", ".btn-add-same");
+
         $(document).on("click", ".btn-add-same", function () {
             var currentRow = $(this).closest(".node-row");
+
             var currentValue = currentRow.find("> .row .node-value").val();
 
             if ($.trim(currentValue) === "") {
-                showToastMessage("error", "Please type value first.");
+                showToastMessage("error", "Please enter value first.");
                 return;
             }
 
+            if (currentRow.find("> .row .field-type").length > 0) {
+                var currentType = currentRow.find("> .row .field-type").val();
+
+                if (currentType === "") {
+                    showToastMessage("error", "Please select value type first.");
+                    return;
+                }
+            }
+
             var parentContainer = currentRow.parent();
-            var configNode = getConfigFromRow(currentRow);
-            var level = getLevel(currentRow);
+
+            var configNode = {
+                id: currentRow.attr("data-config-id"),
+                heading: currentRow.attr("data-heading"),
+                name: currentRow.attr("data-label-name"),
+                inputType: currentRow.attr("data-input-type")
+            };
+
+            var level = parseInt(currentRow.attr("data-level"));
             var isRootLevel = currentRow.attr("data-root") === "true";
 
-            addConfiguredRow(parentContainer, level, configNode, isRootLevel);
+            addConfiguredRow(
+                parentContainer,
+                level,
+                configNode,
+                isRootLevel
+            );
 
             isFormChanged = true;
+
             refreshActionButtons();
         });
 
         $(document).off("click", ".btn-remove-row");
-        $(document).on("click", ".btn-remove-row", function () {
-            var currentRow = $(this).closest(".node-row");
 
-            currentRow.remove();
+        $(document).on("click", ".btn-remove-row", function () {
+            $(this).closest(".node-row").remove();
+
             isFormChanged = true;
 
             if ($("#nodeContainer").children(".node-row").length === 0) {
@@ -467,28 +589,10 @@
             refreshActionButtons();
         });
 
-        function getConfigFromRow(row) {
-            return {
-                id: row.attr("data-config-id"),
-                heading: row.attr("data-heading"),
-                name: row.attr("data-label-name"),
-                inputType: row.attr("data-input-type")
-            };
-        }
-
-        function getLevel(row) {
-            var level = row.attr("data-level");
-
-            if (level === undefined || level === null || level === "") {
-                return 0;
-            }
-
-            return parseInt(level);
-        }
-
         function refreshActionButtons() {
             $("#nodeContainer").find(".node-row").each(function () {
                 var row = $(this);
+
                 var inputType = row.attr("data-input-type");
                 var isRootLevel = row.attr("data-root") === "true";
 
@@ -504,6 +608,7 @@
                     }
 
                     row.find("> .row .btn-remove-row").show();
+
                     return;
                 }
 
@@ -524,26 +629,74 @@
             });
         }
 
-        $("#btnSave").off("click").on("click", function () {
-            saveData();
-        });
+        function validateRows(container) {
+            var valid = true;
 
-        function saveData() {
+            container.find(".node-row").each(function () {
+                var row = $(this);
+                var nodeValue = row.find("> .row .node-value").val();
+
+                if ($.trim(nodeValue) === "") {
+                    showToastMessage("error", "Please fill all required values.");
+                    valid = false;
+                    return false;
+                }
+
+                if (row.find("> .row .field-type").length > 0) {
+                    var fieldType = row.find("> .row .field-type").val();
+
+                    if (fieldType === "") {
+                        showToastMessage("error", "Please select value type.");
+                        valid = false;
+                        return false;
+                    }
+                }
+            });
+
+            return valid;
+        }
+
+        function collectRows(container) {
+            var data = [];
+
+            container.children(".node-row").each(function () {
+                var row = $(this);
+                var nodeValue = row.find("> .row .node-value").val();
+                var configurationNodeId = row.attr("data-config-id");
+                var fieldTypeId = null;
+                var fieldTypeText = null;
+
+                if (row.find("> .row .field-type").length > 0) {
+                    fieldTypeId = row.find("> .row .field-type").val();
+                    fieldTypeText = row.find("> .row .field-type option:selected").text();
+                }
+
+                data.push({
+                    id: row.attr("data-setup-node-id"),
+                    heading: row.attr("data-heading"),
+                    label: row.attr("data-label-name"),
+                    valueType: row.attr("data-input-type"),
+                    value: $.trim(nodeValue),
+                    fieldTypeId: fieldTypeId,
+                    fieldType: fieldTypeText,
+                    configurationNodeId: parseInt(configurationNodeId),
+                    children: collectRows(row.children(".child-area"))
+                });
+            });
+
+            return data;
+        }
+
+        $("#btnSave").off("click").on("click", function () {
             var productId = $("#ProductId").val();
 
             if (productId === "") {
-                showToastMessage("error", "Please select product.");
+                showToastMessage("error", "Please select a main item.");
                 return;
             }
 
             if ($("#nodeContainer").children(".node-row").length === 0) {
-
-                if (editRootIndex >= 0) {
-                    deleteEditedRoot(productId, editRootIndex);
-                    return;
-                }
-
-                showToastMessage("error", "Please add setup data.");
+                showToastMessage("error", "Please add setup values.");
                 return;
             }
 
@@ -564,6 +717,8 @@
                 }),
                 success: function (response) {
                     if (response.success) {
+                        $("#setupConfigurationModal").modal("hide");
+
                         window.location.href =
                             "/ProductSetupConfiguration?selectedProductId=" +
                             productId +
@@ -575,84 +730,10 @@
                     }
                 },
                 error: function () {
-                    showToastMessage("error", "Error while saving setup configuration.");
+                    showToastMessage("error", "Failed to save setup configuration.");
                 }
             });
-        }
-        function deleteEditedRoot(productId, rootIndex) {
-            $.ajax({
-                url: "/ProductSetupConfiguration/Delete",
-                type: "POST",
-                data: {
-                    productId: productId,
-                    rootIndex: rootIndex
-                },
-                success: function () {
-                    window.location.href =
-                        "/ProductSetupConfiguration?selectedProductId=" +
-                        productId +
-                        "&successMessage=" +
-                        encodeURIComponent("Setup configuration removed successfully.");
-                },
-                error: function () {
-                    showToastMessage("error", "Error while removing setup configuration.");
-                }
-            });
-        }
-
-        function validateRows(container) {
-            var valid = true;
-
-            container.find(".node-row").each(function () {
-                var row = $(this);
-                var nodeValue = row.find("> .row .node-value").val();
-
-                if ($.trim(nodeValue) === "") {
-                    showToastMessage("error", "Please type value for all rows.");
-                    valid = false;
-                    return false;
-                }
-
-                if (row.find("> .row .field-type").length > 0) {
-                    var fieldType = row.find("> .row .field-type").val();
-
-                    if (fieldType === "") {
-                        showToastMessage("error", "Please select field type.");
-                        valid = false;
-                        return false;
-                    }
-                }
-            });
-
-            return valid;
-        }
-
-        function collectRows(container) {
-            var data = [];
-
-            container.children(".node-row").each(function () {
-                var row = $(this);
-                var nodeValue = row.find("> .row .node-value").val();
-                var configurationNodeId = row.attr("data-config-id");
-                var fieldType = null;
-
-                if (row.find("> .row .field-type").length > 0) {
-                    fieldType = row.find("> .row .field-type").val();
-                }
-
-                data.push({
-                    heading: row.attr("data-heading"),
-                    label: row.attr("data-label-name"),
-                    valueType: row.attr("data-input-type"),
-                    value: $.trim(nodeValue),
-                    fieldType: fieldType,
-                    configurationNodeId: parseInt(configurationNodeId),
-                    children: collectRows(row.children(".child-area"))
-                });
-            });
-
-            return data;
-        }
+        });
 
         $("#btnFooterClose").off("click").on("click", function () {
             if (isFormChanged === false) {
@@ -672,59 +753,5 @@
             $("#setupConfigurationModal").modal("hide");
         });
 
-        $("#btnCancelProductChange").off("click").on("click", function () {
-            pendingProductId = "";
-            $("#confirmProductChangeModal").modal("hide");
-        });
-
-        $("#btnConfirmProductChange").off("click").on("click", function () {
-            $("#confirmProductChangeModal").modal("hide");
-
-            $("#ProductId").val(pendingProductId);
-
-            changeProduct(pendingProductId);
-
-            pendingProductId = "";
-        });
-
-        function encodeHtml(value) {
-            if (value === null || value === undefined) {
-                return "";
-            }
-
-            return $("<div/>").text(value).html();
-        }
-
-        function showToastMessage(type, message) {
-            if (typeof toastr === "undefined") {
-                alert(message);
-                return;
-            }
-
-            toastr.options = {
-                closeButton: true,
-                progressBar: true,
-                newestOnTop: true,
-                positionClass: "toast-top-right",
-                preventDuplicates: true,
-                timeOut: "3000"
-            };
-
-            if (type === "success") {
-                toastr.success(message);
-            }
-
-            if (type === "error") {
-                toastr.error(message);
-            }
-
-            if (type === "warning") {
-                toastr.warning(message);
-            }
-
-            if (type === "info") {
-                toastr.info(message);
-            }
-        }
     });
 </script>

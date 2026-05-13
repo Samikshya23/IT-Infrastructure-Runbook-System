@@ -40,7 +40,7 @@ CodeMirror.defineMode("vhdl", function(config, parserConfig) {
       "end component,end for,end generate,end if,end loop,end process,end record,end units,entity,exit,file,for," +
       "function,generate,generic,generic map,group,guarded,if,impure,in,inertial,inout,is,label,library,linkage," +
       "literal,loop,map,mod,nand,new,next,nor,null,of,on,open,or,others,out,package,package body,port,port map," +
-      "postponed,procedure,process,pure,range,record,register,reject,rem,report,return,rol,ror,select,severity,signal," +
+      "postponed,procedure,process,pure,range,record,register,reject,rem,ReportModel,return,rol,ror,select,severity,signal," +
       "sla,sll,sra,srl,subtype,then,to,transport,type,unaffected,units,until,use,variable,wait,when,while,with,xnor,xor");
 
   var blockKeywords = words("architecture,entity,begin,case,port,else,elsif,end,for,function,if");

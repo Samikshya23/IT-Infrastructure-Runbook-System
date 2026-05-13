@@ -11,16 +11,20 @@ namespace EmployeeAccessSystem.Repositories
 
         Task<IEnumerable<ProductEntryModel>> GetByProductAsync(int productId);
 
-        Task<IEnumerable<ProductEntryModel>> GetByGroupAsync(Guid entryGroupId);
+        Task<IEnumerable<ProductEntryModel>> GetDetailsAsync(Guid entryGroupId);
 
-        Task<string> GetSetupJsonByProductAsync(int productId);
+        Task<string> GetSetupAsync(int productId);
+
+        Task<string> GetConfigurationAsync(int productId);
 
         Task<IEnumerable<ProductConfigurationIndexItem>> GetConfiguredProductsAsync();
 
-        Task<int> CheckExistsAsync(int productId, DateTime entryDate);
+        Task<int> CheckExistsAsync(int productId);
 
-        Task AddAsync(ProductEntryModel model);
+        Task<int> SaveAsync(ProductEntryModel model);
 
-        Task DeleteGroupAsync(Guid entryGroupId, string deletedBy);
+        Task<int> DeleteAsync(Guid entryGroupId, string deletedBy);
+
+        Task<int> ReportModel(int productId, string validSetupNodeIds, string deletedBy);
     }
 }

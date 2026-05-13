@@ -17,171 +17,173 @@ namespace EmployeeAccessSystem.Services
 
         public async Task<IEnumerable<ProductEntryModel>> GetAllAsync()
         {
-            IEnumerable<ProductEntryModel> data =
-                await _repository.GetAllAsync();
-
-            return data;
+            return await _repository.GetAllAsync();
         }
 
         public async Task<IEnumerable<ProductEntryModel>> GetByProductAsync(int productId)
         {
-            IEnumerable<ProductEntryModel> data =
-                await _repository.GetByProductAsync(productId);
-
-            return data;
+            return await _repository.GetByProductAsync(productId);
         }
 
-        public async Task<IEnumerable<ProductEntryModel>> GetByGroupAsync(Guid entryGroupId)
+        public async Task<IEnumerable<ProductEntryModel>> GetDetailsAsync(Guid entryGroupId)
         {
-            IEnumerable<ProductEntryModel> data =
-                await _repository.GetByGroupAsync(entryGroupId);
-
-            return data;
+            return await _repository.GetDetailsAsync(entryGroupId);
         }
 
-        public async Task<string> GetSetupJsonByProductAsync(int productId)
+        public async Task<string> GetSetupAsync(int productId)
         {
             if (productId <= 0)
             {
                 return "";
             }
 
-            string setupJson =
-                await _repository.GetSetupJsonByProductAsync(productId);
+            return await _repository.GetSetupAsync(productId);
+        }
 
-            if (string.IsNullOrWhiteSpace(setupJson))
+        public async Task<string> GetConfigurationAsync(int productId)
+        {
+            if (productId <= 0)
             {
                 return "";
             }
 
-            return setupJson;
+            return await _repository.GetConfigurationAsync(productId);
         }
 
         public async Task<IEnumerable<ProductConfigurationIndexItem>> GetConfiguredProductsAsync()
         {
-            IEnumerable<ProductConfigurationIndexItem> products =
-                await _repository.GetConfiguredProductsAsync();
-
-            return products;
+            return await _repository.GetConfiguredProductsAsync();
         }
 
-        public async Task<string> SaveEntryAsync(ProductEntrySaveRequest request, string createdBy)
+        public async Task<string> SaveAsync(ProductEntrySaveRequest request, string createdBy)
         {
             if (request == null)
             {
-                return "Invalid product entry data.";
+                return "Invalid request.";
             }
 
             if (request.ProductId <= 0)
             {
-                return "Please select product.";
+                return "Please select a main item.";
             }
 
             if (request.Items == null || request.Items.Count == 0)
             {
-                return "No product entry item found.";
-            }
-
-            if (string.IsNullOrWhiteSpace(createdBy))
-            {
-                createdBy = "System";
-            }
-
-            DateTime entryDate = DateTime.Now;
-
-            if (!request.EntryGroupId.HasValue)
-            {
-                int existingCount =
-                    await _repository.CheckExistsAsync(
-                        request.ProductId,
-                        entryDate);
-
-                if (existingCount > 0)
-                {
-                    return "Entry already exists for today.";
-                }
-            }
-
-            Guid entryGroupId;
-
-            if (request.EntryGroupId.HasValue)
-            {
-                entryGroupId = request.EntryGroupId.Value;
-
-                await _repository.DeleteGroupAsync(entryGroupId, createdBy);
-            }
-            else
-            {
-                entryGroupId = Guid.NewGuid();
+                return "No entry items found.";
             }
 
             foreach (ProductEntryFormItem item in request.Items)
             {
                 if (item == null)
                 {
-                    continue;
+                    return "Invalid entry item found.";
                 }
 
-                string resultValue = item.ResultValue;
-
-                if (item.ValueType == "Percentage")
+                if (string.IsNullOrWhiteSpace(item.ResultValue))
                 {
-                    decimal percentageValue;
-
-                    if (decimal.TryParse(resultValue, out percentageValue))
-                    {
-                        if (percentageValue > 100)
-                        {
-                            return "Percentage value cannot be greater than 100.";
-                        }
-
-                        if (percentageValue < 0)
-                        {
-                            return "Percentage value cannot be less than 0.";
-                        }
-
-                        resultValue = percentageValue.ToString();
-                    }
-                    else if (!string.IsNullOrWhiteSpace(resultValue))
-                    {
-                        return "Invalid percentage value.";
-                    }
+                    return "Please fill all required values.";
                 }
 
-                ProductEntryModel entry = new ProductEntryModel();
-
-                entry.EntryGroupId = entryGroupId;
-                entry.ProductId = request.ProductId;
-                entry.SetupNodeId = item.SetupNodeId;
-                entry.ParentPath = item.ParentPath;
-                entry.DisplayName = item.DisplayName;
-                entry.ValueType = item.ValueType;
-                entry.ResultValue = resultValue;
-                entry.EntryDate = entryDate;
-                entry.IsActive = true;
-                entry.CreatedBy = createdBy;
-
-                await _repository.AddAsync(entry);
+                if (!ValidatePercentage(item, out string validationMessage))
+                {
+                    return validationMessage;
+                }
             }
 
-            return "Product entry saved successfully.";
+            int existingCount = await _repository.CheckExistsAsync(request.ProductId);
+
+            Guid entryGroupId = request.EntryGroupId ?? Guid.NewGuid();
+
+            int savedCount = 0;
+
+            foreach (ProductEntryFormItem item in request.Items)
+            {
+                ProductEntryModel model = new ProductEntryModel();
+
+                model.EntryGroupId = entryGroupId;
+                model.ProductId = request.ProductId;
+                model.SetupNodeId = item.SetupNodeId;
+                model.ParentPath = item.ParentPath;
+                model.DisplayName = item.DisplayName;
+                model.ValueType = item.ValueType;
+                model.ValueTypeId = item.ValueTypeId;
+                model.ResultValue = item.ResultValue;
+                model.IsActive = true;
+                model.CreatedBy = createdBy;
+                model.ModifiedBy = createdBy;
+
+                int result = await _repository.SaveAsync(model);
+
+                if (result > 0)
+                {
+                    savedCount++;
+                }
+            }
+
+            if (savedCount == 0)
+            {
+                return "Failed to save.";
+            }
+
+            if (existingCount > 0)
+            {
+                return "Entry updated successfully.";
+            }
+
+            return "Entry added successfully.";
         }
 
-        public async Task<string> DeleteGroupAsync(Guid entryGroupId, string deletedBy)
+        public async Task<string> DeleteAsync(Guid entryGroupId, string deletedBy)
         {
             if (entryGroupId == Guid.Empty)
             {
-                return "Invalid product entry.";
+                return "Invalid entry.";
             }
 
-            if (string.IsNullOrWhiteSpace(deletedBy))
+            int result = await _repository.DeleteAsync(entryGroupId, deletedBy);
+
+            if (result > 0)
             {
-                deletedBy = "System";
+                return "Entry deleted successfully.";
             }
 
-            await _repository.DeleteGroupAsync(entryGroupId, deletedBy);
+            return "Failed to delete.";
+        }
 
-            return "Product entry deleted successfully.";
+        private bool ValidatePercentage(ProductEntryFormItem item, out string message)
+        {
+            message = "";
+
+            bool isPercentageById = item.ValueTypeId == 3;
+
+            bool isPercentageByText =
+                item.ValueType != null &&
+                item.ValueType.Trim().ToLower() == "percentage";
+
+            if (!isPercentageById && !isPercentageByText)
+            {
+                return true;
+            }
+
+            string resultValue = item.ResultValue.Replace("%", "").Trim();
+
+            decimal percentageValue;
+
+            if (!decimal.TryParse(resultValue, out percentageValue))
+            {
+                message = "Invalid percentage value.";
+                return false;
+            }
+
+            if (percentageValue < 0 || percentageValue > 100)
+            {
+                message = "Percentage value must be between 0 and 100.";
+                return false;
+            }
+
+            item.ResultValue = percentageValue.ToString();
+
+            return true;
         }
     }
 }

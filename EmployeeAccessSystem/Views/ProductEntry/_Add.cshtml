@@ -1,57 +1,45 @@
 ﻿<div class="modal fade" id="productEntryModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
         <div class="modal-content rounded-0">
 
-            <form asp-action="Save"
-                  asp-controller="ProductEntry"
-                  method="post"
-                  id="productEntryForm">
-
+            <form asp-action="Save" asp-controller="ProductEntry" method="post" id="productEntryForm">
                 @Html.AntiForgeryToken()
 
                 <input type="hidden" name="EntryGroupId" id="EntryGroupId" />
 
-                <div class="modal-header">
-                    <h5 class="modal-title font-weight-bold">Product Entry</h5>
-
-                    <button type="button"
-                            class="close"
-                            onclick="confirmCloseProductEntry()">
-                        <span>&times;</span>
-                    </button>
+                <div class="modal-header py-2">
+                    <h5 class="modal-title font-weight-bold">Entry</h5>
                 </div>
 
-                <div class="modal-body">
+                <div class="modal-body py-2" style="max-height:70vh; overflow-y:auto;">
 
-                    <div class="form-group mb-3">
-                        <label class="font-weight-bold">Product</label>
-                        <select name="ProductId"
-                                id="ProductId"
-                                class="form-control form-control-sm"
-                                asp-items="ViewBag.Products"
-                                onchange="loadProductEntryForm(null)">
-                        </select>
+                    <div class="card card-primary card-outline shadow-none rounded-0 mb-0">
+                        <div class="card-body p-2">
+
+                            <div class="form-group mb-2">
+                                <label class="font-weight-bold mb-1">Select</label>
+
+                                <select id="ProductId"
+                                        name="ProductId"
+                                        class="form-control form-control-sm"
+                                        asp-items="ViewBag.Products"
+                                        onchange="loadTodayEntryValues()">
+                                </select>
+                            </div>
+
+                            <div id="dynamicEntryArea"></div>
+
+                        </div>
                     </div>
 
-                    <div id="dynamicEntryArea">
-                    </div>
-
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            onclick="confirmCloseProductEntry()">
-                        Close
-                    </button>
-
-                    <button type="submit"
-                            class="btn btn-primary">
-                        Save
-                    </button>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="confirmCloseProductEntry()">Close</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
                 </div>
-
             </form>
+
         </div>
     </div>
 </div>
@@ -59,9 +47,7 @@
 <div class="modal fade" id="closeConfirmModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
         <div class="modal-content rounded-0">
-
             <div class="modal-body text-center">
-
                 <div class="mb-3">
                     <span class="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center"
                           style="width:60px;height:60px;">
@@ -75,60 +61,94 @@
                     Do you want to close this form?
                 </p>
 
-                <button type="button"
-                        class="btn btn-secondary btn-sm"
-                        data-dismiss="modal">
-                    No
-                </button>
-
-                <button type="button"
-                        class="btn btn-danger btn-sm"
-                        onclick="closeProductEntryModalNow()">
-                    Yes
-                </button>
-
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">No</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="closeProductEntryModalNow()">Yes</button>
             </div>
-
         </div>
+    </div>
+</div>
+
+<div aria-live="polite" aria-atomic="true" style="position:fixed; top:20px; right:20px; z-index:9999;">
+    <div id="productEntryToast" class="toast bg-danger text-white" data-delay="3000" role="alert">
+        <div class="toast-body" id="productEntryToastMessage"></div>
     </div>
 </div>
 
 <script>
     var currentSetupItems = [];
 
+    function getAntiForgeryToken() {
+        return $('input[name="__RequestVerificationToken"]').val();
+    }
+
+    function showEntryToast(message) {
+        $('#productEntryToastMessage').text(message);
+
+        if ($.fn.toast) {
+            $('#productEntryToast').toast('show');
+        }
+        else {
+            $('#productEntryToast').show();
+
+            setTimeout(function () {
+                $('#productEntryToast').hide();
+            }, 3000);
+        }
+    }
+
     function openAddEntryModal() {
         $('#EntryGroupId').val('');
-
-        var selectedProductId = '@ViewBag.SelectedProductId';
-
-        if (selectedProductId !== '') {
-            $('#ProductId').val(selectedProductId);
-        }
-
         $('#dynamicEntryArea').html('');
-
         $('#productEntryModal').modal('show');
 
-        loadProductEntryForm(null);
+        loadTodayEntryValues();
+    }
+
+    function loadTodayEntryValues() {
+        var productId = $('#ProductId').val();
+
+        if (productId === '' || productId == null) {
+            $('#dynamicEntryArea').html('');
+            return;
+        }
+
+        $.ajax({
+            url: '/ProductEntry/GetTodayByProduct',
+            type: 'GET',
+            headers: {
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
+            data: {
+                productId: productId
+            },
+            success: function (entries) {
+                loadProductEntryForm(entries);
+            },
+            error: function () {
+                loadProductEntryForm(null);
+            }
+        });
     }
 
     function openEditEntryModal(entryGroupId) {
         $('#EntryGroupId').val(entryGroupId);
 
         $.ajax({
-            url: '/ProductEntry/GetByGroup',
+            url: '/ProductEntry/GetDetails',
             type: 'GET',
+            headers: {
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
             data: {
                 entryGroupId: entryGroupId
             },
             success: function (entries) {
                 if (entries == null || entries.length === 0) {
-                    alert('Entry not found.');
+                    showEntryToast('Entry not found.');
                     return;
                 }
 
                 var firstEntry = entries[0];
-
                 var productId = firstEntry.productId;
 
                 if (productId == null) {
@@ -136,13 +156,12 @@
                 }
 
                 $('#ProductId').val(productId);
-
                 $('#productEntryModal').modal('show');
 
                 loadProductEntryForm(entries);
             },
             error: function () {
-                alert('Failed to load entry.');
+                showEntryToast('Failed to load entry.');
             }
         });
     }
@@ -156,16 +175,17 @@
         }
 
         $.ajax({
-            url: '/ProductEntry/GetSetupJson',
+            url: '/ProductEntry/GetSetup',
             type: 'GET',
+            headers: {
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
             data: {
                 productId: productId
             },
             success: function (setupJson) {
                 if (setupJson == null || setupJson === '') {
-                    $('#dynamicEntryArea').html(
-                        '<div class="alert alert-warning mb-0">No setup configuration found for this product.</div>'
-                    );
+                    $('#dynamicEntryArea').html('<div class="alert alert-warning m-2">No setup configuration found.</div>');
                     return;
                 }
 
@@ -175,9 +195,7 @@
                     setupObject = JSON.parse(setupJson);
                 }
                 catch (e) {
-                    $('#dynamicEntryArea').html(
-                        '<div class="alert alert-danger mb-0">Invalid setup configuration JSON.</div>'
-                    );
+                    $('#dynamicEntryArea').html('<div class="alert alert-danger m-2">Invalid setup configuration JSON.</div>');
                     return;
                 }
 
@@ -193,7 +211,14 @@
                     collectSetupItems(setupObject.Structure);
                 }
 
+                if (existingEntries == null) {
+                    existingEntries = [];
+                }
+
                 renderEntryForm(existingEntries);
+            },
+            error: function () {
+                $('#dynamicEntryArea').html('<div class="alert alert-danger m-2">Failed to load setup.</div>');
             }
         });
     }
@@ -207,51 +232,36 @@
             var parent = nodes[i];
 
             var parentName = getNodeValue(parent);
+            var parentNodeId = getNodeId(parent);
             var parentFieldType = getNodeFieldType(parent);
+            var parentFieldTypeId = getNodeFieldTypeId(parent);
             var children = getNodeChildren(parent);
 
             if (children == null || children.length === 0) {
                 currentSetupItems.push({
-                    setupNodeId: parentName,
+                    setupNodeId: parentNodeId,
+                    oldSetupNodeId: parentName,
                     parentPath: parentName,
                     displayName: parentName,
-                    valueType: parentFieldType
+                    valueType: parentFieldType,
+                    valueTypeId: parentFieldTypeId
                 });
             }
             else {
-                collectChildItems(children, parentName, parentName, parentFieldType);
-            }
-        }
-    }
+                for (var j = 0; j < children.length; j++) {
+                    var child = children[j];
+                    var childName = getNodeValue(child);
+                    var childNodeId = getNodeId(child);
 
-    function collectChildItems(children, rootName, parentPath, parentFieldType) {
-        if (children == null) {
-            return;
-        }
-
-        for (var j = 0; j < children.length; j++) {
-            var child = children[j];
-
-            var childName = getNodeValue(child);
-            var childFieldType = getNodeFieldType(child);
-
-            if (childFieldType === '') {
-                childFieldType = parentFieldType;
-            }
-
-            var grandChildren = getNodeChildren(child);
-            var currentPath = parentPath + '/' + childName;
-
-            if (grandChildren == null || grandChildren.length === 0) {
-                currentSetupItems.push({
-                    setupNodeId: currentPath,
-                    parentPath: rootName,
-                    displayName: childName,
-                    valueType: childFieldType
-                });
-            }
-            else {
-                collectChildItems(grandChildren, rootName, currentPath, childFieldType);
+                    currentSetupItems.push({
+                        setupNodeId: childNodeId,
+                        oldSetupNodeId: parentName + '/' + childName,
+                        parentPath: parentName,
+                        displayName: childName,
+                        valueType: parentFieldType,
+                        valueTypeId: parentFieldTypeId
+                    });
+                }
             }
         }
     }
@@ -262,54 +272,79 @@
             return;
         }
 
+        var grouped = {};
+
+        for (var i = 0; i < currentSetupItems.length; i++) {
+            var item = currentSetupItems[i];
+
+            if (!grouped[item.parentPath]) {
+                grouped[item.parentPath] = [];
+            }
+
+            grouped[item.parentPath].push(item);
+        }
+
         var html = '';
 
-        html += '<div class="table-responsive mt-3">';
-        html += '<table class="table table-bordered table-sm mb-0" style="table-layout:fixed; width:100%;">';
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-bordered table-sm mb-0 w-100" style="table-layout:fixed;">';
         html += '<tbody>';
 
-        var groupedItems = groupSetupItemsByParent();
+        var index = 0;
 
-        var itemIndex = 0;
+        for (var groupName in grouped) {
+            if (grouped.hasOwnProperty(groupName)) {
+                var items = grouped[groupName];
 
-        for (var groupName in groupedItems) {
-            if (groupedItems.hasOwnProperty(groupName)) {
-                var items = groupedItems[groupName];
+                for (var x = 0; x < items.length; x++) {
+                    var item = items[x];
 
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i];
-
-                    var oldValue = getExistingValue(existingEntries, item.displayName, item.parentPath);
+                    var oldValue = getExistingValue(
+                        existingEntries,
+                        item.setupNodeId,
+                        item.displayName,
+                        item.parentPath,
+                        item.oldSetupNodeId,
+                        item.valueTypeId
+                    );
 
                     html += '<tr>';
 
-                    if (i === 0) {
-                        html += '<td class="align-middle font-weight-bold bg-light" rowspan="' + items.length + '" style="width:28%;">';
-                        html += '<div class="px-2">';
+                    if (x === 0) {
+                        html += '<td rowspan="' + items.length + '" class="align-middle font-weight-bold text-left p-0" style="width:30%;">';
+                        html += '<div class="px-2 d-flex align-items-center justify-content-start" style="height:36px;">';
                         html += escapeHtml(groupName);
                         html += '</div>';
                         html += '</td>';
                     }
 
-                    html += '<td class="align-middle" style="width:36%;">';
-                    html += '<div class="px-2">';
+                    html += '<td class="align-middle text-left p-0" style="width:40%;">';
+                    html += '<div class="px-2 d-flex align-items-center justify-content-start" style="height:36px;">';
                     html += escapeHtml(item.displayName);
                     html += '</div>';
 
-                    html += '<input type="hidden" name="Items[' + itemIndex + '].SetupNodeId" value="' + escapeAttribute(item.setupNodeId) + '" />';
-                    html += '<input type="hidden" name="Items[' + itemIndex + '].ParentPath" value="' + escapeAttribute(item.parentPath) + '" />';
-                    html += '<input type="hidden" name="Items[' + itemIndex + '].DisplayName" value="' + escapeAttribute(item.displayName) + '" />';
-                    html += '<input type="hidden" name="Items[' + itemIndex + '].ValueType" value="' + escapeAttribute(item.valueType) + '" />';
+                    html += '<input type="hidden" name="Items[' + index + '].SetupNodeId" value="' + escapeAttribute(item.setupNodeId) + '" />';
+                    html += '<input type="hidden" name="Items[' + index + '].ParentPath" value="' + escapeAttribute(item.parentPath) + '" />';
+                    html += '<input type="hidden" name="Items[' + index + '].DisplayName" value="' + escapeAttribute(item.displayName) + '" />';
+                    html += '<input type="hidden" name="Items[' + index + '].ValueType" value="' + escapeAttribute(item.valueType) + '" />';
+                    html += '<input type="hidden" name="Items[' + index + '].ValueTypeId" value="' + escapeAttribute(item.valueTypeId) + '" />';
 
                     html += '</td>';
 
-                    html += '<td class="align-middle" style="width:36%;">';
-                    html += createValueInput(itemIndex, item.valueType, oldValue);
-                    html += '</td>';
+                    html += '<td class="align-middle text-left p-0" style="width:30%;">';
+                    html += '<div class="px-2 d-flex align-items-center justify-content-start" style="height:36px;">';
 
+                    html += createValueInput(
+                        index,
+                        oldValue,
+                        item.valueTypeId
+                    );
+
+                    html += '</div>';
+                    html += '</td>';
                     html += '</tr>';
 
-                    itemIndex++;
+                    index++;
                 }
             }
         }
@@ -321,183 +356,273 @@
         $('#dynamicEntryArea').html(html);
     }
 
-    function groupSetupItemsByParent() {
-        var groupedItems = {};
-
-        for (var i = 0; i < currentSetupItems.length; i++) {
-            var item = currentSetupItems[i];
-
-            if (!groupedItems[item.parentPath]) {
-                groupedItems[item.parentPath] = [];
-            }
-
-            groupedItems[item.parentPath].push(item);
-        }
-
-        return groupedItems;
-    }
-
-    function createValueInput(index, valueType, oldValue) {
+    function createValueInput(index, oldValue, valueTypeId) {
         if (oldValue == null) {
             oldValue = '';
         }
 
-        if (valueType == null) {
-            valueType = '';
+        oldValue = oldValue.toString().replace('%', '');
+
+        var typeId = parseInt(valueTypeId);
+
+        if (typeId === 4) {
+            return createTickCrossDropdown(index, oldValue);
         }
 
-        var normalizedType = valueType.toLowerCase();
-
-        if (normalizedType === 'percentage') {
-            return '<div class="input-group input-group-sm" style="max-width:150px;">' +
-                '<input type="number" min="0" max="100" step="0.01" class="form-control percentage-input" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" />' +
-                '<div class="input-group-append"><span class="input-group-text">%</span></div>' +
-                '</div>';
+        if (typeId === 5) {
+            return createUpDownDropdown(index, oldValue);
         }
 
-        if (normalizedType === 'tick/untick') {
-            var tickChecked = '';
-            var crossChecked = '';
-
-            if (oldValue === 'Tick' || oldValue === 'Checked' || oldValue === 'true' || oldValue === 'True') {
-                tickChecked = 'checked';
-            }
-
-            if (oldValue === 'Cross' || oldValue === 'Unchecked' || oldValue === 'false' || oldValue === 'False') {
-                crossChecked = 'checked';
-            }
-
-            return '<div class="d-flex align-items-center">' +
-                '<div class="custom-control custom-radio mr-3">' +
-                '<input type="radio" id="tick_' + index + '" name="Items[' + index + '].ResultValue" value="Tick" class="custom-control-input" ' + tickChecked + ' />' +
-                '<label class="custom-control-label" for="tick_' + index + '"><i class="fas fa-check text-success mr-1"></i>Tick</label>' +
-                '</div>' +
-                '<div class="custom-control custom-radio">' +
-                '<input type="radio" id="cross_' + index + '" name="Items[' + index + '].ResultValue" value="Cross" class="custom-control-input" ' + crossChecked + ' />' +
-                '<label class="custom-control-label" for="cross_' + index + '"><i class="fas fa-times text-danger mr-1"></i>Cross</label>' +
+        if (typeId === 3) {
+            return '' +
+                '<div class="input-group input-group-sm" style="width:100px;">' +
+                '<input type="text" autocomplete="off" class="form-control form-control-sm percentage-input required-entry-value" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" oninput="limitPercentageInput(this)" />' +
+                '<div class="input-group-append">' +
+                '<span class="input-group-text">%</span>' +
                 '</div>' +
                 '</div>';
         }
 
-        if (normalizedType === 'check/unchecked' ||
-            normalizedType === 'checked/unchecked') {
-
-            var checkedText = '';
-
-            if (oldValue === 'Checked' ||
-                oldValue === 'Tick' ||
-                oldValue === 'true' ||
-                oldValue === 'True') {
-                checkedText = 'checked';
-            }
-
-            return '<div class="custom-control custom-checkbox">' +
-                '<input type="hidden" class="check-hidden" name="Items[' + index + '].ResultValue" value="Unchecked" />' +
-                '<input type="checkbox" class="custom-control-input check-input" id="check_' + index + '" data-index="' + index + '" ' + checkedText + ' />' +
-                '<label class="custom-control-label" for="check_' + index + '">Check</label>' +
-                '</div>';
+        if (typeId === 2) {
+            return '' +
+                '<input type="date" class="form-control form-control-sm required-entry-value" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" style="width:140px;" />';
         }
 
-        if (normalizedType === 'up/down') {
-            var upSelected = '';
-            var downSelected = '';
+        var textValue = oldValue;
 
-            if (oldValue === 'Up') {
-                upSelected = 'selected';
-            }
-
-            if (oldValue === 'Down') {
-                downSelected = 'selected';
-            }
-
-            return '<select class="form-control form-control-sm" name="Items[' + index + '].ResultValue" style="max-width:150px;">' +
-                '<option value="">Select</option>' +
-                '<option value="Up" ' + upSelected + '>Up</option>' +
-                '<option value="Down" ' + downSelected + '>Down</option>' +
-                '</select>';
+        if (
+            oldValue === '8' ||
+            oldValue === '9' ||
+            oldValue === '10' ||
+            oldValue === '11' ||
+            oldValue === 'Tick' ||
+            oldValue === 'Cross' ||
+            oldValue === 'Up' ||
+            oldValue === 'Down'
+        ) {
+            textValue = '';
         }
 
-        if (normalizedType === 'date') {
-            return '<input type="date" class="form-control form-control-sm" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" style="max-width:170px;" />';
-        }
-
-        return '<input type="text" class="form-control form-control-sm" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(oldValue) + '" style="max-width:180px;" />';
+        return '' +
+            '<input type="text" autocomplete="off" class="form-control form-control-sm required-entry-value" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(textValue) + '" style="width:120px;" />';
     }
 
-    $(document).on('change', '.check-input', function () {
-        var index = $(this).data('index');
+    function createTickCrossDropdown(index, oldValue) {
+        var selectedText = 'Select';
+        var selectedValue = oldValue;
 
-        if ($(this).is(':checked')) {
-            $('input[name="Items[' + index + '].ResultValue"]').val('Checked');
-        }
-        else {
-            $('input[name="Items[' + index + '].ResultValue"]').val('Unchecked');
-        }
-    });
-
-    $(document).on('input', '.percentage-input', function () {
-        var value = parseFloat($(this).val());
-
-        if (value > 100) {
-            $(this).val(100);
+        if (oldValue === 'Tick') {
+            selectedValue = '8';
         }
 
-        if (value < 0) {
-            $(this).val(0);
+        if (oldValue === 'Cross') {
+            selectedValue = '9';
         }
-    });
 
-    $('#productEntryForm').on('submit', function () {
+        if (selectedValue === '8') {
+            selectedText = '<i class="fas fa-check text-success"></i>';
+        }
+
+        if (selectedValue === '9') {
+            selectedText = '<i class="fas fa-times text-danger"></i>';
+        }
+
+        return '' +
+            '<input type="hidden" class="required-entry-value" id="tickCross_' + index + '" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(selectedValue) + '" />' +
+            '<div class="dropdown" style="width:100px;">' +
+            '<button type="button" class="btn btn-light border btn-sm dropdown-toggle" data-toggle="dropdown" id="tickCrossButton_' + index + '" style="width:100px;">' +
+            selectedText +
+            '</button>' +
+            '<div class="dropdown-menu p-0 text-center" style="min-width:100px;">' +
+            '<button type="button" class="dropdown-item" onclick="selectTickCross(' + index + ', \'8\')">' +
+            '<i class="fas fa-check text-success"></i>' +
+            '</button>' +
+            '<button type="button" class="dropdown-item" onclick="selectTickCross(' + index + ', \'9\')">' +
+            '<i class="fas fa-times text-danger"></i>' +
+            '</button>' +
+            '</div>' +
+            '</div>';
+    }
+
+    function selectTickCross(index, value) {
+        $('#tickCross_' + index).val(value);
+
+        if (value === '8') {
+            $('#tickCrossButton_' + index).html('<i class="fas fa-check text-success"></i>');
+        }
+
+        if (value === '9') {
+            $('#tickCrossButton_' + index).html('<i class="fas fa-times text-danger"></i>');
+        }
+    }
+
+    function createUpDownDropdown(index, oldValue) {
+        var selectedText = 'Select';
+        var selectedValue = oldValue;
+
+        if (oldValue === 'Up') {
+            selectedValue = '10';
+        }
+
+        if (oldValue === 'Down') {
+            selectedValue = '11';
+        }
+
+        if (selectedValue === '10') {
+            selectedText = '<span class="text-success font-weight-bold">Up</span>';
+        }
+
+        if (selectedValue === '11') {
+            selectedText = '<span class="text-danger font-weight-bold">Down</span>';
+        }
+
+        return '' +
+            '<input type="hidden" class="required-entry-value" id="upDown_' + index + '" name="Items[' + index + '].ResultValue" value="' + escapeAttribute(selectedValue) + '" />' +
+            '<div class="dropdown" style="width:100px;">' +
+            '<button type="button" class="btn btn-light border btn-sm dropdown-toggle" data-toggle="dropdown" id="upDownButton_' + index + '" style="width:100px;">' +
+            selectedText +
+            '</button>' +
+            '<div class="dropdown-menu p-0 text-center" style="min-width:100px;">' +
+            '<button type="button" class="dropdown-item" onclick="selectUpDown(' + index + ', \'10\')">' +
+            '<span class="text-success font-weight-bold">Up</span>' +
+            '</button>' +
+            '<button type="button" class="dropdown-item" onclick="selectUpDown(' + index + ', \'11\')">' +
+            '<span class="text-danger font-weight-bold">Down</span>' +
+            '</button>' +
+            '</div>' +
+            '</div>';
+    }
+
+    function selectUpDown(index, value) {
+        $('#upDown_' + index).val(value);
+
+        if (value === '10') {
+            $('#upDownButton_' + index).html('<span class="text-success font-weight-bold">Up</span>');
+        }
+
+        if (value === '11') {
+            $('#upDownButton_' + index).html('<span class="text-danger font-weight-bold">Down</span>');
+        }
+    }
+
+    function limitPercentageInput(input) {
+        if (input == null) {
+            return;
+        }
+
+        var value = input.value.replace(/[^0-9]/g, '');
+
+        if (value === '') {
+            input.value = '';
+            return;
+        }
+
+        var numberValue = parseInt(value);
+
+        if (numberValue > 100) {
+            input.value = '';
+            showEntryToast('Percentage value cannot be greater than 100.');
+            return;
+        }
+
+        input.value = numberValue.toString();
+    }
+
+    function getExistingValue(existingEntries, setupNodeId, displayName, parentPath, oldSetupNodeId, valueTypeId) {
+        if (existingEntries == null) {
+            return '';
+        }
+
+        var foundValue = '';
+
+        for (var i = 0; i < existingEntries.length; i++) {
+            var entry = existingEntries[i];
+
+            var entrySetupNodeId = entry.setupNodeId || entry.SetupNodeId;
+            var entryResultValue = entry.resultValue;
+
+            if (entryResultValue == null) {
+                entryResultValue = entry.ResultValue;
+            }
+
+            if (entrySetupNodeId === setupNodeId || entrySetupNodeId === oldSetupNodeId) {
+                foundValue = entryResultValue;
+                break;
+            }
+        }
+
+        if (foundValue === '') {
+            for (var j = 0; j < existingEntries.length; j++) {
+                var entry2 = existingEntries[j];
+
+                var entryDisplayName = entry2.displayName || entry2.DisplayName;
+                var entryParentPath = entry2.parentPath || entry2.ParentPath;
+                var entryResultValue2 = entry2.resultValue;
+
+                if (entryResultValue2 == null) {
+                    entryResultValue2 = entry2.ResultValue;
+                }
+
+                if (entryDisplayName === displayName && entryParentPath === parentPath) {
+                    foundValue = entryResultValue2;
+                    break;
+                }
+            }
+        }
+
+        if (foundValue === '') {
+            return '';
+        }
+
+        if (parseInt(valueTypeId) === 3) {
+            if (isNaN(foundValue.replace('%', ''))) {
+                return '';
+            }
+        }
+
+        if (parseInt(valueTypeId) === 4) {
+            if (foundValue !== 'Tick' && foundValue !== 'Cross' && foundValue !== '8' && foundValue !== '9') {
+                return '';
+            }
+        }
+
+        if (parseInt(valueTypeId) === 5) {
+            if (foundValue !== 'Up' && foundValue !== 'Down' && foundValue !== '10' && foundValue !== '11') {
+                return '';
+            }
+        }
+
+        return foundValue;
+    }
+
+    $('#productEntryForm').off('submit').on('submit', function (e) {
+        var productId = $('#ProductId').val();
+
+        if (productId === '' || productId == null) {
+            e.preventDefault();
+            showEntryToast('Please select a main item.');
+            return false;
+        }
+
         var isValid = true;
 
-        $('.percentage-input').each(function () {
-            var value = parseFloat($(this).val());
+        $('.required-entry-value').each(function () {
+            var value = $(this).val();
 
-            if (!isNaN(value) && value > 100) {
+            if (value == null || value.trim() === '') {
                 isValid = false;
+                return false;
             }
         });
 
         if (!isValid) {
-            alert('Percentage value cannot be greater than 100.');
+            e.preventDefault();
+            showEntryToast('Please fill all required values.');
             return false;
         }
 
         return true;
     });
-
-    function getExistingValue(existingEntries, displayName, parentPath) {
-        if (existingEntries == null) {
-            return '';
-        }
-
-        for (var i = 0; i < existingEntries.length; i++) {
-            var itemDisplayName = existingEntries[i].displayName;
-
-            if (itemDisplayName == null) {
-                itemDisplayName = existingEntries[i].DisplayName;
-            }
-
-            var itemParentPath = existingEntries[i].parentPath;
-
-            if (itemParentPath == null) {
-                itemParentPath = existingEntries[i].ParentPath;
-            }
-
-            var itemResultValue = existingEntries[i].resultValue;
-
-            if (itemResultValue == null) {
-                itemResultValue = existingEntries[i].ResultValue;
-            }
-
-            if (itemDisplayName === displayName &&
-                itemParentPath === parentPath) {
-                return itemResultValue;
-            }
-        }
-
-        return '';
-    }
 
     function confirmCloseProductEntry() {
         $('#closeConfirmModal').modal('show');
@@ -506,6 +631,28 @@
     function closeProductEntryModalNow() {
         $('#closeConfirmModal').modal('hide');
         $('#productEntryModal').modal('hide');
+    }
+
+    function getNodeId(node) {
+        var id = node.id;
+
+        if (id == null) {
+            id = node.Id;
+        }
+
+        if (id == null) {
+            id = node.nodeId;
+        }
+
+        if (id == null) {
+            id = node.NodeId;
+        }
+
+        if (id == null || id === '') {
+            id = getNodeValue(node);
+        }
+
+        return id;
     }
 
     function getNodeValue(node) {
@@ -521,14 +668,6 @@
 
         if (value == null) {
             value = node.Label;
-        }
-
-        if (value == null) {
-            value = node.name;
-        }
-
-        if (value == null) {
-            value = node.Name;
         }
 
         if (value == null) {
@@ -554,18 +693,32 @@
         }
 
         if (fieldType == null) {
-            fieldType = node.type;
-        }
-
-        if (fieldType == null) {
-            fieldType = node.Type;
-        }
-
-        if (fieldType == null) {
             fieldType = '';
         }
 
-        return fieldType;
+        return fieldType.trim();
+    }
+
+    function getNodeFieldTypeId(node) {
+        var fieldTypeId = node.fieldTypeId;
+
+        if (fieldTypeId == null) {
+            fieldTypeId = node.FieldTypeId;
+        }
+
+        if (fieldTypeId == null) {
+            fieldTypeId = node.valueTypeId;
+        }
+
+        if (fieldTypeId == null) {
+            fieldTypeId = node.ValueTypeId;
+        }
+
+        if (fieldTypeId == null || fieldTypeId === '') {
+            return '';
+        }
+
+        return fieldTypeId;
     }
 
     function getNodeChildren(node) {

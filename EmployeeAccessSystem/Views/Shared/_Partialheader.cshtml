@@ -68,7 +68,7 @@
                         currentController == "FortigateCategory" ||
                         currentController == "FortigateItem" ||
                         currentController == "FortigateConfig" ||
-                        currentController == "Report"
+                        currentController == "ReportModel"
                         ? "menu-open" : "")">
 
                         <a href="#"
@@ -85,7 +85,7 @@
                                currentController == "FortigateCategory" ||
                                currentController == "FortigateItem" ||
                                currentController == "FortigateConfig" ||
-                               currentController == "Report"
+                               currentController == "ReportModel"
                                ? "active" : "")">
 
                             <i class="nav-icon fas fa-network-wired"></i>
@@ -266,11 +266,11 @@
                             </li>
 
                             <li class="nav-item">
-                                <a asp-controller="Report"
+                                <a asp-controller="ReportModel"
                                    asp-action="Index"
-                                   class="nav-link @(currentController == "Report" ? "active" : "")">
+                                   class="nav-link @(currentController == "ReportModel" ? "active" : "")">
                                     <i class="far fa-circle nav-icon"></i>
-                                    <p>Reports</p>
+                                    <p>ReportModels</p>
                                 </a>
                             </li>
 

@@ -9302,7 +9302,7 @@ var FullCalendar = (function (exports) {
                 expandRows: sectionConfig.expandRows,
                 syncRowHeights: false,
                 rowSyncHeights: [],
-                reportRowHeightChange: function () { },
+                ReportModelRowHeightChange: function () { },
             }, isHeader);
             return createElement(isHeader ? 'th' : 'td', {
                 ref: chunkConfig.elRef,
@@ -11093,7 +11093,7 @@ var FullCalendar = (function (exports) {
             };
             _this.handlePointerUp = function (pev) {
                 if (_this.dragSelection) {
-                    // selection is already rendered, so just need to report selection
+                    // selection is already rendered, so just need to ReportModel selection
                     triggerDateSelect(_this.dragSelection, pev, _this.component.context);
                     _this.dragSelection = null;
                 }

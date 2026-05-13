@@ -18,7 +18,7 @@ CodeMirror.defineMode("haskell", function(_config, modeConfig) {
     return f(source, setState);
   }
 
-  // These should all be Unicode extended, as per the Haskell 2010 report
+  // These should all be Unicode extended, as per the Haskell 2010 ReportModel
   var smallRE = /[a-z_]/;
   var largeRE = /[A-Z]/;
   var digitRE = /\d/;

@@ -14074,9 +14074,9 @@
 	
 	
 		/**
-		 * Error reporting.
+		 * Error ReportModeling.
 		 * 
-		 * How should DataTables report an error. Can take the value 'alert',
+		 * How should DataTables ReportModel an error. Can take the value 'alert',
 		 * 'throw', 'none' or a function.
 		 *
 		 *  @type string|function

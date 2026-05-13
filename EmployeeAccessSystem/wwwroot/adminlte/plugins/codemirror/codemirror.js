@@ -345,7 +345,7 @@
   }
 
   // Bidirectional ordering algorithm
-  // See http://unicode.org/reports/tr9/tr9-13.html for the algorithm
+  // See http://unicode.org/ReportModels/tr9/tr9-13.html for the algorithm
   // that this (partially) implements.
 
   // One-char codes used for character types:
@@ -648,7 +648,7 @@
     return node
   }
 
-  // Feature-detect IE's crummy client rect reporting for bidi text
+  // Feature-detect IE's crummy client rect ReportModeling for bidi text
   var badBidiRects;
   function hasBadBidiRects(measure) {
     if (badBidiRects != null) { return badBidiRects }
@@ -1878,7 +1878,7 @@
     return result
   }
 
-  // Work around nonsense dimensions being reported for stretches of
+  // Work around nonsense dimensions being ReportModeled for stretches of
   // right-to-left text.
   function buildTokenBadBidi(inner, order) {
     return function (builder, text, style, startStyle, endStyle, css, attributes) {
@@ -4201,9 +4201,9 @@
     }
 
     update.signal(cm, "update", cm);
-    if (cm.display.viewFrom != cm.display.reportedViewFrom || cm.display.viewTo != cm.display.reportedViewTo) {
+    if (cm.display.viewFrom != cm.display.ReportModeledViewFrom || cm.display.viewTo != cm.display.ReportModeledViewTo) {
       update.signal(cm, "viewportChange", cm, cm.display.viewFrom, cm.display.viewTo);
-      cm.display.reportedViewFrom = cm.display.viewFrom; cm.display.reportedViewTo = cm.display.viewTo;
+      cm.display.ReportModeledViewFrom = cm.display.viewFrom; cm.display.ReportModeledViewTo = cm.display.viewTo;
     }
   }
 
@@ -4424,7 +4424,7 @@
 
     // Current rendered range (may be bigger than the view window).
     d.viewFrom = d.viewTo = doc.first;
-    d.reportedViewFrom = d.reportedViewTo = doc.first;
+    d.ReportModeledViewFrom = d.ReportModeledViewTo = doc.first;
     // Information about the rendered lines.
     d.view = [];
     d.renderedView = null;
@@ -4473,7 +4473,7 @@
     input.init(d);
   }
 
-  // Since the delta values reported on mouse wheel events are
+  // Since the delta values ReportModeled on mouse wheel events are
   // unstandardized between browsers and even browser versions, and
   // generally horribly unpredictable, this code starts by measuring
   // the scroll effect that the first few mouse wheel events have,

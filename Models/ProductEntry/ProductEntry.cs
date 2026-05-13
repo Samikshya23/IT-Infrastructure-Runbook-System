@@ -4,7 +4,7 @@ namespace EmployeeAccessSystem.Models
 {
     public class ProductEntryModel
     {
-        public int EntryId { get; set; }
+        public int entryId { get; set; }
         public Guid? EntryGroupId { get; set; }
         public int ProductId { get; set; }
 
@@ -16,7 +16,7 @@ namespace EmployeeAccessSystem.Models
 
         public DateTime EntryDate { get; set; }
         public bool IsActive { get; set; }
-
+        public int ValueTypeId { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; }
 

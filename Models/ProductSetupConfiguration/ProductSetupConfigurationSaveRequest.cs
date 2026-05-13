@@ -6,8 +6,6 @@ namespace EmployeeAccessSystem.Models
     {
         public int ProductId { get; set; }
 
-        // -1 means normal Add mode
-        // 0,1,2... means Edit specific root group like Log, Telnet
         public int RootIndex { get; set; }
 
         public List<ProductSetupConfigurationNodeRequest> Nodes { get; set; }
@@ -21,6 +19,8 @@ namespace EmployeeAccessSystem.Models
 
     public class ProductSetupConfigurationNodeRequest
     {
+        public string Id { get; set; }
+
         public string Heading { get; set; }
 
         public string Label { get; set; }
@@ -28,6 +28,8 @@ namespace EmployeeAccessSystem.Models
         public string ValueType { get; set; }
 
         public string Value { get; set; }
+
+        public int? FieldTypeId { get; set; }
 
         public string FieldType { get; set; }
 

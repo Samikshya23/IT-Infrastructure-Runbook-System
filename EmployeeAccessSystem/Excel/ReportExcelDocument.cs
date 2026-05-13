@@ -6,41 +6,41 @@ using System.IO;
 
 namespace EmployeeAccessSystem.Excel
 {
-    public class ReportExcelDocument
+    public class ReportModelExcelDocument
     {
-        private readonly List<ReportModel> _reportData;
-        private readonly string _reportTitle;
+        private readonly List<ReportModel> _ReportModelData;
+        private readonly string _ReportModelTitle;
         private readonly DateTime? _fromDate;
         private readonly DateTime? _toDate;
-        private readonly bool _isPingReport;
+        private readonly bool _isPingReportModel;
 
-        public ReportExcelDocument(
-            List<ReportModel> reportData,
-            string reportTitle,
+        public ReportModelExcelDocument(
+            List<ReportModel> ReportModelData,
+            string ReportModelTitle,
             DateTime? fromDate,
             DateTime? toDate,
-            bool isPingReport)
+            bool isPingReportModel)
         {
-            _reportData = reportData;
-            _reportTitle = reportTitle;
+            _ReportModelData = ReportModelData;
+            _ReportModelTitle = ReportModelTitle;
             _fromDate = fromDate;
             _toDate = toDate;
-            _isPingReport = isPingReport;
+            _isPingReportModel = isPingReportModel;
         }
 
         public byte[] Generate()
         {
             using (XLWorkbook workbook = new XLWorkbook())
             {
-                IXLWorksheet worksheet = workbook.Worksheets.Add("Report");
+                IXLWorksheet worksheet = workbook.Worksheets.Add("ReportModel");
 
-                if (_isPingReport)
+                if (_isPingReportModel)
                 {
-                    GeneratePingReport(worksheet);
+                    GeneratePingReportModel(worksheet);
                 }
                 else
                 {
-                    GenerateSmscReport(worksheet);
+                    GenerateSmscReportModel(worksheet);
                 }
 
                 using (MemoryStream stream = new MemoryStream())
@@ -51,7 +51,7 @@ namespace EmployeeAccessSystem.Excel
             }
         }
 
-        private void GenerateSmscReport(IXLWorksheet worksheet)
+        private void GenerateSmscReportModel(IXLWorksheet worksheet)
         {
             List<DateTime> dateList = GetDateList();
             List<SmscRowItem> uniqueRows = GetUniqueSmscRows();
@@ -140,7 +140,7 @@ namespace EmployeeAccessSystem.Excel
             worksheet.Rows().AdjustToContents();
         }
 
-        private void GeneratePingReport(IXLWorksheet worksheet)
+        private void GeneratePingReportModel(IXLWorksheet worksheet)
         {
             List<DateTime> dateList = GetDateList();
             List<PingRowItem> uniqueRows = GetUniquePingRows();
@@ -205,7 +205,7 @@ namespace EmployeeAccessSystem.Excel
 
         private void BuildTitleSection(IXLWorksheet worksheet, ref int currentRow, int totalColumns)
         {
-            worksheet.Cell(currentRow, 1).Value = _reportTitle;
+            worksheet.Cell(currentRow, 1).Value = _ReportModelTitle;
             worksheet.Range(currentRow, 1, currentRow, totalColumns).Merge();
             worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
             worksheet.Cell(currentRow, 1).Style.Font.FontSize = 14;
@@ -331,14 +331,14 @@ namespace EmployeeAccessSystem.Excel
         {
             List<SmscRowItem> uniqueRows = new List<SmscRowItem>();
 
-            for (int i = 0; i < _reportData.Count; i++)
+            for (int i = 0; i < _ReportModelData.Count; i++)
             {
                 bool exists = false;
 
                 for (int j = 0; j < uniqueRows.Count; j++)
                 {
-                    if (uniqueRows[j].MonitoringTypeName == _reportData[i].MonitoringTypeName &&
-                        uniqueRows[j].ItemName == _reportData[i].ItemName)
+                    if (uniqueRows[j].MonitoringTypeName == _ReportModelData[i].MonitoringTypeName &&
+                        uniqueRows[j].ItemName == _ReportModelData[i].ItemName)
                     {
                         exists = true;
                         break;
@@ -348,8 +348,8 @@ namespace EmployeeAccessSystem.Excel
                 if (!exists)
                 {
                     SmscRowItem item = new SmscRowItem();
-                    item.MonitoringTypeName = _reportData[i].MonitoringTypeName;
-                    item.ItemName = _reportData[i].ItemName;
+                    item.MonitoringTypeName = _ReportModelData[i].MonitoringTypeName;
+                    item.ItemName = _ReportModelData[i].ItemName;
                     uniqueRows.Add(item);
                 }
             }
@@ -361,14 +361,14 @@ namespace EmployeeAccessSystem.Excel
         {
             List<PingRowItem> uniqueRows = new List<PingRowItem>();
 
-            for (int i = 0; i < _reportData.Count; i++)
+            for (int i = 0; i < _ReportModelData.Count; i++)
             {
                 bool exists = false;
 
                 for (int j = 0; j < uniqueRows.Count; j++)
                 {
-                    if (uniqueRows[j].IPAddress == _reportData[i].IPAddress &&
-                        uniqueRows[j].ServerHostName == _reportData[i].ServerHostName)
+                    if (uniqueRows[j].IPAddress == _ReportModelData[i].IPAddress &&
+                        uniqueRows[j].ServerHostName == _ReportModelData[i].ServerHostName)
                     {
                         exists = true;
                         break;
@@ -378,8 +378,8 @@ namespace EmployeeAccessSystem.Excel
                 if (!exists)
                 {
                     PingRowItem item = new PingRowItem();
-                    item.IPAddress = _reportData[i].IPAddress;
-                    item.ServerHostName = _reportData[i].ServerHostName;
+                    item.IPAddress = _ReportModelData[i].IPAddress;
+                    item.ServerHostName = _ReportModelData[i].ServerHostName;
                     uniqueRows.Add(item);
                 }
             }
@@ -389,17 +389,17 @@ namespace EmployeeAccessSystem.Excel
 
         private string GetSmscCellValue(string monitoringTypeName, string itemName, DateTime date)
         {
-            for (int r = 0; r < _reportData.Count; r++)
+            for (int r = 0; r < _ReportModelData.Count; r++)
             {
-                if (_reportData[r].MonitoringTypeName == monitoringTypeName &&
-                    _reportData[r].ItemName == itemName &&
-                    _reportData[r].EntryDate.Date == date.Date)
+                if (_ReportModelData[r].MonitoringTypeName == monitoringTypeName &&
+                    _ReportModelData[r].ItemName == itemName &&
+                    _ReportModelData[r].EntryDate.Date == date.Date)
                 {
-                    if (!string.IsNullOrWhiteSpace(_reportData[r].EntryMode))
+                    if (!string.IsNullOrWhiteSpace(_ReportModelData[r].EntryMode))
                     {
-                        if (_reportData[r].EntryMode.Trim() == "Checkbox")
+                        if (_ReportModelData[r].EntryMode.Trim() == "Checkbox")
                         {
-                            if (_reportData[r].IsChecked)
+                            if (_ReportModelData[r].IsChecked)
                             {
                                 return "✔";
                             }
@@ -407,20 +407,20 @@ namespace EmployeeAccessSystem.Excel
                             return "-";
                         }
 
-                        if (_reportData[r].EntryMode.Trim() == "Value")
+                        if (_ReportModelData[r].EntryMode.Trim() == "Value")
                         {
-                            if (!string.IsNullOrWhiteSpace(_reportData[r].ConfigValue))
+                            if (!string.IsNullOrWhiteSpace(_ReportModelData[r].ConfigValue))
                             {
-                                return _reportData[r].ConfigValue.Trim();
+                                return _ReportModelData[r].ConfigValue.Trim();
                             }
 
                             return "-";
                         }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(_reportData[r].ConfigValue))
+                    if (!string.IsNullOrWhiteSpace(_ReportModelData[r].ConfigValue))
                     {
-                        return _reportData[r].ConfigValue.Trim();
+                        return _ReportModelData[r].ConfigValue.Trim();
                     }
 
                     return "-";
@@ -432,17 +432,17 @@ namespace EmployeeAccessSystem.Excel
 
         private string GetPingCellValue(string ipAddress, string serverHostName, DateTime date)
         {
-            for (int r = 0; r < _reportData.Count; r++)
+            for (int r = 0; r < _ReportModelData.Count; r++)
             {
-                if (_reportData[r].IPAddress == ipAddress &&
-                    _reportData[r].ServerHostName == serverHostName &&
-                    _reportData[r].EntryDate.Date == date.Date)
+                if (_ReportModelData[r].IPAddress == ipAddress &&
+                    _ReportModelData[r].ServerHostName == serverHostName &&
+                    _ReportModelData[r].EntryDate.Date == date.Date)
                 {
-                    if (!string.IsNullOrWhiteSpace(_reportData[r].EntryMode))
+                    if (!string.IsNullOrWhiteSpace(_ReportModelData[r].EntryMode))
                     {
-                        if (_reportData[r].EntryMode.Trim() == "Checkbox")
+                        if (_ReportModelData[r].EntryMode.Trim() == "Checkbox")
                         {
-                            if (_reportData[r].IsChecked)
+                            if (_ReportModelData[r].IsChecked)
                             {
                                 return "✔";
                             }
@@ -450,20 +450,20 @@ namespace EmployeeAccessSystem.Excel
                             return "-";
                         }
 
-                        if (_reportData[r].EntryMode.Trim() == "Value")
+                        if (_ReportModelData[r].EntryMode.Trim() == "Value")
                         {
-                            if (!string.IsNullOrWhiteSpace(_reportData[r].ConfigValue))
+                            if (!string.IsNullOrWhiteSpace(_ReportModelData[r].ConfigValue))
                             {
-                                return _reportData[r].ConfigValue.Trim();
+                                return _ReportModelData[r].ConfigValue.Trim();
                             }
 
                             return "-";
                         }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(_reportData[r].ConfigValue))
+                    if (!string.IsNullOrWhiteSpace(_ReportModelData[r].ConfigValue))
                     {
-                        return _reportData[r].ConfigValue.Trim();
+                        return _ReportModelData[r].ConfigValue.Trim();
                     }
 
                     return "-";

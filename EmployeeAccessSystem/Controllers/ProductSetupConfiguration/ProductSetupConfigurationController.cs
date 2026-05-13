@@ -11,40 +11,48 @@ namespace EmployeeAccessSystem.Controllers
     {
         private readonly IProductSetupConfigurationService _setupConfigurationService;
         private readonly IProductSetupService _productSetupService;
+        private readonly IDropdownService _dropdownService;
 
         public ProductSetupConfigurationController(
             IProductSetupConfigurationService setupConfigurationService,
-            IProductSetupService productSetupService)
+            IProductSetupService productSetupService,
+            IDropdownService dropdownService)
         {
             _setupConfigurationService = setupConfigurationService;
             _productSetupService = productSetupService;
+            _dropdownService = dropdownService;
         }
 
-        public async Task<IActionResult> Index( int? selectedProductId, string successMessage)
+        public async Task<IActionResult> Index(int? selectedProductId, string successMessage)
         {
             ViewBag.SelectedProductId = selectedProductId ?? 0;
             ViewBag.SuccessMessage = successMessage;
-            ViewBag.Products =await _setupConfigurationService.GetConfiguredProductsAsync();
+            ViewBag.Products = await _setupConfigurationService.GetConfiguredProductsAsync();
 
             return View(new List<ProductSetupConfiguration>());
         }
-        public async Task<IActionResult> Add( int? productId, int? rootIndex)
+        public async Task<IActionResult> Add(int? productId, int? rootIndex)
         {
-            var products =await _setupConfigurationService.GetConfiguredProductsAsync();
-            ViewBag.Products = products;
+            ViewBag.Products = await _setupConfigurationService.GetConfiguredProductsAsync();
+            ViewBag.ValueTypes = await _dropdownService.GetItemsByGroupNameAsync("ValueType");
             ViewBag.SelectedProductId = productId ?? 0;
             ViewBag.RootIndex = rootIndex ?? -1;
 
             return PartialView("_Add");
         }
+
         public async Task<IActionResult> ShowTable(int productId)
         {
-            List<ProductSetupConfiguration> tree =  await _setupConfigurationService.GetTreeByProductIdAsync(productId);
+            List<ProductSetupConfiguration> tree =
+                await _setupConfigurationService.GetTreeByProductIdAsync(productId);
+
             return PartialView("_ShowTable", tree);
         }
+
         public async Task<IActionResult> GetRootLevels(int productId)
         {
-            List<ProductConfiguration> roots = await _setupConfigurationService.GetRootLevelsAsync(productId);
+            List<ProductConfiguration> roots =
+                await _setupConfigurationService.GetRootLevelsAsync(productId);
 
             List<object> data = new List<object>();
 
@@ -66,9 +74,13 @@ namespace EmployeeAccessSystem.Controllers
             });
         }
 
-        public async Task<IActionResult> GetChildLevels( int productId, int? parentConfigurationNodeId)
+        public async Task<IActionResult> GetChildLevels(int productId, int? parentConfigurationNodeId)
         {
-            List<ProductConfiguration> children =  await _setupConfigurationService.GetChildLevelsAsync(productId,parentConfigurationNodeId);
+            List<ProductConfiguration> children =
+                await _setupConfigurationService.GetChildLevelsAsync(
+                    productId,
+                    parentConfigurationNodeId
+                );
 
             List<object> data = new List<object>();
 
@@ -82,6 +94,7 @@ namespace EmployeeAccessSystem.Controllers
                     inputType = item.InputType
                 });
             }
+
             return Json(new
             {
                 success = true,
@@ -89,15 +102,13 @@ namespace EmployeeAccessSystem.Controllers
             });
         }
 
-        // LOAD ONLY SELECTED ROOT GROUP
-        public async Task<IActionResult> GetRootForEdit(
-            int productId,
-            int rootIndex)
+        public async Task<IActionResult> GetRootForEdit(int productId, int rootIndex)
         {
             var result =
                 await _setupConfigurationService.GetRootForEditAsync(
                     productId,
-                    rootIndex);
+                    rootIndex
+                );
 
             return Json(new
             {
@@ -120,13 +131,13 @@ namespace EmployeeAccessSystem.Controllers
                 });
             }
 
-            // EDIT MODE
             if (request.RootIndex >= 0)
             {
                 var editResult =
                     await _setupConfigurationService.SaveRootDataAsync(
                         request,
-                        GetCurrentUser());
+                        GetCurrentUser()
+                    );
 
                 return Json(new
                 {
@@ -136,10 +147,11 @@ namespace EmployeeAccessSystem.Controllers
                 });
             }
 
-            // ADD MODE
-            var result = await _setupConfigurationService.SaveDataAsync(
-                request,
-                GetCurrentUser());
+            var result =
+                await _setupConfigurationService.SaveDataAsync(
+                    request,
+                    GetCurrentUser()
+                );
 
             return Json(new
             {
@@ -150,16 +162,14 @@ namespace EmployeeAccessSystem.Controllers
         }
 
         [HttpPost]
-     
-        public async Task<IActionResult> Delete(
-    int productId,
-    int rootIndex)
+        public async Task<IActionResult> Delete(int productId, int rootIndex)
         {
             var result =
                 await _setupConfigurationService.DeleteRootAsync(
                     productId,
                     rootIndex,
-                    GetCurrentUser());
+                    GetCurrentUser()
+                );
 
             if (result.Success)
             {
@@ -175,8 +185,10 @@ namespace EmployeeAccessSystem.Controllers
                 new
                 {
                     selectedProductId = productId
-                });
+                }
+            );
         }
+
         private string GetCurrentUser()
         {
             string name = User.FindFirst(ClaimTypes.Name)?.Value;
@@ -199,7 +211,7 @@ namespace EmployeeAccessSystem.Controllers
                 return email;
             }
 
-            return "User";
+            return "Unknown User";
         }
     }
 }

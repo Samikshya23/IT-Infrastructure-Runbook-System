@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Services;
@@ -21,9 +23,23 @@ namespace EmployeeAccessSystem.Controllers
         {
             await LoadProductDropdown(productId);
 
+            List<string> headings = new List<string>();
+
             if (productId.HasValue && productId.Value > 0)
             {
                 ViewBag.SelectedProductId = productId.Value;
+
+                string configurationJson =
+                    await _service.GetConfigurationAsync(productId.Value);
+
+                headings = GetHeadingsFromJson(configurationJson);
+
+                if (headings.Count == 0)
+                {
+                    TempData["Error"] = "No product configuration found.";
+                }
+
+                ViewBag.Headings = headings;
 
                 IEnumerable<ProductEntryModel> data =
                     await _service.GetByProductAsync(productId.Value);
@@ -32,6 +48,7 @@ namespace EmployeeAccessSystem.Controllers
             }
 
             ViewBag.SelectedProductId = null;
+            ViewBag.Headings = headings;
 
             IEnumerable<ProductEntryModel> allData =
                 await _service.GetAllAsync();
@@ -40,19 +57,33 @@ namespace EmployeeAccessSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetSetupJson(int productId)
+        public async Task<IActionResult> GetSetup(int productId)
         {
             string setupJson =
-                await _service.GetSetupJsonByProductAsync(productId);
+                await _service.GetSetupAsync(productId);
 
             return Json(setupJson);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetByGroup(Guid entryGroupId)
+        public async Task<IActionResult> GetDetails(Guid entryGroupId)
         {
             IEnumerable<ProductEntryModel> data =
-                await _service.GetByGroupAsync(entryGroupId);
+                await _service.GetDetailsAsync(entryGroupId);
+
+            return Json(data);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTodayByProduct(int productId)
+        {
+            if (productId <= 0)
+            {
+                return Json(new List<ProductEntryModel>());
+            }
+
+            IEnumerable<ProductEntryModel> data =
+                await _service.GetByProductAsync(productId);
 
             return Json(data);
         }
@@ -61,19 +92,14 @@ namespace EmployeeAccessSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save(ProductEntrySaveRequest request)
         {
-            string createdBy = "System";
-
-            if (User != null &&
-                User.Identity != null &&
-                !string.IsNullOrWhiteSpace(User.Identity.Name))
-            {
-                createdBy = User.Identity.Name;
-            }
+            string createdBy =
+                GetLoginUser();
 
             string message =
-                await _service.SaveEntryAsync(request, createdBy);
+                await _service.SaveAsync(request, createdBy);
 
-            if (message == "Product entry saved successfully.")
+            if (message == "Entry added successfully." ||
+                message == "Entry updated successfully.")
             {
                 TempData["Success"] = message;
             }
@@ -82,65 +108,177 @@ namespace EmployeeAccessSystem.Controllers
                 TempData["Error"] = message;
             }
 
-            return RedirectToAction(
-                "Index",
-                new { productId = request.ProductId });
+            int selectedId = 0;
+
+            if (request != null)
+            {
+                selectedId = request.ProductId;
+            }
+
+            return RedirectToAction("Index", new { productId = selectedId });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid entryGroupId, int productId)
         {
-            string deletedBy = "System";
-
-            if (User != null &&
-                User.Identity != null &&
-                !string.IsNullOrWhiteSpace(User.Identity.Name))
-            {
-                deletedBy = User.Identity.Name;
-            }
+            string deletedBy =
+                GetLoginUser();
 
             string message =
-                await _service.DeleteGroupAsync(entryGroupId, deletedBy);
+                await _service.DeleteAsync(entryGroupId, deletedBy);
 
-            TempData["Success"] = message;
+            if (message == "Entry deleted successfully.")
+            {
+                TempData["Success"] = message;
+            }
+            else
+            {
+                TempData["Error"] = message;
+            }
 
-            return RedirectToAction(
-                "Index",
-                new { productId = productId });
+            return RedirectToAction("Index", new { productId = productId });
+        }
+
+        private List<string> GetHeadingsFromJson(string json)
+        {
+            List<string> headings = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return headings;
+            }
+
+            try
+            {
+                JsonDocument document = JsonDocument.Parse(json);
+                JsonElement root = document.RootElement;
+
+                if (root.TryGetProperty("structure", out JsonElement structure))
+                {
+                    AddHeadingLabels(structure, headings);
+                }
+                else if (root.TryGetProperty("Structure", out JsonElement capitalStructure))
+                {
+                    AddHeadingLabels(capitalStructure, headings);
+                }
+                else
+                {
+                    AddHeadingLabels(root, headings);
+                }
+            }
+            catch
+            {
+                headings.Clear();
+            }
+
+            return headings;
+        }
+
+        private void AddHeadingLabels(JsonElement element, List<string> headings)
+        {
+            if (element.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement item in element.EnumerateArray())
+                {
+                    AddHeadingLabels(item, headings);
+                }
+
+                return;
+            }
+
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+
+            string labelText = "";
+
+            if (element.TryGetProperty("label", out JsonElement label))
+            {
+                labelText = label.GetString();
+            }
+            else if (element.TryGetProperty("Label", out JsonElement capitalLabel))
+            {
+                labelText = capitalLabel.GetString();
+            }
+
+            if (!string.IsNullOrWhiteSpace(labelText))
+            {
+                headings.Add(labelText.Trim());
+            }
+
+            if (element.TryGetProperty("children", out JsonElement children))
+            {
+                AddHeadingLabels(children, headings);
+            }
+            else if (element.TryGetProperty("Children", out JsonElement capitalChildren))
+            {
+                AddHeadingLabels(capitalChildren, headings);
+            }
+        }
+
+        private string GetLoginUser()
+        {
+            string userName = "";
+
+            if (User != null)
+            {
+                Claim emailClaim =
+                    User.FindFirst(ClaimTypes.Email);
+
+                if (emailClaim != null)
+                {
+                    userName = emailClaim.Value;
+                }
+
+                if (string.IsNullOrWhiteSpace(userName) &&
+                    User.Identity != null)
+                {
+                    userName = User.Identity.Name;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                userName = "Unknown User";
+            }
+
+            return userName;
         }
 
         private async Task LoadProductDropdown(int? selectedProductId)
         {
-            IEnumerable<ProductConfigurationIndexItem> products =
+            IEnumerable<ProductConfigurationIndexItem> items =
                 await _service.GetConfiguredProductsAsync();
 
-            List<SelectListItem> productList =
+            List<SelectListItem> dropdownList =
                 new List<SelectListItem>();
 
-            productList.Add(new SelectListItem
+            dropdownList.Add(new SelectListItem
             {
-                Text = "Select Product",
+                Text = "Select",
                 Value = ""
             });
 
-            foreach (ProductConfigurationIndexItem product in products)
+            foreach (ProductConfigurationIndexItem item in items)
             {
-                SelectListItem item = new SelectListItem();
+                SelectListItem option =
+                    new SelectListItem();
 
-                item.Text = product.ProductName;
-                item.Value = product.ProductId.ToString();
+                option.Text = item.ProductName;
+                option.Value = item.ProductId.ToString();
 
                 if (selectedProductId.HasValue &&
-                    selectedProductId.Value == product.ProductId)
+                    selectedProductId.Value == item.ProductId)
                 {
-                    item.Selected = true;
+                    option.Selected = true;
                 }
 
-                productList.Add(item);
+                dropdownList.Add(option);
             }
 
-            ViewBag.Products = productList;
+            ViewBag.Products = dropdownList;
         }
     }
 }

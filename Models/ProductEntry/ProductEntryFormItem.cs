@@ -11,5 +11,6 @@
         public string ValueType { get; set; }
 
         public string ResultValue { get; set; }
+        public int ValueTypeId { get; set; }
     }
 }

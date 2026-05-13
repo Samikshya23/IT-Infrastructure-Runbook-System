@@ -2702,7 +2702,7 @@ StreamHelper.prototype = {
             // an object stream containing blob/arraybuffer/uint8array/string
             // is strange and I don't know if it would be useful.
             // I you find this comment and have a good usecase, please open a
-            // bug report !
+            // bug ReportModel !
             throw new Error(this._outputType + " is not supported by this method");
         }
 
@@ -6320,7 +6320,7 @@ function fill_window(s) {
   } while (s.lookahead < MIN_LOOKAHEAD && s.strm.avail_in !== 0);
 
   /* If the WIN_INIT bytes after the end of the current data have never been
-   * written, then zero those bytes in order to avoid memory check reports of
+   * written, then zero those bytes in order to avoid memory check ReportModels of
    * the use of uninitialized (or uninitialised as Julian writes) bytes by
    * the longest match routines.  Update the high water mark for the next
    * time through here.  WIN_INIT is set to MAX_MATCH since the longest match
@@ -9852,7 +9852,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
     table[table_index++] = (1 << 24) | (64 << 16) | 0;
 
     opts.bits = 1;
-    return 0;     /* no symbols, but wait for decoding to report error */
+    return 0;     /* no symbols, but wait for decoding to ReportModel error */
   }
   for (min = 1; min < max; min++) {
     if (count[min] !== 0) { break; }
