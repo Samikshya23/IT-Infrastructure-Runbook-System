@@ -17,6 +17,7 @@ namespace EmployeeAccessSystem.Repositories
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
+
         private SqlConnection GetConnection()
         {
             return new SqlConnection(_connectionString);
@@ -26,10 +27,10 @@ namespace EmployeeAccessSystem.Repositories
         {
             try
             {
-                using var conn = GetConnection();
+                using SqlConnection conn = GetConnection();
 
                 DynamicParameters parameters = new DynamicParameters();
-                parameters.Add("Flag", "GETPRODUCTS");
+                parameters.Add("@Flag", "GETPRODUCTS");
 
                 return await conn.QueryAsync<ReportProduct>(
                     "dbo.sp_Report_Manage",
@@ -42,15 +43,16 @@ namespace EmployeeAccessSystem.Repositories
                 throw new Exception("Failed to load report products.");
             }
         }
+
         public async Task<string> GetHeadingsAsync(int productId)
         {
             try
             {
-                using var conn = GetConnection();
+                using SqlConnection conn = GetConnection();
 
                 DynamicParameters parameters = new DynamicParameters();
-                parameters.Add("Flag", "GETHEADINGS");
-                parameters.Add("ProductId", productId);
+                parameters.Add("@Flag", "GETHEADINGS");
+                parameters.Add("@ProductId", productId);
 
                 return await conn.QueryFirstOrDefaultAsync<string>(
                     "dbo.sp_Report_Manage",
@@ -72,13 +74,13 @@ namespace EmployeeAccessSystem.Repositories
         {
             try
             {
-                using var conn = GetConnection();
+                using SqlConnection conn = GetConnection();
 
                 DynamicParameters parameters = new DynamicParameters();
-                parameters.Add("Flag", "GETDATA");
-                parameters.Add("ProductId", productId);
-                parameters.Add("FromDate", fromDate.Date);
-                parameters.Add("ToDate", toDate.Date);
+                parameters.Add("@Flag", "GETDATA");
+                parameters.Add("@ProductId", productId);
+                parameters.Add("@FromDate", fromDate.Date);
+                parameters.Add("@ToDate", toDate.Date);
 
                 return await conn.QueryAsync<Report>(
                     "dbo.sp_Report_Manage",

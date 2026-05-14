@@ -1,7 +1,5 @@
 ﻿using EmployeeAccessSystem.Repositories;
-
 using EmployeeAccessSystem.Services;
-
 using Microsoft.AspNetCore.Authentication.Cookies;
 using QuestPDF.Infrastructure;
 using Serilog;
@@ -22,16 +20,7 @@ builder.Services.AddScoped<IDepartmentRepositories, DepartmentRepositories>();
 builder.Services.AddScoped<IAccessRequestRepositories, AccessRequestRepositories>();
 builder.Services.AddScoped<ISupervisorRepositories, SupervisorRepositories>();
 builder.Services.AddScoped<IProductSetupRepositories, ProductSetupRepositories>();
-builder.Services.AddScoped<ISMCProductRepository, SMCProductRepository>();
-builder.Services.AddScoped<ISMCProductItemRepositories, SMCProductItemRepositories>();
-builder.Services.AddScoped<ISMCConfigRepository, SMCConfigRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>(); 
-builder.Services.AddScoped<IPingProductRepository, PingProductRepository>();
-builder.Services.AddScoped<IFortigateCategoryRepository, FortigateCategoryRepository>();
-builder.Services.AddScoped<IFortigateCategoryService, FortigateCategoryService>();
-builder.Services.AddScoped<IPingConfigRepository, PingConfigRepository>();
-builder.Services.AddScoped<IFortigateItemRepositories, FortigateItemRepositories>();
-builder.Services.AddScoped<IFortigateConfigRepositories, FortigateConfigRepositories>();
 builder.Services.AddScoped<IProductConfigurationRepository, ProductConfigurationRepository>();
 builder.Services.AddScoped<IProductConfigurationService, ProductConfigurationService>();
 builder.Services.AddScoped<IProductSetupConfigurationRepository, ProductSetupConfigurationRepository>();
@@ -43,14 +32,9 @@ builder.Services.AddScoped<IDropdownRepository, DropdownRepository>();
 builder.Services.AddScoped<IDropdownService, DropdownService>();
 
 builder.Services.AddScoped<IProductSetupConfigurationService, ProductSetupConfigurationService>();
-builder.Services.AddScoped<IFortigateConfigService, FortigateConfigService>();
-builder.Services.AddScoped<IFortigateItemService, FortigateItemService>();
-builder.Services.AddScoped<IPingConfigService, PingConfigService>();
-builder.Services.AddScoped<IPingProductService, PingProductService>();
+
 builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<ISMCConfigService, SMCConfigService>();
-builder.Services.AddScoped<ISMCProductItemService, SMCProductItemService>();
-builder.Services.AddScoped<ISMCProductService, SMCProductService>();
+
 builder.Services.AddScoped<IProductSetupService, ProductSetupService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();

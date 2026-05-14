@@ -13,6 +13,7 @@ namespace EmployeeAccessSystem.Models
         public string DisplayName { get; set; }
 
         public string ValueType { get; set; }
+        public int ValueTypeId { get; set; }
         public string ResultValue { get; set; }
 
         public DateTime EntryDate { get; set; }
