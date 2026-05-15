@@ -1,8 +1,10 @@
-﻿using EmployeeAccessSystem.Models;
+﻿
+using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+
 namespace EmployeeAccessSystem.Controllers
 {
     [Authorize]
@@ -14,6 +16,7 @@ namespace EmployeeAccessSystem.Controllers
         {
             _service = service;
         }
+        // Display product setup list
         public async Task<IActionResult> Index(string successMessage, string errorMessage)
         {
             if (!string.IsNullOrWhiteSpace(successMessage))
@@ -27,15 +30,17 @@ namespace EmployeeAccessSystem.Controllers
             }
 
             var data = await _service.GetAllAsync();
+
             return View(data);
         }
+        // Activate or deactivate record
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
             var message = await _service.ToggleAsync(id);
 
-            if (message == "Status changed successfully.")
+            if (message == "Status updated successfully.")
             {
                 TempData["Success"] = message;
             }
@@ -46,12 +51,18 @@ namespace EmployeeAccessSystem.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+        // Load create modal
         public IActionResult Create()
         {
-            var model = new ProductSetup();
-            model.IsActive = true;
+            var model = new ProductSetup
+            {
+                IsActive = true
+            };
+
             return PartialView(model);
         }
+
+        // Save new record
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProductSetup productSetup)
@@ -63,14 +74,17 @@ namespace EmployeeAccessSystem.Controllers
 
             var message = await _service.AddAsync(productSetup);
 
-            if (message == "Product added successfully.")
+            if (message == "Record saved successfully.")
             {
                 return Content("success|" + message);
             }
 
             ViewBag.Error = message;
+
             return PartialView("Create", productSetup);
         }
+
+        // Load edit modal
         public async Task<IActionResult> Edit(int id)
         {
             var productSetup = await _service.GetByIdAsync(id);
@@ -82,6 +96,8 @@ namespace EmployeeAccessSystem.Controllers
 
             return PartialView("Edit", productSetup);
         }
+
+        // Update record
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ProductSetup productSetup)
@@ -93,14 +109,17 @@ namespace EmployeeAccessSystem.Controllers
 
             var message = await _service.UpdateAsync(productSetup);
 
-            if (message == "Product updated successfully.")
+            if (message == "Record updated successfully.")
             {
                 return Content("success|" + message);
             }
 
             ViewBag.Error = message;
+
             return PartialView("Edit", productSetup);
         }
+
+        // Load delete confirmation modal
         public async Task<IActionResult> Delete(int id)
         {
             var productSetup = await _service.GetByIdAsync(id);
@@ -112,6 +131,8 @@ namespace EmployeeAccessSystem.Controllers
 
             return PartialView("Delete", productSetup);
         }
+
+        // Delete record
         [HttpPost]
         [ValidateAntiForgeryToken]
         [ActionName("Delete")]
@@ -119,7 +140,7 @@ namespace EmployeeAccessSystem.Controllers
         {
             var message = await _service.DeleteAsync(productId);
 
-            if (message == "Product deleted successfully.")
+            if (message == "Record deleted successfully.")
             {
                 return Content("success|" + message);
             }
@@ -128,3 +149,4 @@ namespace EmployeeAccessSystem.Controllers
         }
     }
 }
+

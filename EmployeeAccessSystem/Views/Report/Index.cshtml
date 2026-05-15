@@ -46,7 +46,7 @@
     </div>
 
     <div class="card-body p-2">
-        <div class="card mb-3">
+        <div class="card card-primary card-outline mb-3">
             <div class="card-body">
                 <form asp-controller="Report"
                       asp-action="Index"
@@ -61,7 +61,6 @@
                                 <select id="productId"
                                         name="productId"
                                         class="form-control select2bs4">
-
                                     <option value="">Select Product</option>
 
                                     @if (products != null)
@@ -158,7 +157,7 @@
                 toDate.HasValue &&
                 rows.Count > 0)
         {
-            <div class="card mb-0">
+            <div class="card card-primary card-outline mb-0">
                 <div class="card-body p-2">
 
                     <div class="d-flex justify-content-between align-items-center mb-2 px-1">
@@ -176,17 +175,14 @@
                             </button>
 
                             <div class="dropdown-menu dropdown-menu-right">
-
                                 <a class="dropdown-item"
                                    asp-controller="Report"
                                    asp-action="DownloadPdf"
                                    asp-route-productId="@selectedProductId"
                                    asp-route-fromDate="@(fromDate.HasValue? fromDate.Value.ToString("yyyy-MM-dd") : "")"
                                    asp-route-toDate="@(toDate.HasValue? toDate.Value.ToString("yyyy-MM-dd") : "")">
-
                                     <i class="fas fa-file-pdf text-danger mr-2"></i>
                                     PDF
-
                                 </a>
 
                                 <a class="dropdown-item"
@@ -195,19 +191,16 @@
                                    asp-route-productId="@selectedProductId"
                                    asp-route-fromDate="@(fromDate.HasValue? fromDate.Value.ToString("yyyy-MM-dd") : "")"
                                    asp-route-toDate="@(toDate.HasValue? toDate.Value.ToString("yyyy-MM-dd") : "")">
-
                                     <i class="fas fa-file-excel text-success mr-2"></i>
                                     Excel
-
                                 </a>
-
                             </div>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-2 report-pagination-bar">
                         <div class="form-inline">
-                            <label class="mr-2 mb-0">Show</label>
+                            <label class="mr-2 mb-0 font-weight-bold">Show</label>
 
                             <select id="reportPageSize"
                                     class="form-control form-control-sm mr-2"
@@ -235,8 +228,9 @@
                     <div class="table-responsive p-0"
                          style="max-height:70vh; overflow:auto;">
 
-                        <table class="table table-bordered table-sm table-hover mb-0 text-center bg-white"
-                               id="dynamicReportTable">
+                        <table class="table table-bordered table-sm mb-0 text-center bg-white"
+                               id="dynamicReportTable"
+                               style="border-collapse:collapse; width:100%;">
 
                             <thead>
                                 <tr>
@@ -249,8 +243,8 @@
                                         int width = h == 0 ? 180 : 170;
 
                                         <th rowspan="2"
-                                            class="align-middle bg-light"
-                                            style="position:sticky; top:0; left:@(leftPosition)px; z-index:6; min-width:@(width)px;">
+                                            class="align-middle bg-light border"
+                                            style="position:sticky; top:0; left:@(leftPosition)px; z-index:6; min-width:@(width)px; border:1px solid #dee2e6;">
                                             @headings[h]
                                         </th>
 
@@ -259,8 +253,8 @@
 
                                     @for (int d = 0; d < dates.Count; d++)
                                     {
-                                        <th class="text-center bg-light"
-                                            style="position:sticky; top:0; z-index:5; min-width:55px;">
+                                        <th class="text-center bg-light border"
+                                            style="position:sticky; top:0; z-index:5; min-width:55px; border:1px solid #dee2e6;">
                                             <div class="font-weight-bold">
                                                 @dates[d].ToString("dd")
                                             </div>
@@ -271,8 +265,8 @@
                                 <tr>
                                     @for (int d = 0; d < dates.Count; d++)
                                     {
-                                        <th class="text-center bg-light"
-                                            style="position:sticky; top:39px; z-index:5; min-width:55px;">
+                                        <th class="text-center bg-light border"
+                                            style="position:sticky; top:39px; z-index:5; min-width:55px; border:1px solid #dee2e6;">
                                             <small>@dates[d].ToString("ddd")</small>
                                         </th>
                                     }
@@ -282,7 +276,10 @@
                             <tbody>
                                 @for (int r = 0; r < rows.Count; r++)
                                 {
-                                    <tr class="report-entry-row">
+                                    bool groupStart = ShouldShowCell(rows, r, 0);
+
+                                    <tr class="report-entry-row"
+                                        data-group-start="@(groupStart ? "true" : "false")">
                                         @{
                                             int bodyLeftPosition = 0;
                                         }
@@ -296,8 +293,8 @@
                                             if (showCell)
                                             {
                                                 <td rowspan="@rowSpan"
-                                                    class="align-middle text-left bg-white"
-                                                    style="position:sticky; left:@(bodyLeftPosition)px; z-index:4; min-width:@(width)px;">
+                                                    class="align-middle text-left bg-white border"
+                                                    style="position:sticky; left:@(bodyLeftPosition)px; z-index:4; min-width:@(width)px; border:1px solid #dee2e6;">
                                                     @rows[r].LeftValues[c]
                                                 </td>
                                             }
@@ -315,8 +312,8 @@
                                                 value = rows[r].DateValues[key];
                                             }
 
-                                            <td class="text-center align-middle"
-                                                style="min-width:55px;">
+                                            <td class="text-center align-middle border"
+                                                style="min-width:55px; border:1px solid #dee2e6;">
                                                 @if (string.IsNullOrWhiteSpace(value))
                                                 {
                                                     <span class="text-muted">-</span>
@@ -497,8 +494,7 @@
 
     public List<DynamicReportRow> BuildRows(List<Report> reportData, int headingCount)
     {
-        List<DynamicReportRow> rows =
-            new List<DynamicReportRow>();
+        List<DynamicReportRow> rows = new List<DynamicReportRow>();
 
         if (headingCount == 0)
         {
@@ -507,18 +503,14 @@
 
         for (int i = 0; i < reportData.Count; i++)
         {
-            List<string> leftValues =
-                BuildLeftValues(reportData[i], headingCount);
-
-            string rowKey =
-                BuildRowKey(leftValues);
+            List<string> leftValues = BuildLeftValues(reportData[i], headingCount);
+            string rowKey = BuildRowKey(leftValues);
 
             DynamicReportRow row = null;
 
             for (int r = 0; r < rows.Count; r++)
             {
-                string existingKey =
-                    BuildRowKey(rows[r].LeftValues);
+                string existingKey = BuildRowKey(rows[r].LeftValues);
 
                 if (existingKey == rowKey)
                 {
@@ -539,8 +531,7 @@
                 rows.Add(row);
             }
 
-            string dateKey =
-                reportData[i].EntryDate.ToString("yyyy-MM-dd");
+            string dateKey = reportData[i].EntryDate.ToString("yyyy-MM-dd");
 
             string displayValue =
                 FormatResultValue(
@@ -918,12 +909,39 @@
 
             function buildPagination() {
                 var pageSize = parseInt($('#reportPageSize').val());
-                var rows = $('#dynamicReportTable tbody tr');
+
+                function getReportGroups() {
+                    var rows = $('#dynamicReportTable tbody tr');
+                    var groups = [];
+                    var currentGroup = [];
+
+                    rows.each(function () {
+                        var row = $(this);
+                        var isGroupStart = row.attr('data-group-start') === 'true';
+
+                        if (isGroupStart) {
+                            if (currentGroup.length > 0) {
+                                groups.push(currentGroup);
+                            }
+
+                            currentGroup = [];
+                            currentGroup.push(row);
+                        }
+                        else {
+                            currentGroup.push(row);
+                        }
+                    });
+
+                    if (currentGroup.length > 0) {
+                        groups.push(currentGroup);
+                    }
+
+                    return groups;
+                }
 
                 function renderPage(pageNumber) {
-                    rows.hide();
-
-                    var totalEntries = rows.length;
+                    var groups = getReportGroups();
+                    var totalEntries = groups.length;
                     var totalPages = Math.ceil(totalEntries / pageSize);
 
                     if (totalPages === 0) {
@@ -938,13 +956,23 @@
                         pageNumber = totalPages;
                     }
 
+                    $('#dynamicReportTable tbody tr').hide();
+
                     var startIndex = (pageNumber - 1) * pageSize;
                     var endIndex = startIndex + pageSize;
 
-                    rows.slice(startIndex, endIndex).show();
+                    if (endIndex > totalEntries) {
+                        endIndex = totalEntries;
+                    }
+
+                    for (var i = startIndex; i < endIndex; i++) {
+                        for (var j = 0; j < groups[i].length; j++) {
+                            groups[i][j].show();
+                        }
+                    }
 
                     var startEntry = totalEntries === 0 ? 0 : startIndex + 1;
-                    var endEntry = endIndex > totalEntries ? totalEntries : endIndex;
+                    var endEntry = endIndex;
 
                     $('#reportStartEntry').text(startEntry);
                     $('#reportEndEntry').text(endEntry);
@@ -983,8 +1011,7 @@
                         );
                     }
 
-                    var nextDisabled =
-                        currentPage === totalPages ? 'disabled' : '';
+                    var nextDisabled = currentPage === totalPages ? 'disabled' : '';
 
                     pagination.append(
                         '<li class="page-item ' + nextDisabled + '">' +

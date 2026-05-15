@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.Threading.Tasks;
-using Dapper;
+﻿using Dapper;
 using EmployeeAccessSystem.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace EmployeeAccessSystem.Repositories
 {
@@ -22,110 +23,138 @@ namespace EmployeeAccessSystem.Repositories
             return new SqlConnection(_connectionString);
         }
 
+        // Get all records
         public async Task<IEnumerable<ProductSetup>> GetAllAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETALL");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETALL");
 
-            return await conn.QueryAsync<ProductSetup>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.QueryAsync<ProductSetup>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading records.", ex);
+            }
         }
 
+        // Get active records
         public async Task<IEnumerable<ProductSetup>> GetActiveAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETACTIVE");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETACTIVE");
 
-            return await conn.QueryAsync<ProductSetup>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.QueryAsync<ProductSetup>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading active records.", ex);
+            }
         }
 
+        // Get record by id
         public async Task<ProductSetup> GetByIdAsync(int id)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETBYID");
-            parameters.Add("ProductId", id);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETBYID");
+                parameters.Add("ProductId", id);
 
-            return await conn.QueryFirstOrDefaultAsync<ProductSetup>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.QueryFirstOrDefaultAsync<ProductSetup>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading record.", ex);
+            }
         }
 
+        // Save new record
         public async Task<int> AddAsync(ProductSetup productSetup)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "ADD");
-            parameters.Add("ProductName", productSetup.ProductName);
-            parameters.Add("IsActive", productSetup.IsActive);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "ADD");
+                parameters.Add("ProductName", productSetup.ProductName);
+                parameters.Add("IsActive", productSetup.IsActive);
 
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.ExecuteScalarAsync<int>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while saving record.", ex);
+            }
         }
 
+        // Update existing record
         public async Task<int> UpdateAsync(ProductSetup productSetup)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "UPDATE");
-            parameters.Add("ProductId", productSetup.ProductId);
-            parameters.Add("ProductName", productSetup.ProductName);
-            parameters.Add("IsActive", productSetup.IsActive);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "UPDATE");
+                parameters.Add("ProductId", productSetup.ProductId);
+                parameters.Add("ProductName", productSetup.ProductName);
+                parameters.Add("IsActive", productSetup.IsActive);
 
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.ExecuteScalarAsync<int>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while updating record.", ex);
+            }
         }
 
+        // Delete record
         public async Task<int> DeleteAsync(int id)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "DELETE");
-            parameters.Add("ProductId", id);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "DELETE");
+                parameters.Add("ProductId", id);
 
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.ExecuteScalarAsync<int>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while deleting record.", ex);
+            }
         }
 
+        // Activate or deactivate record
         public async Task<int> ToggleAsync(int id)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "TOGGLE");
-            parameters.Add("ProductId", id);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "TOGGLE");
+                parameters.Add("ProductId", id);
 
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductSetup_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.ExecuteScalarAsync<int>("dbo.sp_ProductSetup_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while updating status.", ex);
+            }
         }
     }
 }

@@ -4,57 +4,81 @@
     Layout = null;
 }
 
+<!-- Create form -->
 <form asp-action="Create" method="post" id="createProductForm">
+
+    @* Anti-forgery token *@
     @Html.AntiForgeryToken()
 
+    @* Display server-side error message *@
     @if (ViewBag.Error != null)
     {
-        <div class="alert alert-danger">@ViewBag.Error</div>
+        <div class="alert alert-danger">
+            @ViewBag.Error
+        </div>
     }
 
+    @* Name field *@
     <div class="form-group">
-        <label asp-for="ProductName" class="font-weight-bold">Product Name</label>
-        <input asp-for="ProductName" class="form-control" placeholder="Enter product name" maxlength="100" />
-        <span asp-validation-for="ProductName" class="text-danger small"></span>
+
+        <label asp-for="ProductName" class="font-weight-bold">
+            Name
+        </label>
+
+        <input asp-for="ProductName"
+               class="form-control"
+               placeholder="Enter name"
+               maxlength="100" />
+
+        <span asp-validation-for="ProductName"
+              class="text-danger small">
+        </span>
+
     </div>
 
+    @* Active/Inactive switch *@
     <div class="form-group mb-4">
+
         <div class="custom-control custom-switch">
-            <input asp-for="IsActive" class="custom-control-input" id="CreateIsActive" />
-            <label class="custom-control-label font-weight-bold" for="CreateIsActive" id="createStatusLabel">Active</label>
+
+            <input asp-for="IsActive"
+                   class="custom-control-input"
+                   id="CreateIsActive" />
+
+            <label class="custom-control-label font-weight-bold"
+                   for="CreateIsActive"
+                   id="createStatusLabel">
+                Active
+            </label>
+
         </div>
-        <span asp-validation-for="IsActive" class="text-danger small"></span>
+
+        <span asp-validation-for="IsActive"
+              class="text-danger small">
+        </span>
+
     </div>
 
+    @* Modal footer buttons *@
     <div class="modal-footer px-0 pb-0">
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
             Back
         </button>
 
-        <button type="submit" class="btn btn-primary btn-sm">
+        <button type="submit"
+                class="btn btn-primary btn-sm">
             Save
         </button>
+
     </div>
+
 </form>
 
+@* Validation scripts *@
 <partial name="_ValidationScriptsPartial" />
 
-<script>
-    $(document).ready(function () {
-
-        function updateCreateStatus() {
-            if ($('#CreateIsActive').is(':checked')) {
-                $('#createStatusLabel').text('Active');
-            } else {
-                $('#createStatusLabel').text('Inactive');
-            }
-        }
-
-        updateCreateStatus();
-
-        $('#CreateIsActive').change(function () {
-            updateCreateStatus();
-        });
-
-    });
-</script>
+@* Page JavaScript file *@
+<script src="~/js/productsetup/create.js"></script>

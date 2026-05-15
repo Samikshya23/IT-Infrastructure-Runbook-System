@@ -6,14 +6,10 @@
     int selectedProductId = ViewBag.SelectedProductId;
     int rootIndex = ViewBag.RootIndex;
 
-    var products =
-        ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetupConfiguration>;
+    var products = ViewBag.Products as IEnumerable<EmployeeAccessSystem.Models.ProductSetupConfiguration>;
+    var valueTypes = ViewBag.ValueTypes as IEnumerable<EmployeeAccessSystem.Models.DropdownItemModel>;
 
-    var valueTypes =
-        ViewBag.ValueTypes as IEnumerable<EmployeeAccessSystem.Models.DropdownItemModel>;
-
-    string valueTypeJson =
-        JsonSerializer.Serialize(valueTypes);
+    string valueTypeJson = JsonSerializer.Serialize(valueTypes);
 }
 
 <div class="modal-header bg-white border-bottom">
@@ -24,26 +20,20 @@
 
 <div class="modal-body">
 
-    <input type="hidden"
-           id="RootIndex"
-           value="@rootIndex" />
+    <input type="hidden" id="RootIndex" value="@rootIndex" />
+    <input type="hidden" id="SelectedProductId" value="@selectedProductId" />
 
-    <div class="card mb-2 shadow-none">
+    <!-- Main card -->
+    <div class="card card-outline card-primary mb-0 shadow-none">
+
+        <!-- Card header -->
+        <div class="card-header bg-white border-bottom-0 py-1 px-2 ">
         <div class="card-body p-2">
-
             <div class="form-group mb-0">
+                <label class="font-weight-bold mb-1">Select</label>
 
-                <label class="font-weight-bold mb-1">
-                    Select
-                </label>
-
-                <select id="ProductId"
-                        class="form-control form-control-sm"
-                        @(rootIndex >= 0 ? "disabled" : "")>
-
-                    <option value="">
-                        Select
-                    </option>
+                <select id="ProductId" class="form-control form-control-sm" @(rootIndex >= 0 ? "disabled" : "")>
+                    <option value="">Select</option>
 
                     @if (products != null)
                     {
@@ -51,707 +41,56 @@
                         {
                             if (selectedProductId == product.ProductId)
                             {
-                                <option value="@product.ProductId" selected>
-                                    @product.ProductName
-                                </option>
+                                <option value="@product.ProductId" selected>@product.ProductName</option>
                             }
                             else
                             {
-                                <option value="@product.ProductId">
-                                    @product.ProductName
-                                </option>
+                                <option value="@product.ProductId">@product.ProductName</option>
                             }
                         }
                     }
-
                 </select>
-
             </div>
-
         </div>
     </div>
 
     <div id="generatedSetupArea" style="display:none;">
-
         <div class="card shadow-none">
-
             <div class="card-body p-2">
-
                 <div id="nodeContainer"></div>
-
             </div>
-
         </div>
-
     </div>
 
 </div>
 
 <div class="modal-footer">
-
-    <button type="button"
-            id="btnFooterClose"
-            class="btn btn-secondary btn-sm">
-        Close
-    </button>
-
-    <button type="button"
-            id="btnSave"
-            class="btn btn-primary btn-sm">
-        Save
-    </button>
-
+    <button type="button" id="btnFooterClose" class="btn btn-secondary btn-sm">Close</button>
+    <button type="button" id="btnSave" class="btn btn-primary btn-sm">Save</button>
 </div>
 
-<div class="modal fade"
-     id="confirmCloseModal"
-     tabindex="-1"
-     role="dialog"
-     data-backdrop="static"
-     data-keyboard="false">
-
-    <div class="modal-dialog modal-sm modal-dialog-centered"
-         role="document">
-
+<div class="modal fade" id="confirmCloseModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow">
-
             <div class="modal-body text-center py-4">
-
                 <div class="mb-3">
-                    <i class="fas fa-exclamation-circle text-warning"
-                       style="font-size:50px;"></i>
+                    <i class="fas fa-exclamation-circle text-warning" style="font-size:50px;"></i>
                 </div>
 
-                <h4 class="font-weight-bold mb-3">
-                    Are you sure?
-                </h4>
-
-                <p class="mb-0">
-                    Do you want to close this form?
-                </p>
-
+                <h4 class="font-weight-bold mb-3">Are you sure?</h4>
+                <p class="mb-0">Do you want to close this form?</p>
             </div>
 
             <div class="modal-footer justify-content-center bg-light border-top-0">
-
-                <button type="button"
-                        id="btnContinueEditing"
-                        class="btn btn-secondary btn-sm px-4">
-                    No
-                </button>
-
-                <button type="button"
-                        id="btnConfirmClose"
-                        class="btn btn-danger btn-sm px-4">
-                    Yes
-                </button>
-
+                <button type="button" id="btnContinueEditing" class="btn btn-secondary btn-sm px-4">No</button>
+                <button type="button" id="btnConfirmClose" class="btn btn-danger btn-sm px-4">Yes</button>
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 <script>
-    var valueTypeList = @Html.Raw(valueTypeJson);
-
-    $(document).ready(function () {
-
-        var selectedProductId = @selectedProductId;
-        var editRootIndex = @rootIndex;
-        var isFormChanged = false;
-
-        function generateSetupNodeId() {
-            return "node_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-        }
-
-        function encodeHtml(value) {
-            if (value == null) {
-                return "";
-            }
-
-            return $("<div/>").text(value).html();
-        }
-
-        function showToastMessage(type, message) {
-            if (message == null || message === "") {
-                return;
-            }
-
-            if (typeof toastr === "undefined") {
-                alert(message);
-                return;
-            }
-
-            toastr.options = {
-                closeButton: true,
-                progressBar: true,
-                newestOnTop: true,
-                positionClass: "toast-top-right",
-                preventDuplicates: true,
-                timeOut: "3000"
-            };
-
-            if (type === "success") {
-                toastr.success(message, "Success");
-            }
-
-            if (type === "error") {
-                toastr.error(message, "Message");
-            }
-
-            if (type === "warning") {
-                toastr.warning(message, "Message");
-            }
-
-            if (type === "info") {
-                toastr.info(message, "Message");
-            }
-        }
-
-        if (selectedProductId > 0) {
-            $("#ProductId").val(selectedProductId);
-
-            if (editRootIndex >= 0) {
-                loadRootForEdit(selectedProductId, editRootIndex);
-            }
-            else {
-                loadGeneratedForm(selectedProductId);
-            }
-        }
-
-        $(document).off("input change", ".node-value, .field-type");
-        $(document).on("input change", ".node-value, .field-type", function () {
-            isFormChanged = true;
-        });
-
-        $("#ProductId").off("change").on("change", function () {
-            var productId = $(this).val();
-
-            $("#nodeContainer").html("");
-            $("#generatedSetupArea").hide();
-
-            if (productId === "") {
-                return;
-            }
-
-            loadGeneratedForm(productId);
-        });
-
-        function loadGeneratedForm(productId) {
-            $("#generatedSetupArea").show();
-
-            $("#nodeContainer").html(
-                '<div class="text-muted text-center py-3">Loading...</div>'
-            );
-
-            $.get(
-                "/ProductSetupConfiguration/GetRootLevels",
-                {
-                    productId: productId
-                },
-                function (response) {
-                    if (!response.success) {
-                        showToastMessage("error", response.message);
-                        return;
-                    }
-
-                    $("#nodeContainer").html("");
-
-                    if (response.data == null || response.data.length === 0) {
-                        $("#nodeContainer").html(
-                            '<div class="text-muted text-center py-3">No setup structure found.</div>'
-                        );
-                        return;
-                    }
-
-                    for (var i = 0; i < response.data.length; i++) {
-                        addConfiguredRow(
-                            $("#nodeContainer"),
-                            0,
-                            response.data[i],
-                            true
-                        );
-                    }
-
-                    refreshActionButtons();
-                    isFormChanged = false;
-                }
-            );
-        }
-
-        function loadRootForEdit(productId, rootIndex) {
-            $("#generatedSetupArea").show();
-
-            $("#nodeContainer").html(
-                '<div class="text-muted text-center py-3">Loading...</div>'
-            );
-
-            $.get(
-                "/ProductSetupConfiguration/GetRootForEdit",
-                {
-                    productId: productId,
-                    rootIndex: rootIndex
-                },
-                function (response) {
-                    if (!response.success) {
-                        showToastMessage("error", response.message);
-                        return;
-                    }
-
-                    $("#nodeContainer").html("");
-
-                    addSavedRow(
-                        $("#nodeContainer"),
-                        0,
-                        response.data,
-                        true
-                    );
-
-                    refreshActionButtons();
-                    isFormChanged = false;
-                }
-            );
-        }
-
-        function addConfiguredRow(container, level, configNode, isRootLevel) {
-            var margin = level * 30;
-            var setupNodeId = generateSetupNodeId();
-            var html = "";
-
-            html += '<div class="node-row mb-2" ';
-            html += 'data-setup-node-id="' + setupNodeId + '" ';
-            html += 'data-level="' + level + '" ';
-            html += 'data-config-id="' + configNode.id + '" ';
-            html += 'data-heading="' + encodeHtml(configNode.heading) + '" ';
-            html += 'data-label-name="' + encodeHtml(configNode.name) + '" ';
-            html += 'data-input-type="' + encodeHtml(configNode.inputType) + '" ';
-            html += 'data-root="' + isRootLevel + '" ';
-            html += 'style="margin-left:' + margin + 'px;">';
-
-            html += '<div class="row align-items-center">';
-
-            html += '<div class="col-md-3">';
-            html += '<label class="mb-0 font-weight-bold">';
-            html += encodeHtml(configNode.name);
-            html += '</label>';
-            html += '</div>';
-
-            html += '<div class="col-md-5">';
-            html += '<input type="text" maxlength="100" ';
-            html += 'class="form-control form-control-sm node-value" ';
-            html += 'placeholder="Enter value">';
-            html += '</div>';
-
-            if (isRootLevel === true) {
-                html += getFieldTypeDropdown("", "");
-            }
-            else {
-                html += '<div class="col-md-2"></div>';
-            }
-
-            html += getActionButtons();
-
-            html += '</div>';
-            html += '<div class="child-area mt-2"></div>';
-            html += '</div>';
-
-            container.append(html);
-
-            var currentRow = container.children(".node-row").last();
-
-            loadDefaultChildren(currentRow);
-        }
-
-        function addSavedRow(container, level, savedNode, isRootLevel) {
-            var margin = level * 30;
-
-            var setupNodeId = savedNode.id || savedNode.Id;
-
-            if (setupNodeId == null || setupNodeId === "") {
-                setupNodeId = generateSetupNodeId();
-            }
-
-            var fieldType = savedNode.fieldType || "";
-            var fieldTypeId = savedNode.fieldTypeId || "";
-            var valueType = savedNode.valueType || "";
-
-            var html = "";
-
-            html += '<div class="node-row mb-2" ';
-            html += 'data-setup-node-id="' + setupNodeId + '" ';
-            html += 'data-level="' + level + '" ';
-            html += 'data-config-id="' + savedNode.configurationNodeId + '" ';
-            html += 'data-heading="' + encodeHtml(savedNode.heading) + '" ';
-            html += 'data-label-name="' + encodeHtml(savedNode.label) + '" ';
-            html += 'data-input-type="' + encodeHtml(valueType) + '" ';
-            html += 'data-root="' + isRootLevel + '" ';
-            html += 'style="margin-left:' + margin + 'px;">';
-
-            html += '<div class="row align-items-center">';
-
-            html += '<div class="col-md-3">';
-            html += '<label class="mb-0 font-weight-bold">';
-            html += encodeHtml(savedNode.label);
-            html += '</label>';
-            html += '</div>';
-
-            html += '<div class="col-md-5">';
-            html += '<input type="text" maxlength="100" ';
-            html += 'class="form-control form-control-sm node-value" ';
-            html += 'value="' + encodeHtml(savedNode.value) + '" ';
-            html += 'placeholder="Enter value">';
-            html += '</div>';
-
-            if (isRootLevel === true) {
-                html += getFieldTypeDropdown(fieldType, fieldTypeId);
-            }
-            else {
-                html += '<div class="col-md-2"></div>';
-            }
-
-            html += getActionButtons();
-
-            html += '</div>';
-            html += '<div class="child-area mt-2"></div>';
-            html += '</div>';
-
-            container.append(html);
-
-            var currentRow = container.children(".node-row").last();
-
-            if (savedNode.children != null && savedNode.children.length > 0) {
-                for (var i = 0; i < savedNode.children.length; i++) {
-                    addSavedRow(
-                        currentRow.children(".child-area"),
-                        level + 1,
-                        savedNode.children[i],
-                        false
-                    );
-                }
-            }
-        }
-
-        function getFieldTypeDropdown(selectedValue, selectedId) {
-            var html = "";
-
-            html += '<div class="col-md-2">';
-            html += '<select class="form-control form-control-sm field-type">';
-            html += '<option value="">Select</option>';
-
-            if (valueTypeList != null) {
-                for (var i = 0; i < valueTypeList.length; i++) {
-                    var item = valueTypeList[i];
-
-                    var id = item.DropdownItemId || item.dropdownItemId;
-                    var text = item.ItemName || item.itemName;
-
-                    html += getFieldTypeOption(
-                        id,
-                        text,
-                        selectedValue,
-                        selectedId
-                    );
-                }
-            }
-
-            html += '</select>';
-            html += '</div>';
-
-            return html;
-        }
-
-        function getFieldTypeOption(id, text, selectedValue, selectedId) {
-            var selected = "";
-
-            if (id == selectedId || text === selectedValue) {
-                selected = " selected";
-            }
-
-            return '<option value="' + id + '" data-text="' + encodeHtml(text) + '"' + selected + '>' + encodeHtml(text) + '</option>';
-        }
-
-        function getActionButtons() {
-            var html = "";
-
-            html += '<div class="col-md-2 text-right">';
-
-            html += '<button type="button" ';
-            html += 'class="btn btn-outline-primary btn-sm btn-add-same mr-1">';
-            html += '<i class="fas fa-plus"></i>';
-            html += '</button>';
-
-            html += '<button type="button" ';
-            html += 'class="btn btn-outline-danger btn-sm btn-remove-row">';
-            html += '<i class="fas fa-minus"></i>';
-            html += '</button>';
-
-            html += '</div>';
-
-            return html;
-        }
-
-        function loadDefaultChildren(parentRow) {
-            var productId = $("#ProductId").val();
-            var configId = parentRow.attr("data-config-id");
-            var childArea = parentRow.children(".child-area");
-            var level = parseInt(parentRow.attr("data-level"));
-
-            $.get(
-                "/ProductSetupConfiguration/GetChildLevels",
-                {
-                    productId: productId,
-                    parentConfigurationNodeId: configId
-                },
-                function (response) {
-                    if (!response.success) {
-                        return;
-                    }
-
-                    if (response.data == null || response.data.length === 0) {
-                        refreshActionButtons();
-                        return;
-                    }
-
-                    for (var i = 0; i < response.data.length; i++) {
-                        addConfiguredRow(
-                            childArea,
-                            level + 1,
-                            response.data[i],
-                            false
-                        );
-                    }
-
-                    refreshActionButtons();
-                }
-            );
-        }
-
-        $(document).off("click", ".btn-add-same");
-
-        $(document).on("click", ".btn-add-same", function () {
-            var currentRow = $(this).closest(".node-row");
-
-            var currentValue = currentRow.find("> .row .node-value").val();
-
-            if ($.trim(currentValue) === "") {
-                showToastMessage("error", "Please enter value first.");
-                return;
-            }
-
-            if (currentRow.find("> .row .field-type").length > 0) {
-                var currentType = currentRow.find("> .row .field-type").val();
-
-                if (currentType === "") {
-                    showToastMessage("error", "Please select value type first.");
-                    return;
-                }
-            }
-
-            var parentContainer = currentRow.parent();
-
-            var configNode = {
-                id: currentRow.attr("data-config-id"),
-                heading: currentRow.attr("data-heading"),
-                name: currentRow.attr("data-label-name"),
-                inputType: currentRow.attr("data-input-type")
-            };
-
-            var level = parseInt(currentRow.attr("data-level"));
-            var isRootLevel = currentRow.attr("data-root") === "true";
-
-            addConfiguredRow(
-                parentContainer,
-                level,
-                configNode,
-                isRootLevel
-            );
-
-            isFormChanged = true;
-
-            refreshActionButtons();
-        });
-
-        $(document).off("click", ".btn-remove-row");
-
-        $(document).on("click", ".btn-remove-row", function () {
-            $(this).closest(".node-row").remove();
-
-            isFormChanged = true;
-
-            if ($("#nodeContainer").children(".node-row").length === 0) {
-                $("#generatedSetupArea").hide();
-                $("#nodeContainer").html("");
-            }
-
-            refreshActionButtons();
-        });
-
-        function refreshActionButtons() {
-            $("#nodeContainer").find(".node-row").each(function () {
-                var row = $(this);
-
-                var inputType = row.attr("data-input-type");
-                var isRootLevel = row.attr("data-root") === "true";
-
-                row.find("> .row .btn-add-same").hide();
-                row.find("> .row .btn-remove-row").hide();
-
-                if (isRootLevel === true) {
-                    var rootRows = row.parent().children(".node-row");
-                    var isLastRoot = row.is(rootRows.last());
-
-                    if (isLastRoot) {
-                        row.find("> .row .btn-add-same").show();
-                    }
-
-                    row.find("> .row .btn-remove-row").show();
-
-                    return;
-                }
-
-                if (inputType === "Single") {
-                    return;
-                }
-
-                if (inputType === "Multiple") {
-                    var siblingRows = row.parent().children(".node-row");
-                    var isLastRow = row.is(siblingRows.last());
-
-                    if (isLastRow) {
-                        row.find("> .row .btn-add-same").show();
-                    }
-
-                    row.find("> .row .btn-remove-row").show();
-                }
-            });
-        }
-
-        function validateRows(container) {
-            var valid = true;
-
-            container.find(".node-row").each(function () {
-                var row = $(this);
-                var nodeValue = row.find("> .row .node-value").val();
-
-                if ($.trim(nodeValue) === "") {
-                    showToastMessage("error", "Please fill all required values.");
-                    valid = false;
-                    return false;
-                }
-
-                if (row.find("> .row .field-type").length > 0) {
-                    var fieldType = row.find("> .row .field-type").val();
-
-                    if (fieldType === "") {
-                        showToastMessage("error", "Please select value type.");
-                        valid = false;
-                        return false;
-                    }
-                }
-            });
-
-            return valid;
-        }
-
-        function collectRows(container) {
-            var data = [];
-
-            container.children(".node-row").each(function () {
-                var row = $(this);
-                var nodeValue = row.find("> .row .node-value").val();
-                var configurationNodeId = row.attr("data-config-id");
-                var fieldTypeId = null;
-                var fieldTypeText = null;
-
-                if (row.find("> .row .field-type").length > 0) {
-                    fieldTypeId = row.find("> .row .field-type").val();
-                    fieldTypeText = row.find("> .row .field-type option:selected").text();
-                }
-
-                data.push({
-                    id: row.attr("data-setup-node-id"),
-                    heading: row.attr("data-heading"),
-                    label: row.attr("data-label-name"),
-                    valueType: row.attr("data-input-type"),
-                    value: $.trim(nodeValue),
-                    fieldTypeId: fieldTypeId,
-                    fieldType: fieldTypeText,
-                    configurationNodeId: parseInt(configurationNodeId),
-                    children: collectRows(row.children(".child-area"))
-                });
-            });
-
-            return data;
-        }
-
-        $("#btnSave").off("click").on("click", function () {
-            var productId = $("#ProductId").val();
-
-            if (productId === "") {
-                showToastMessage("error", "Please select a main item.");
-                return;
-            }
-
-            if ($("#nodeContainer").children(".node-row").length === 0) {
-                showToastMessage("error", "Please add setup values.");
-                return;
-            }
-
-            if (!validateRows($("#nodeContainer"))) {
-                return;
-            }
-
-            var nodes = collectRows($("#nodeContainer"));
-
-            $.ajax({
-                url: "/ProductSetupConfiguration/SaveData",
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({
-                    productId: parseInt(productId),
-                    rootIndex: editRootIndex,
-                    nodes: nodes
-                }),
-                success: function (response) {
-                    if (response.success) {
-                        $("#setupConfigurationModal").modal("hide");
-
-                        window.location.href =
-                            "/ProductSetupConfiguration?selectedProductId=" +
-                            productId +
-                            "&successMessage=" +
-                            encodeURIComponent(response.message);
-                    }
-                    else {
-                        showToastMessage("error", response.message);
-                    }
-                },
-                error: function () {
-                    showToastMessage("error", "Failed to save setup configuration.");
-                }
-            });
-        });
-
-        $("#btnFooterClose").off("click").on("click", function () {
-            if (isFormChanged === false) {
-                $("#setupConfigurationModal").modal("hide");
-                return;
-            }
-
-            $("#confirmCloseModal").modal("show");
-        });
-
-        $("#btnContinueEditing").off("click").on("click", function () {
-            $("#confirmCloseModal").modal("hide");
-        });
-
-        $("#btnConfirmClose").off("click").on("click", function () {
-            $("#confirmCloseModal").modal("hide");
-            $("#setupConfigurationModal").modal("hide");
-        });
-
-    });
+    window.productSetupValueTypes = @Html.Raw(valueTypeJson);
 </script>
+
+<script src="~/js/productsetupconfiguration/add.js" asp-append-version="true"></script>

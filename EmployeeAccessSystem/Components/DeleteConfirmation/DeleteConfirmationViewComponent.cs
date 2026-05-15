@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace EmployeeAccessSystem.Components.DeleteConfirmation
 {
     public class DeleteConfirmationViewComponent : ViewComponent
     {
+        // Load reusable delete confirmation modal
         public Task<IViewComponentResult> InvokeAsync(
             string formId,
             string actionName,

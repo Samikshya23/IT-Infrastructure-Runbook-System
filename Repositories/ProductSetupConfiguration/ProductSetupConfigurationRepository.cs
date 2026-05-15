@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using Dapper;
@@ -17,89 +18,126 @@ namespace EmployeeAccessSystem.Repositories
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
+        // Create database connection
         private SqlConnection GetConnection()
         {
             return new SqlConnection(_connectionString);
         }
+
+        // Load all setup configurations
+        public async Task<IEnumerable<ProductSetupConfiguration>> GetAllAsync()
+        {
+            try
+            {
+                using var conn = GetConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETALL");
+
+                return await conn.QueryAsync<ProductSetupConfiguration>("dbo.sp_ProductSetupConfiguration_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading records.", ex);
+            }
+        }
+
+        // Load configured products
         public async Task<IEnumerable<ProductSetupConfiguration>> GetConfiguredProductsAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETCONFIGUREDPRODUCTS");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETCONFIGUREDPRODUCTS");
 
-            return await conn.QueryAsync<ProductSetupConfiguration>(
-                "dbo.sp_ProductSetupConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.QueryAsync<ProductSetupConfiguration>("dbo.sp_ProductSetupConfiguration_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading configured products.", ex);
+            }
         }
+
+        // Load setup by product
         public async Task<IEnumerable<ProductSetupConfiguration>> GetByProductIdAsync(int productId)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETBYPRODUCT");
-            parameters.Add("ProductId", productId);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETBYPRODUCT");
+                parameters.Add("ProductId", productId);
 
-            return await conn.QueryAsync<ProductSetupConfiguration>(
-                "dbo.sp_ProductSetupConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.QueryAsync<ProductSetupConfiguration>("dbo.sp_ProductSetupConfiguration_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading record by product.", ex);
+            }
         }
 
+        // Load setup json by product
         public async Task<ProductSetupConfiguration> GetJsonByProductIdAsync(int productId)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETJSONBYPRODUCT");
-            parameters.Add("ProductId", productId);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETJSONBYPRODUCT");
+                parameters.Add("ProductId", productId);
 
-            return await conn.QueryFirstOrDefaultAsync<ProductSetupConfiguration>(
-                "dbo.sp_ProductSetupConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.QueryFirstOrDefaultAsync<ProductSetupConfiguration>("dbo.sp_ProductSetupConfiguration_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading setup json.", ex);
+            }
         }
 
-        public async Task<int> SaveOrUpdateJsonAsync(
-            int productId,
-            string setupJson,
-            string createdBy)
+        // Save or update setup json
+        public async Task<int> SaveOrUpdateJsonAsync(int productId, string setupJson, string createdBy, string modifiedBy)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "SAVEORUPDATEJSON");
-            parameters.Add("ProductId", productId);
-            parameters.Add("SetupJson", setupJson);
-            parameters.Add("CreatedBy", createdBy);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "SAVEORUPDATEJSON");
+                parameters.Add("ProductId", productId);
+                parameters.Add("SetupJson", setupJson);
+                parameters.Add("CreatedBy", createdBy);
+                parameters.Add("ModifiedBy", modifiedBy);
 
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductSetupConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.ExecuteScalarAsync<int>("dbo.sp_ProductSetupConfiguration_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while saving record.", ex);
+            }
         }
 
-        public async Task<int> DeleteJsonByProductAsync(
-            int productId,
-            string deletedBy)
+        // Delete setup by product
+        public async Task<int> DeleteJsonByProductAsync(int productId, string deletedBy)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "DELETEJSONBYPRODUCT");
-            parameters.Add("ProductId", productId);
-            parameters.Add("DeletedBy", deletedBy);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "DELETEJSONBYPRODUCT");
+                parameters.Add("ProductId", productId);
+                parameters.Add("DeletedBy", deletedBy);
 
-            return await conn.ExecuteScalarAsync<int>(
-                "dbo.sp_ProductSetupConfiguration_Manage",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
+                return await conn.ExecuteScalarAsync<int>("dbo.sp_ProductSetupConfiguration_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while deleting record.", ex);
+            }
         }
     }
 }

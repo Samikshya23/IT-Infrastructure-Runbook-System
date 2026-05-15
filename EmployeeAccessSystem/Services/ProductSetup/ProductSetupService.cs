@@ -9,22 +9,21 @@ namespace EmployeeAccessSystem.Services
     public class ProductSetupService : IProductSetupService
     {
         private readonly IProductSetupRepositories _repo;
-
         public ProductSetupService(IProductSetupRepositories repo)
         {
             _repo = repo;
         }
-
+        // Get all records
         public async Task<IEnumerable<ProductSetup>> GetAllAsync()
         {
             return await _repo.GetAllAsync();
         }
-
+        // Get single record by id
         public async Task<ProductSetup> GetByIdAsync(int id)
         {
             return await _repo.GetByIdAsync(id);
         }
-
+        // Save new record
         public async Task<string> AddAsync(ProductSetup productSetup)
         {
             if (productSetup == null)
@@ -34,14 +33,14 @@ namespace EmployeeAccessSystem.Services
 
             if (string.IsNullOrWhiteSpace(productSetup.ProductName))
             {
-                return "Product Name is required.";
+                return "Name is required.";
             }
 
             productSetup.ProductName = productSetup.ProductName.Trim();
 
             if (productSetup.ProductName.Length > 100)
             {
-                return "Product Name cannot exceed 100 characters.";
+                return "Name cannot exceed 100 characters.";
             }
 
             try
@@ -50,21 +49,21 @@ namespace EmployeeAccessSystem.Services
 
                 if (result > 0)
                 {
-                    return "Product added successfully.";
+                    return "Record saved successfully.";
                 }
 
-                return "Failed to add product.";
+                return "Failed to save record.";
             }
             catch (SqlException)
             {
-                return "Database error while adding product.";
+                return "Database error while saving record.";
             }
             catch
             {
-                return "Error while adding product.";
+                return "Error while saving record.";
             }
         }
-
+        // Update existing record
         public async Task<string> UpdateAsync(ProductSetup productSetup)
         {
             if (productSetup == null)
@@ -74,26 +73,26 @@ namespace EmployeeAccessSystem.Services
 
             if (productSetup.ProductId <= 0)
             {
-                return "Invalid product.";
+                return "Invalid record.";
             }
 
             if (string.IsNullOrWhiteSpace(productSetup.ProductName))
             {
-                return "Product Name is required.";
+                return "Name is required.";
             }
 
             productSetup.ProductName = productSetup.ProductName.Trim();
 
             if (productSetup.ProductName.Length > 100)
             {
-                return "Product Name cannot exceed 100 characters.";
+                return "Name cannot exceed 100 characters.";
             }
 
             ProductSetup existing = await _repo.GetByIdAsync(productSetup.ProductId);
 
             if (existing == null)
             {
-                return "Product not found.";
+                return "Record not found.";
             }
 
             try
@@ -102,33 +101,34 @@ namespace EmployeeAccessSystem.Services
 
                 if (result > 0)
                 {
-                    return "Product updated successfully.";
+                    return "Record updated successfully.";
                 }
 
-                return "Failed to update product.";
+                return "Failed to update record.";
             }
             catch (SqlException)
             {
-                return "Database error while updating product.";
+                return "Database error while updating record.";
             }
             catch
             {
-                return "Error while updating product.";
+                return "Error while updating record.";
             }
         }
 
+        // Delete record
         public async Task<string> DeleteAsync(int id)
         {
             if (id <= 0)
             {
-                return "Invalid product.";
+                return "Invalid record.";
             }
 
             ProductSetup existing = await _repo.GetByIdAsync(id);
 
             if (existing == null)
             {
-                return "Product not found.";
+                return "Record not found.";
             }
 
             try
@@ -137,29 +137,30 @@ namespace EmployeeAccessSystem.Services
 
                 if (result > 0)
                 {
-                    return "Product deleted successfully.";
+                    return "Record deleted successfully.";
                 }
 
-                return "Failed to delete product.";
+                return "Failed to delete record.";
             }
             catch
             {
-                return "This product cannot be deleted because it is used somewhere.";
+                return "This record cannot be deleted because it is used somewhere.";
             }
         }
 
+        // Activate or deactivate record
         public async Task<string> ToggleAsync(int id)
         {
             if (id <= 0)
             {
-                return "Invalid product.";
+                return "Invalid record.";
             }
 
             ProductSetup existing = await _repo.GetByIdAsync(id);
 
             if (existing == null)
             {
-                return "Product not found.";
+                return "Record not found.";
             }
 
             try
@@ -168,14 +169,14 @@ namespace EmployeeAccessSystem.Services
 
                 if (result > 0)
                 {
-                    return "Status changed successfully.";
+                    return "Status updated successfully.";
                 }
 
-                return "Failed to change status.";
+                return "Failed to update status.";
             }
             catch
             {
-                return "Error while changing status.";
+                return "Error while updating status.";
             }
         }
     }

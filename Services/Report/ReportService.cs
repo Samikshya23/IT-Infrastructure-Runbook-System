@@ -10,37 +10,41 @@ namespace EmployeeAccessSystem.Services
     {
         private readonly IReportRepository _reportRepository;
 
+        // Constructor
         public ReportService(IReportRepository reportRepository)
         {
             _reportRepository = reportRepository;
         }
 
+        // Load products
         public async Task<IEnumerable<ReportProduct>> GetProductsAsync()
         {
             return await _reportRepository.GetProductsAsync();
         }
 
+        // Load headings
         public async Task<string> GetHeadingsAsync(int productId)
         {
+            // Validate product
             if (productId <= 0)
             {
                 throw new Exception("Please select a valid product.");
             }
 
+            // Return headings from repository
             return await _reportRepository.GetHeadingsAsync(productId);
         }
 
-        public async Task<IEnumerable<Report>> GetDataAsync(
-            int productId,
-            DateTime fromDate,
-            DateTime toDate
-        )
+        // Load report data
+        public async Task<IEnumerable<Report>> GetDataAsync(int productId, DateTime fromDate, DateTime toDate)
         {
+            // Validate product
             if (productId <= 0)
             {
                 throw new Exception("Please select a valid product.");
             }
 
+            // Validate date range
             if (fromDate.Date > toDate.Date)
             {
                 throw new Exception("From date cannot be greater than to date.");
@@ -48,16 +52,14 @@ namespace EmployeeAccessSystem.Services
 
             int totalDays = (toDate.Date - fromDate.Date).Days;
 
+            // Allow maximum 31 days only
             if (totalDays > 31)
             {
                 throw new Exception("Maximum 31 days allowed.");
             }
 
-            return await _reportRepository.GetDataAsync(
-                productId,
-                fromDate,
-                toDate
-            );
+            // Return report data from repository
+            return await _reportRepository.GetDataAsync(productId, fromDate, toDate);
         }
     }
 }

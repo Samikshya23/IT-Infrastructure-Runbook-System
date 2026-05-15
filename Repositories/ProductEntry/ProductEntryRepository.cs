@@ -18,14 +18,10 @@ namespace EmployeeAccessSystem.Repositories
             _configuration = configuration;
         }
 
-        private IDbConnection Connection
-        {
-            get
-            {
-                return new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-            }
-        }
+        // Create SQL connection
+        private IDbConnection Connection => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
+        // Load all today's active product entries
         public async Task<IEnumerable<ProductEntryModel>> GetAllAsync()
         {
             try
@@ -34,11 +30,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@Flag", "GETALL");
 
                 using IDbConnection db = Connection;
-
-                return await db.QueryAsync<ProductEntryModel>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.QueryAsync<ProductEntryModel>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -46,6 +38,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Load today's active entries by product
         public async Task<IEnumerable<ProductEntryModel>> GetByProductAsync(int productId)
         {
             try
@@ -55,11 +48,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@ProductId", productId);
 
                 using IDbConnection db = Connection;
-
-                return await db.QueryAsync<ProductEntryModel>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.QueryAsync<ProductEntryModel>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -67,6 +56,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Load details of one entry group
         public async Task<IEnumerable<ProductEntryModel>> GetDetailsAsync(Guid entryGroupId)
         {
             try
@@ -76,11 +66,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@EntryGroupId", entryGroupId);
 
                 using IDbConnection db = Connection;
-
-                return await db.QueryAsync<ProductEntryModel>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.QueryAsync<ProductEntryModel>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -88,6 +74,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Load SetupJson from ProductSetupConfiguration
         public async Task<string> GetSetupAsync(int productId)
         {
             try
@@ -97,11 +84,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@ProductId", productId);
 
                 using IDbConnection db = Connection;
-
-                return await db.QueryFirstOrDefaultAsync<string>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.QueryFirstOrDefaultAsync<string>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -109,6 +92,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Load ConfigurationJson from ProductConfiguration
         public async Task<string> GetConfigurationAsync(int productId)
         {
             try
@@ -118,11 +102,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@ProductId", productId);
 
                 using IDbConnection db = Connection;
-
-                return await db.QueryFirstOrDefaultAsync<string>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.QueryFirstOrDefaultAsync<string>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -130,6 +110,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Load products that already have saved setup
         public async Task<IEnumerable<ProductConfigurationIndexItem>> GetConfiguredProductsAsync()
         {
             try
@@ -138,11 +119,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@Flag", "GETCONFIGUREDPRODUCTS");
 
                 using IDbConnection db = Connection;
-
-                return await db.QueryAsync<ProductConfigurationIndexItem>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.QueryAsync<ProductConfigurationIndexItem>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -150,6 +127,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Check whether today's entry already exists for product
         public async Task<int> CheckExistsAsync(int productId)
         {
             try
@@ -159,11 +137,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@ProductId", productId);
 
                 using IDbConnection db = Connection;
-
-                return await db.ExecuteScalarAsync<int>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.ExecuteScalarAsync<int>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -171,12 +145,12 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Save or update product entry value
         public async Task<int> SaveAsync(ProductEntryModel model)
         {
             try
             {
                 DynamicParameters parameters = new DynamicParameters();
-
                 parameters.Add("@Flag", "SAVE");
                 parameters.Add("@EntryGroupId", model.EntryGroupId);
                 parameters.Add("@ProductId", model.ProductId);
@@ -191,11 +165,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@ModifiedBy", model.ModifiedBy);
 
                 using IDbConnection db = Connection;
-
-                return await db.ExecuteScalarAsync<int>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.ExecuteScalarAsync<int>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -203,6 +173,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Soft delete product entry group
         public async Task<int> DeleteAsync(Guid entryGroupId, string deletedBy)
         {
             try
@@ -213,11 +184,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@DeletedBy", deletedBy);
 
                 using IDbConnection db = Connection;
-
-                return await db.ExecuteScalarAsync<int>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.ExecuteScalarAsync<int>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
@@ -225,6 +192,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Report cleanup method; name kept same because report already uses it
         public async Task<int> ReportModel(int productId, string validSetupNodeIds, string deletedBy)
         {
             try
@@ -236,11 +204,7 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@DeletedBy", deletedBy);
 
                 using IDbConnection db = Connection;
-
-                return await db.ExecuteScalarAsync<int>(
-                    "sp_ProductEntry_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
+                return await db.ExecuteScalarAsync<int>("sp_ProductEntry_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {

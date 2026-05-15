@@ -19,6 +19,7 @@ namespace EmployeeAccessSystem.Controllers
             _service = service;
         }
 
+        // Load index page with optional selected record
         public async Task<IActionResult> Index(int? productId)
         {
             await LoadProductDropdown(productId);
@@ -29,51 +30,44 @@ namespace EmployeeAccessSystem.Controllers
             {
                 ViewBag.SelectedProductId = productId.Value;
 
-                string configurationJson =
-                    await _service.GetConfigurationAsync(productId.Value);
-
+                string configurationJson = await _service.GetConfigurationAsync(productId.Value);
                 headings = GetHeadingsFromJson(configurationJson);
 
                 if (headings.Count == 0)
                 {
-                    TempData["Error"] = "No product configuration found.";
+                    TempData["Error"] = "No configuration found.";
                 }
 
                 ViewBag.Headings = headings;
 
-                IEnumerable<ProductEntryModel> data =
-                    await _service.GetByProductAsync(productId.Value);
-
+                IEnumerable<ProductEntryModel> data = await _service.GetByProductAsync(productId.Value);
                 return View(data);
             }
 
             ViewBag.SelectedProductId = null;
             ViewBag.Headings = headings;
 
-            IEnumerable<ProductEntryModel> allData =
-                await _service.GetAllAsync();
-
+            IEnumerable<ProductEntryModel> allData = await _service.GetAllAsync();
             return View(allData);
         }
 
+        // Load setup JSON for selected record
         [HttpGet]
         public async Task<IActionResult> GetSetup(int productId)
         {
-            string setupJson =
-                await _service.GetSetupAsync(productId);
-
+            string setupJson = await _service.GetSetupAsync(productId);
             return Json(setupJson);
         }
 
+        // Load saved entry details by group
         [HttpGet]
         public async Task<IActionResult> GetDetails(Guid entryGroupId)
         {
-            IEnumerable<ProductEntryModel> data =
-                await _service.GetDetailsAsync(entryGroupId);
-
+            IEnumerable<ProductEntryModel> data = await _service.GetDetailsAsync(entryGroupId);
             return Json(data);
         }
 
+        // Load today's entries for selected record
         [HttpGet]
         public async Task<IActionResult> GetTodayByProduct(int productId)
         {
@@ -82,24 +76,19 @@ namespace EmployeeAccessSystem.Controllers
                 return Json(new List<ProductEntryModel>());
             }
 
-            IEnumerable<ProductEntryModel> data =
-                await _service.GetByProductAsync(productId);
-
+            IEnumerable<ProductEntryModel> data = await _service.GetByProductAsync(productId);
             return Json(data);
         }
 
+        // Save dynamic entry values
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save(ProductEntrySaveRequest request)
         {
-            string createdBy =
-                GetLoginUser();
+            string createdBy = GetLoginUser();
+            string message = await _service.SaveAsync(request, createdBy);
 
-            string message =
-                await _service.SaveAsync(request, createdBy);
-
-            if (message == "Entry added successfully." ||
-                message == "Entry updated successfully.")
+            if (message == "Entry saved successfully.")
             {
                 TempData["Success"] = message;
             }
@@ -108,25 +97,17 @@ namespace EmployeeAccessSystem.Controllers
                 TempData["Error"] = message;
             }
 
-            int selectedId = 0;
-
-            if (request != null)
-            {
-                selectedId = request.ProductId;
-            }
-
+            int selectedId = request != null ? request.ProductId : 0;
             return RedirectToAction("Index", new { productId = selectedId });
         }
 
+        // Soft delete one entry group
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid entryGroupId, int productId)
         {
-            string deletedBy =
-                GetLoginUser();
-
-            string message =
-                await _service.DeleteAsync(entryGroupId, deletedBy);
+            string deletedBy = GetLoginUser();
+            string message = await _service.DeleteAsync(entryGroupId, deletedBy);
 
             if (message == "Entry deleted successfully.")
             {
@@ -140,6 +121,7 @@ namespace EmployeeAccessSystem.Controllers
             return RedirectToAction("Index", new { productId = productId });
         }
 
+        // Extract dynamic heading labels from configuration JSON
         private List<string> GetHeadingsFromJson(string json)
         {
             List<string> headings = new List<string>();
@@ -175,6 +157,7 @@ namespace EmployeeAccessSystem.Controllers
             return headings;
         }
 
+        // Recursively collect heading labels
         private void AddHeadingLabels(JsonElement element, List<string> headings)
         {
             if (element.ValueKind == JsonValueKind.Array)
@@ -218,22 +201,21 @@ namespace EmployeeAccessSystem.Controllers
             }
         }
 
+        // Get logged-in user email/name
         private string GetLoginUser()
         {
             string userName = "";
 
             if (User != null)
             {
-                Claim emailClaim =
-                    User.FindFirst(ClaimTypes.Email);
+                Claim emailClaim = User.FindFirst(ClaimTypes.Email);
 
                 if (emailClaim != null)
                 {
                     userName = emailClaim.Value;
                 }
 
-                if (string.IsNullOrWhiteSpace(userName) &&
-                    User.Identity != null)
+                if (string.IsNullOrWhiteSpace(userName) && User.Identity != null)
                 {
                     userName = User.Identity.Name;
                 }
@@ -247,13 +229,11 @@ namespace EmployeeAccessSystem.Controllers
             return userName;
         }
 
+        // Load configured records for dropdown
         private async Task LoadProductDropdown(int? selectedProductId)
         {
-            IEnumerable<ProductConfigurationIndexItem> items =
-                await _service.GetConfiguredProductsAsync();
-
-            List<SelectListItem> dropdownList =
-                new List<SelectListItem>();
+            IEnumerable<ProductConfigurationIndexItem> items = await _service.GetConfiguredProductsAsync();
+            List<SelectListItem> dropdownList = new List<SelectListItem>();
 
             dropdownList.Add(new SelectListItem
             {
@@ -263,17 +243,12 @@ namespace EmployeeAccessSystem.Controllers
 
             foreach (ProductConfigurationIndexItem item in items)
             {
-                SelectListItem option =
-                    new SelectListItem();
-
-                option.Text = item.ProductName;
-                option.Value = item.ProductId.ToString();
-
-                if (selectedProductId.HasValue &&
-                    selectedProductId.Value == item.ProductId)
+                SelectListItem option = new SelectListItem
                 {
-                    option.Selected = true;
-                }
+                    Text = item.ProductName,
+                    Value = item.ProductId.ToString(),
+                    Selected = selectedProductId.HasValue && selectedProductId.Value == item.ProductId
+                };
 
                 dropdownList.Add(option);
             }

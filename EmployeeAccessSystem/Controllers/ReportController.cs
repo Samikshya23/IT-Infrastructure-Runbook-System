@@ -16,17 +16,13 @@ namespace EmployeeAccessSystem.Controllers
     public class ReportController : Controller
     {
         private readonly IReportService _reportService;
-
-        public ReportController(
-            IReportService reportService)
+        // Constructor
+        public ReportController(IReportService reportService)
         {
             _reportService = reportService;
         }
-
-        public async Task<IActionResult> Index(
-            int? productId,
-            DateTime? fromDate,
-            DateTime? toDate)
+        // Report page
+        public async Task<IActionResult> Index(int? productId, DateTime? fromDate, DateTime? toDate)
         {
             IEnumerable<ReportProduct> products =
                 await _reportService.GetProductsAsync();
@@ -47,13 +43,14 @@ namespace EmployeeAccessSystem.Controllers
             {
                 try
                 {
+                    // Load headings JSON
                     string configurationJson =
-                        await _reportService.GetHeadingsAsync(
-                            productId.Value);
+                        await _reportService.GetHeadingsAsync(productId.Value);
 
                     ViewBag.Headings =
                         configurationJson;
 
+                    // Load report data
                     reportData =
                         await _reportService.GetDataAsync(
                             productId.Value,
@@ -70,16 +67,11 @@ namespace EmployeeAccessSystem.Controllers
             return View(reportData);
         }
 
-        public async Task<IActionResult> DownloadExcel(
-            int productId,
-            DateTime fromDate,
-            DateTime toDate)
+        // Download Excel report
+        public async Task<IActionResult> DownloadExcel(int productId, DateTime fromDate, DateTime toDate)
         {
             DynamicReportExportModel model =
-                await BuildExportModel(
-                    productId,
-                    fromDate,
-                    toDate);
+                await BuildExportModel(productId, fromDate, toDate);
 
             DynamicReportExcelDocument excel =
                 new DynamicReportExcelDocument(model);
@@ -100,16 +92,11 @@ namespace EmployeeAccessSystem.Controllers
                 fileName);
         }
 
-        public async Task<IActionResult> DownloadPdf(
-            int productId,
-            DateTime fromDate,
-            DateTime toDate)
+        // Download PDF report
+        public async Task<IActionResult> DownloadPdf(int productId, DateTime fromDate, DateTime toDate)
         {
             DynamicReportExportModel model =
-                await BuildExportModel(
-                    productId,
-                    fromDate,
-                    toDate);
+                await BuildExportModel(productId, fromDate, toDate);
 
             DynamicReportPdfDocument document =
                 new DynamicReportPdfDocument(model);
@@ -124,33 +111,27 @@ namespace EmployeeAccessSystem.Controllers
                 toDate.ToString("yyyyMMdd") +
                 ".pdf";
 
-            return File(
-                fileBytes,
-                "application/pdf",
-                fileName);
+            return File(fileBytes, "application/pdf", fileName);
         }
 
-        private async Task<DynamicReportExportModel>
-            BuildExportModel(
-                int productId,
-                DateTime fromDate,
-                DateTime toDate)
+        // Build export model
+        private async Task<DynamicReportExportModel> BuildExportModel(
+            int productId,
+            DateTime fromDate,
+            DateTime toDate)
         {
             string headingJson =
-                await _reportService.GetHeadingsAsync(
-                    productId);
+                await _reportService.GetHeadingsAsync(productId);
 
             IEnumerable<Report> data =
-                await _reportService.GetDataAsync(
-                    productId,
-                    fromDate,
-                    toDate);
+                await _reportService.GetDataAsync(productId, fromDate, toDate);
 
             IEnumerable<ReportProduct> products =
                 await _reportService.GetProductsAsync();
 
             string productName = "";
 
+            // Find selected product name
             foreach (ReportProduct product in products)
             {
                 if (product.ProductId == productId)
@@ -173,35 +154,28 @@ namespace EmployeeAccessSystem.Controllers
             DynamicReportExportModel model =
                 new DynamicReportExportModel();
 
-            model.Title =
-                "Dynamic Product Report";
+            model.Title = "Dynamic Product Report";
+            model.ProductName = productName;
+            model.FromDate = fromDate.Date;
+            model.ToDate = toDate.Date;
 
-            model.ProductName =
-                productName;
-
-            model.FromDate =
-                fromDate.Date;
-
-            model.ToDate =
-                toDate.Date;
-
+            // Build headings
             model.Headings =
                 BuildHeadings(headingJson);
 
+            // Build dates
             model.Dates =
                 BuildDates(fromDate, toDate);
 
+            // Build rows
             model.Rows =
-                BuildRows(
-                    reportData,
-                    model.Headings.Count);
+                BuildRows(reportData, model.Headings.Count);
 
             return model;
         }
 
-        private List<DateTime> BuildDates(
-            DateTime fromDate,
-            DateTime toDate)
+        // Create date list
+        private List<DateTime> BuildDates(DateTime fromDate, DateTime toDate)
         {
             List<DateTime> dates =
                 new List<DateTime>();
@@ -220,8 +194,8 @@ namespace EmployeeAccessSystem.Controllers
             return dates;
         }
 
-        private List<string> BuildHeadings(
-            string json)
+        // Create heading list from JSON
+        private List<string> BuildHeadings(string json)
         {
             List<string> headings =
                 new List<string>();
@@ -239,19 +213,13 @@ namespace EmployeeAccessSystem.Controllers
                 JsonElement root =
                     document.RootElement;
 
-                if (root.TryGetProperty(
-                    "structure",
-                    out JsonElement structure))
+                if (root.TryGetProperty("structure", out JsonElement structure))
                 {
-                    AddLabels(
-                        structure,
-                        headings);
+                    AddLabels(structure, headings);
                 }
                 else
                 {
-                    AddLabels(
-                        root,
-                        headings);
+                    AddLabels(root, headings);
                 }
             }
             catch
@@ -262,35 +230,27 @@ namespace EmployeeAccessSystem.Controllers
             return headings;
         }
 
-        private void AddLabels(
-            JsonElement element,
-            List<string> headings)
+        // Recursively add labels
+        private void AddLabels(JsonElement element, List<string> headings)
         {
-            if (element.ValueKind ==
-                JsonValueKind.Array)
+            if (element.ValueKind == JsonValueKind.Array)
             {
-                foreach (JsonElement child
-                    in element.EnumerateArray())
+                foreach (JsonElement child in element.EnumerateArray())
                 {
-                    AddLabels(
-                        child,
-                        headings);
+                    AddLabels(child, headings);
                 }
 
                 return;
             }
 
-            if (element.ValueKind !=
-                JsonValueKind.Object)
+            if (element.ValueKind != JsonValueKind.Object)
             {
                 return;
             }
 
             string label = "";
 
-            if (element.TryGetProperty(
-                "label",
-                out JsonElement labelElement))
+            if (element.TryGetProperty("label", out JsonElement labelElement))
             {
                 label =
                     labelElement.GetString();
@@ -298,24 +258,19 @@ namespace EmployeeAccessSystem.Controllers
 
             if (!string.IsNullOrWhiteSpace(label))
             {
-                headings.Add(
-                    label.Trim());
+                headings.Add(label.Trim());
             }
 
-            if (element.TryGetProperty(
-                "children",
-                out JsonElement children))
+            if (element.TryGetProperty("children", out JsonElement children))
             {
-                AddLabels(
-                    children,
-                    headings);
+                AddLabels(children, headings);
             }
         }
 
-        private List<DynamicReportExportRow>
-            BuildRows(
-                List<Report> reportData,
-                int headingCount)
+        // Build report rows
+        private List<DynamicReportExportRow> BuildRows(
+            List<Report> reportData,
+            int headingCount)
         {
             List<DynamicReportExportRow> rows =
                 new List<DynamicReportExportRow>();
@@ -323,9 +278,7 @@ namespace EmployeeAccessSystem.Controllers
             foreach (Report report in reportData)
             {
                 List<string> leftValues =
-                    BuildLeftValues(
-                        report,
-                        headingCount);
+                    BuildLeftValues(report, headingCount);
 
                 string rowKey =
                     BuildRowKey(leftValues);
@@ -333,20 +286,17 @@ namespace EmployeeAccessSystem.Controllers
                 DynamicReportExportRow row =
                     null;
 
-                foreach (DynamicReportExportRow
-                    existingRow in rows)
+                // Check existing row
+                foreach (DynamicReportExportRow existingRow in rows)
                 {
-                    if (BuildRowKey(
-                        existingRow.LeftValues)
-                        == rowKey)
+                    if (BuildRowKey(existingRow.LeftValues) == rowKey)
                     {
-                        row =
-                            existingRow;
-
+                        row = existingRow;
                         break;
                     }
                 }
 
+                // Create new row
                 if (row == null)
                 {
                     row =
@@ -359,8 +309,7 @@ namespace EmployeeAccessSystem.Controllers
                 }
 
                 string dateKey =
-                    report.EntryDate
-                        .ToString("yyyy-MM-dd");
+                    report.EntryDate.ToString("yyyy-MM-dd");
 
                 string value =
                     FormatResultValue(
@@ -368,61 +317,45 @@ namespace EmployeeAccessSystem.Controllers
                         report.ValueTypeId,
                         report.ResultValue);
 
-                if (row.DateValues
-                    .ContainsKey(dateKey))
+                // Add or update date value
+                if (row.DateValues.ContainsKey(dateKey))
                 {
-                    row.DateValues[dateKey] =
-                        value;
+                    row.DateValues[dateKey] = value;
                 }
                 else
                 {
-                    row.DateValues.Add(
-                        dateKey,
-                        value);
+                    row.DateValues.Add(dateKey, value);
                 }
             }
 
             return rows;
         }
 
-        private List<string> BuildLeftValues(
-            Report report,
-            int headingCount)
+        // Build left-side values
+        private List<string> BuildLeftValues(Report report, int headingCount)
         {
             List<string> values =
                 new List<string>();
 
-            if (!string.IsNullOrWhiteSpace(
-                report.ParentPath))
+            if (!string.IsNullOrWhiteSpace(report.ParentPath))
             {
-                string[] parts;
-
-                if (report.ParentPath.Contains(">"))
-                {
-                    parts =
-                        report.ParentPath.Split('>');
-                }
-                else
-                {
-                    parts =
-                        report.ParentPath.Split('/');
-                }
+                string[] parts =
+                    report.ParentPath.Contains(">")
+                    ? report.ParentPath.Split('>')
+                    : report.ParentPath.Split('/');
 
                 foreach (string part in parts)
                 {
                     if (!string.IsNullOrWhiteSpace(part))
                     {
-                        values.Add(
-                            part.Trim());
+                        values.Add(part.Trim());
                     }
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(
-                report.DisplayName))
+            if (!string.IsNullOrWhiteSpace(report.DisplayName))
             {
-                values.Add(
-                    report.DisplayName.Trim());
+                values.Add(report.DisplayName.Trim());
             }
 
             while (values.Count < headingCount)
@@ -432,34 +365,32 @@ namespace EmployeeAccessSystem.Controllers
 
             while (values.Count > headingCount)
             {
-                values.RemoveAt(
-                    values.Count - 1);
+                values.RemoveAt(values.Count - 1);
             }
 
             return values;
         }
 
-        private string BuildRowKey(
-            List<string> values)
+        // Create unique row key
+        private string BuildRowKey(List<string> values)
         {
             string key = "";
 
             foreach (string value in values)
             {
-                key =
-                    key + value + "|";
+                key = key + value + "|";
             }
 
             return key;
         }
 
+        // Format result value
         private string FormatResultValue(
             string valueType,
             int valueTypeId,
             string resultValue)
         {
-            if (string.IsNullOrWhiteSpace(
-                resultValue))
+            if (string.IsNullOrWhiteSpace(resultValue))
             {
                 return "-";
             }
@@ -467,36 +398,30 @@ namespace EmployeeAccessSystem.Controllers
             string value =
                 resultValue.Trim();
 
+            // Percentage
             if (valueTypeId == 3)
             {
-                if (value.EndsWith("%"))
-                {
-                    return value;
-                }
-
-                return value + "%";
+                return value.EndsWith("%")
+                    ? value
+                    : value + "%";
             }
 
+            // Tick / Cross
             if (valueTypeId == 4)
             {
-                if (value == "8" ||
-                    value == "Tick")
-                {
-                    return "✓";
-                }
-
-                return "✗";
+                return value == "8" ||
+                       value == "Tick"
+                    ? "✓"
+                    : "✗";
             }
 
+            // Up / Down
             if (valueTypeId == 5)
             {
-                if (value == "10" ||
-                    value == "Up")
-                {
-                    return "Up";
-                }
-
-                return "Down";
+                return value == "10" ||
+                       value == "Up"
+                    ? "Up"
+                    : "Down";
             }
 
             return value;

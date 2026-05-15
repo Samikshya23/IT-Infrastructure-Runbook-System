@@ -13,16 +13,19 @@ namespace EmployeeAccessSystem.Repositories
     {
         private readonly string _connectionString;
 
+        // Constructor
         public ReportRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
+        // Create SQL connection
         private SqlConnection GetConnection()
         {
             return new SqlConnection(_connectionString);
         }
 
+        // Load report product list
         public async Task<IEnumerable<ReportProduct>> GetProductsAsync()
         {
             try
@@ -32,11 +35,8 @@ namespace EmployeeAccessSystem.Repositories
                 DynamicParameters parameters = new DynamicParameters();
                 parameters.Add("@Flag", "GETPRODUCTS");
 
-                return await conn.QueryAsync<ReportProduct>(
-                    "dbo.sp_Report_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                // Execute stored procedure and return product list
+                return await conn.QueryAsync<ReportProduct>("dbo.sp_Report_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch
             {
@@ -44,6 +44,7 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
+        // Load headings JSON
         public async Task<string> GetHeadingsAsync(int productId)
         {
             try
@@ -54,11 +55,8 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@Flag", "GETHEADINGS");
                 parameters.Add("@ProductId", productId);
 
-                return await conn.QueryFirstOrDefaultAsync<string>(
-                    "dbo.sp_Report_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                // Execute stored procedure and return headings
+                return await conn.QueryFirstOrDefaultAsync<string>("dbo.sp_Report_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch
             {
@@ -66,11 +64,8 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
-        public async Task<IEnumerable<Report>> GetDataAsync(
-            int productId,
-            DateTime fromDate,
-            DateTime toDate
-        )
+        // Load report data
+        public async Task<IEnumerable<Report>> GetDataAsync(int productId, DateTime fromDate, DateTime toDate)
         {
             try
             {
@@ -82,11 +77,8 @@ namespace EmployeeAccessSystem.Repositories
                 parameters.Add("@FromDate", fromDate.Date);
                 parameters.Add("@ToDate", toDate.Date);
 
-                return await conn.QueryAsync<Report>(
-                    "dbo.sp_Report_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                // Execute stored procedure and return report data
+                return await conn.QueryAsync<Report>("dbo.sp_Report_Manage", parameters, commandType: CommandType.StoredProcedure);
             }
             catch
             {

@@ -9,13 +9,15 @@ namespace EmployeeAccessSystem.Services
     public class ProductConfigurationService : IProductConfigurationService
     {
         private readonly IProductConfigurationRepository _repository;
+
         public ProductConfigurationService(IProductConfigurationRepository repository)
         {
             _repository = repository;
         }
 
+        #region Public Methods
 
-        #region configuration
+        // Load configuration list for index page
         public async Task<List<ProductConfigurationIndexItem>> GetIndexAsync()
         {
             List<ProductConfigurationIndexItem> result = new List<ProductConfigurationIndexItem>();
@@ -29,7 +31,7 @@ namespace EmployeeAccessSystem.Services
                     continue;
                 }
 
-                // Show only configured products.
+                // Show only configured products
                 if (string.IsNullOrWhiteSpace(item.ConfigurationJson))
                 {
                     continue;
@@ -40,13 +42,16 @@ namespace EmployeeAccessSystem.Services
                 indexItem.ProductId = item.ProductId;
                 indexItem.ProductName = item.ProductName;
 
-                // Convert saved JSON structure to tree model.
+                // Convert saved JSON into hierarchy tree
                 indexItem.Nodes = ConvertJsonToTree(item.ConfigurationJson);
 
                 result.Add(indexItem);
             }
+
             return result;
         }
+
+        // Load saved hierarchy structure by product
         public async Task<List<ProductConfiguration>> GetTreeByProductIdAsync(int productId)
         {
             if (productId <= 0)
@@ -65,6 +70,7 @@ namespace EmployeeAccessSystem.Services
             return ConvertJsonToTree(data.ConfigurationJson);
         }
 
+        // Save or update configuration structure
         public async Task<(bool Success, string Message)> SaveStructureAsync(ProductConfigurationSaveRequest request, string createdBy)
         {
             if (request == null)
@@ -79,11 +85,10 @@ namespace EmployeeAccessSystem.Services
 
             if (request.Nodes == null || request.Nodes.Count == 0)
             {
-                return (false, "Please add product configuration structure.");
+                return (false, "Please add configuration structure.");
             }
 
-            string validationMessage =
-                ValidateNodes(request.Nodes, true);
+            string validationMessage = ValidateNodes(request.Nodes, true);
 
             if (!string.IsNullOrWhiteSpace(validationMessage))
             {
@@ -113,9 +118,11 @@ namespace EmployeeAccessSystem.Services
             jsonModel.Product = productName;
             jsonModel.Structure = BuildJsonStructure(request.Nodes);
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
-            options.WriteIndented = false;
-            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
 
             string json = JsonSerializer.Serialize(jsonModel, options);
 
@@ -123,35 +130,40 @@ namespace EmployeeAccessSystem.Services
 
             if (result > 0)
             {
-                return (true, "Product configuration saved successfully.");
+                return (true, "Record saved successfully.");
             }
 
-            return (false, "Product configuration save failed.");
+            return (false, "Record save failed.");
         }
 
+        // Delete configuration by product
         public async Task<(bool Success, string Message)> DeleteByProductAsync(int productId, string deletedBy)
         {
             if (productId <= 0)
             {
-                return (false, "Invalid product configuration.");
+                return (false, "Invalid record.");
             }
 
             int result = await _repository.DeleteJsonByProductAsync(productId, deletedBy);
 
             if (result > 0)
             {
-                return (true, "Product configuration deleted successfully.");
+                return (true, "Record deleted successfully.");
             }
 
-            return (false, "Product configuration delete failed.");
+            return (false, "Record delete failed.");
         }
 
         #endregion
+
+        #region Validation Methods
+
+        // Validate hierarchy structure before save
         private string ValidateNodes(List<ProductConfigurationNodeRequest> nodes, bool isRootLevel)
         {
             if (nodes == null || nodes.Count == 0)
             {
-                return "Please add product configuration structure.";
+                return "Please add configuration structure.";
             }
 
             foreach (ProductConfigurationNodeRequest node in nodes)
@@ -168,12 +180,12 @@ namespace EmployeeAccessSystem.Services
 
                 if (string.IsNullOrWhiteSpace(node.NodeName))
                 {
-                    return "Please enter label/level name.";
+                    return "Name is required.";
                 }
 
                 if (node.NodeName.Trim().Length > 50)
                 {
-                    return "Label/level name cannot exceed 50 characters.";
+                    return "Name cannot exceed 50 characters.";
                 }
 
                 if (string.IsNullOrWhiteSpace(node.InputType))
@@ -181,12 +193,12 @@ namespace EmployeeAccessSystem.Services
                     return "Please select input type.";
                 }
 
+                // Validate parent level
                 if (isRootLevel)
                 {
-                    if (node.Children == null ||
-                        node.Children.Count == 0)
+                    if (node.Children == null || node.Children.Count == 0)
                     {
-                        return "Please add at least one child level before saving this root level.";
+                        return "Please add at least one child level.";
                     }
 
                     if (node.InputType != "Text" &&
@@ -197,6 +209,7 @@ namespace EmployeeAccessSystem.Services
                 }
                 else
                 {
+                    // Validate child level
                     if (node.InputType != "Single" &&
                         node.InputType != "Multiple")
                     {
@@ -204,6 +217,7 @@ namespace EmployeeAccessSystem.Services
                     }
                 }
 
+                // Validate child nodes recursively
                 if (node.Children != null && node.Children.Count > 0)
                 {
                     string childMessage = ValidateNodes(node.Children, false);
@@ -218,6 +232,11 @@ namespace EmployeeAccessSystem.Services
             return "";
         }
 
+        #endregion
+
+        #region JSON Methods
+
+        // Convert saved JSON into hierarchy tree
         private List<ProductConfiguration> ConvertJsonToTree(string json)
         {
             List<ProductConfiguration> result = new List<ProductConfiguration>();
@@ -227,10 +246,13 @@ namespace EmployeeAccessSystem.Services
                 return result;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
-            options.PropertyNameCaseInsensitive = true;
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
-            ProductConfigurationJsonModel model = JsonSerializer.Deserialize<ProductConfigurationJsonModel>(json, options);
+            ProductConfigurationJsonModel model =
+                JsonSerializer.Deserialize<ProductConfigurationJsonModel>(json, options);
 
             if (model == null || model.Structure == null)
             {
@@ -247,13 +269,16 @@ namespace EmployeeAccessSystem.Services
             return result;
         }
 
+        // Build JSON structure recursively
         private List<ProductConfigurationJsonNode> BuildJsonStructure(List<ProductConfigurationNodeRequest> nodes)
         {
             List<ProductConfigurationJsonNode> result = new List<ProductConfigurationJsonNode>();
+
             if (nodes == null)
             {
                 return result;
             }
+
             foreach (ProductConfigurationNodeRequest node in nodes)
             {
                 ProductConfigurationJsonNode item = new ProductConfigurationJsonNode();
@@ -261,12 +286,16 @@ namespace EmployeeAccessSystem.Services
                 item.Heading = node.Heading;
                 item.Label = node.NodeName;
                 item.ValueType = node.InputType;
+
                 item.Children = BuildJsonStructure(node.Children);
+
                 result.Add(item);
             }
 
             return result;
         }
+
+        // Convert JSON node into tree node
         private ProductConfiguration ConvertJsonNodeToTree(ProductConfigurationJsonNode jsonNode)
         {
             ProductConfiguration node = new ProductConfiguration();
@@ -275,6 +304,7 @@ namespace EmployeeAccessSystem.Services
             node.NodeName = jsonNode.Label;
             node.InputType = jsonNode.ValueType;
             node.IsActive = true;
+
             node.Children = new List<ProductConfiguration>();
 
             if (jsonNode.Children != null &&
@@ -283,11 +313,14 @@ namespace EmployeeAccessSystem.Services
                 foreach (ProductConfigurationJsonNode child in jsonNode.Children)
                 {
                     ProductConfiguration childNode = ConvertJsonNodeToTree(child);
+
                     node.Children.Add(childNode);
                 }
             }
 
             return node;
         }
+
+        #endregion
     }
 }

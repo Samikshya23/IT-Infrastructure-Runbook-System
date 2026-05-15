@@ -167,24 +167,19 @@
             </div>
 
             <div class="col-sm-6 text-right px-0">
-                <button type="button"
-                        class="btn btn-primary btn-sm"
-                        onclick="openAddEntryModal()">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openAddEntryModal()">
                     <i class="fas fa-plus mr-1"></i> Add
                 </button>
             </div>
         </div>
+<div class="card card-outline card-primary mb-0 shadow-none">
 
-        <div class="card mb-0 shadow-none rounded-0">
-
-            <div class="card-header bg-white py-2 px-2 rounded-0">
+         <div class="card-header bg-white py-2 px-2 ">
                 <div class="row mx-0">
 
                     <div class="col-md-4 px-0">
                         <form asp-action="Index" method="get">
-                            <select name="productId"
-                                    class="form-control form-control-sm"
-                                    onchange="this.form.submit()">
+                            <select name="productId" class="form-control form-control-sm" onchange="this.form.submit()">
                                 @foreach (var product in ViewBag.Products)
                                 {
                                     <option value="@product.Value" selected="@product.Selected">
@@ -216,10 +211,7 @@
                         <div class="col-md-8 px-0 mt-2 mt-md-0">
                             <div class="d-flex justify-content-md-end">
                                 <div style="width:220px;">
-                                    <input type="text"
-                                           id="customSearch"
-                                           class="form-control form-control-sm"
-                                           placeholder="Search" />
+                                    <input type="text" id="customSearch" class="form-control form-control-sm" placeholder="Search" />
                                 </div>
                             </div>
                         </div>
@@ -230,9 +222,7 @@
             @if (selectedProductId.HasValue && selectedProductId.Value > 0)
             {
                 <div class="card-body p-0">
-                    <table id="productEntryTable"
-                           class="table table-bordered table-hover table-sm mb-0 rounded-0"
-                           style="table-layout:fixed;width:100%;">
+                    <table id="productEntryTable" class="table table-bordered table-hover table-sm mb-0 rounded-0" style="table-layout:fixed;width:100%;">
 
                         <thead class="bg-light">
                             <tr>
@@ -240,9 +230,7 @@
 
                                 @foreach (string heading in headings)
                                 {
-                                    <th class="text-center align-middle">
-                                        @heading
-                                    </th>
+                                    <th class="text-center align-middle">@heading</th>
                                 }
 
                                 <th class="text-center align-middle" style="width:15%;">Date / Time</th>
@@ -259,7 +247,6 @@
                                 {
                                     List<EmployeeAccessSystem.Models.ProductEntryModel> items = group.Items;
 
-                                    bool hasMoreItems = items.Count > visibleLimit;
                                     int displayCount = items.Count;
 
                                     if (items.Count > visibleLimit)
@@ -276,26 +263,18 @@
 
                                         foreach (string value in hierarchyValues)
                                         {
-                                            searchText += " ";
-                                            searchText += value;
+                                            searchText += " " + value;
                                         }
 
-                                        searchText += " ";
-                                        searchText += item.EntryDate.ToString("yyyy-MM-dd HH:mm");
-                                        searchText += " ";
-                                        searchText += item.CreatedBy;
-                                        searchText += " ";
-                                        searchText += GetResultText(item);
+                                        searchText += " " + item.EntryDate.ToString("yyyy-MM-dd HH:mm");
+                                        searchText += " " + item.CreatedBy;
+                                        searchText += " " + GetResultText(item);
                                     }
 
-                                    <tr class="group-row"
-                                        data-search="@searchText"
-                                        data-full-count="@items.Count"
-                                        data-visible-count="@visibleLimit">
+                                    <tr class="group-row" data-search="@searchText" data-full-count="@items.Count" data-visible-count="@visibleLimit">
 
                                         <td class="text-center align-middle p-0 group-sn">
-                                            <div class="d-flex align-items-center justify-content-center px-2 group-sn-wrap"
-                                                 style="height:@(displayCount * 36)px;">
+                                            <div class="d-flex align-items-center justify-content-center px-2 group-sn-wrap" style="height:@(displayCount * 36)px;">
                                                 @sn
                                             </div>
                                         </td>
@@ -303,31 +282,37 @@
                                         @for (int headingIndex = 0; headingIndex < headings.Count; headingIndex++)
                                         {
                                             <td class="p-0 align-top">
-                                                <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
-                                                    <tbody>
-                                                        @for (int i = 0; i < items.Count; i++)
-                                                        {
-                                                            List<string> values = GetHierarchyValues(items[i]);
-                                                            string columnValue = "-";
-
-                                                            if (headingIndex < values.Count)
+                                                @if (headingIndex == 0)
+                                                {
+                                                    <div class="d-flex align-items-center px-2 font-weight-normal" style="height:@(displayCount * 36)px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@group.GroupName">
+                                                        @group.GroupName
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
+                                                        <tbody>
+                                                            @for (int i = 0; i < items.Count; i++)
                                                             {
-                                                                columnValue = values[headingIndex];
-                                                            }
+                                                                List<string> values = GetHierarchyValues(items[i]);
+                                                                string columnValue = "-";
 
-                                                            <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")"
-                                                                style="@(i >= visibleLimit ? "display:none;" : "")">
-                                                                <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                    <div class="d-flex align-items-center px-2"
-                                                                         style="height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                                                         title="@columnValue">
-                                                                        @columnValue
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        }
-                                                    </tbody>
-                                                </table>
+                                                                if (headingIndex < values.Count)
+                                                                {
+                                                                    columnValue = values[headingIndex];
+                                                                }
+
+                                                                <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                                    <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                                        <div class="d-flex align-items-center px-2" style="height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@columnValue">
+                                                                            @columnValue
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                }
                                             </td>
                                         }
 
@@ -336,11 +321,9 @@
                                                 <tbody>
                                                     @for (int i = 0; i < items.Count; i++)
                                                     {
-                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")"
-                                                            style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
                                                             <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                <div class="d-flex justify-content-center align-items-center px-2"
-                                                                     style="height:36px;">
+                                                                <div class="d-flex justify-content-center align-items-center px-2" style="height:36px;">
                                                                     @items[i].EntryDate.ToString("yyyy-MM-dd HH:mm")
                                                                 </div>
                                                             </td>
@@ -362,12 +345,9 @@
                                                             userText = items[i].CreatedBy;
                                                         }
 
-                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")"
-                                                            style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
                                                             <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                <div class="px-2"
-                                                                     style="height:36px;line-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                                                     title="@userText">
+                                                                <div class="px-2" style="height:36px;line-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@userText">
                                                                     @userText
                                                                 </div>
                                                             </td>
@@ -384,11 +364,9 @@
                                                     {
                                                         string resultText = GetResultText(items[i]);
 
-                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")"
-                                                            style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
                                                             <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                <div class="d-flex justify-content-center align-items-center px-2"
-                                                                     style="height:36px;">
+                                                                <div class="d-flex justify-content-center align-items-center px-2" style="height:36px;">
                                                                     @if (resultText == "Tick" || resultText == "8")
                                                                     {
                                                                         <i class="fas fa-check text-success"></i>
@@ -427,17 +405,10 @@
                                                 }
                                             }
 
-                                            <div class="d-flex justify-content-center align-items-center"
-                                                 style="height:@(displayCount * 36)px;">
-
-                                                <button type="button"
-                                                        class="btn btn-light border btn-sm p-0"
-                                                        onclick="openEditEntryModal('@groupIdText')"
-                                                        title="Edit"
-                                                        style="width:24px;height:24px;line-height:22px;">
+                                            <div class="d-flex justify-content-center align-items-center" style="height:@(displayCount * 36)px;">
+                                                <button type="button" class="btn btn-light border btn-sm p-0" onclick="openEditEntryModal('@groupIdText')" title="Edit" style="width:24px;height:24px;line-height:22px;">
                                                     <i class="fas fa-pen" style="font-size:10px;"></i>
                                                 </button>
-
                                             </div>
                                         </td>
                                     </tr>
@@ -479,193 +450,9 @@
 
 @await Html.PartialAsync("_Add")
 
+<input type="hidden" id="tempSuccessMessage" value="@TempData["Success"]" />
+<input type="hidden" id="tempErrorMessage" value="@TempData["Error"]" />
+
 @section Scripts {
-<script>
-    $(document).ready(function () {
-
-        toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "timeOut": "3000"
-        };
-
-        @if (TempData["Success"] != null)
-        {
-            <text>
-                toastr.success('@TempData["Success"]', 'Success');
-            </text>
-        }
-
-        @if (TempData["Error"] != null)
-        {
-            <text>
-                toastr.error('@TempData["Error"]', 'Message');
-            </text>
-        }
-
-        if ($('#productEntryTableBody tr.group-row').length === 0) {
-            return;
-        }
-
-        var rowsPerPage = parseInt($('#entriesPerPage').val());
-        var currentPage = 1;
-
-        function getFilteredRows() {
-            var searchText = $('#customSearch').val().toLowerCase().trim();
-            var filteredRows = [];
-
-            $('#productEntryTableBody tr.group-row').each(function () {
-                var rowSearchText = ($(this).attr('data-search') || '').toLowerCase();
-
-                if (searchText === '' || rowSearchText.indexOf(searchText) > -1) {
-                    filteredRows.push(this);
-                }
-            });
-
-            return filteredRows;
-        }
-
-        function updateSerialNumbers(filteredRows) {
-            for (var i = 0; i < filteredRows.length; i++) {
-                $(filteredRows[i]).find('.group-sn-wrap').text(i + 1);
-            }
-        }
-
-        function renderPagination() {
-            var filteredRows = getFilteredRows();
-            var totalRows = filteredRows.length;
-            var totalPages = Math.ceil(totalRows / rowsPerPage);
-
-            $('#productEntryTableBody tr.group-row').hide();
-
-            if (totalRows === 0) {
-                $('#paginationInfo').text('No matching entries found.');
-                $('#customPagination').html('');
-                return;
-            }
-
-            updateSerialNumbers(filteredRows);
-
-            if (currentPage > totalPages) {
-                currentPage = 1;
-            }
-
-            var startIndex = (currentPage - 1) * rowsPerPage;
-            var endIndex = startIndex + rowsPerPage;
-
-            for (var i = startIndex; i < endIndex && i < totalRows; i++) {
-                $(filteredRows[i]).show();
-            }
-
-            var fromRecord = startIndex + 1;
-            var toRecord = endIndex;
-
-            if (toRecord > totalRows) {
-                toRecord = totalRows;
-            }
-
-            $('#paginationInfo').text(
-                'Showing ' +
-                fromRecord +
-                ' to ' +
-                toRecord +
-                ' of ' +
-                totalRows +
-                ' grouped entries'
-            );
-
-            var paginationHtml = '';
-
-            if (currentPage > 1) {
-                paginationHtml +=
-                    '<li class="page-item">' +
-                    '<a href="#" class="page-link pagination-link" data-page="' +
-                    (currentPage - 1) +
-                    '">Previous</a></li>';
-            }
-            else {
-                paginationHtml +=
-                    '<li class="page-item disabled">' +
-                    '<span class="page-link">Previous</span></li>';
-            }
-
-            for (var page = 1; page <= totalPages; page++) {
-                if (page === currentPage) {
-                    paginationHtml +=
-                        '<li class="page-item active">' +
-                        '<span class="page-link">' +
-                        page +
-                        '</span></li>';
-                }
-                else {
-                    paginationHtml +=
-                        '<li class="page-item">' +
-                        '<a href="#" class="page-link pagination-link" data-page="' +
-                        page +
-                        '">' +
-                        page +
-                        '</a></li>';
-                }
-            }
-
-            if (currentPage < totalPages) {
-                paginationHtml +=
-                    '<li class="page-item">' +
-                    '<a href="#" class="page-link pagination-link" data-page="' +
-                    (currentPage + 1) +
-                    '">Next</a></li>';
-            }
-            else {
-                paginationHtml +=
-                    '<li class="page-item disabled">' +
-                    '<span class="page-link">Next</span></li>';
-            }
-
-            $('#customPagination').html(paginationHtml);
-        }
-
-        $('#customSearch').on('keyup', function () {
-            currentPage = 1;
-            renderPagination();
-        });
-
-        $('#entriesPerPage').on('change', function () {
-            rowsPerPage = parseInt($(this).val());
-            currentPage = 1;
-            renderPagination();
-        });
-
-        $(document).on('click', '.pagination-link', function (e) {
-            e.preventDefault();
-            currentPage = parseInt($(this).data('page'));
-            renderPagination();
-        });
-
-        $(document).on('click', '.toggle-entry-group', function () {
-            var targetClass = $(this).data('target');
-            var icon = $(this).find('i');
-            var mainRow = $(this).closest('tr.group-row');
-
-            $('.' + targetClass).toggle();
-
-            if (icon.hasClass('fa-caret-right')) {
-                icon.removeClass('fa-caret-right').addClass('fa-caret-down');
-
-                var fullCount = parseInt(mainRow.attr('data-full-count'));
-
-                mainRow.find('.group-sn-wrap').css('height', (fullCount * 36) + 'px');
-            }
-            else {
-                icon.removeClass('fa-caret-down').addClass('fa-caret-right');
-
-                var visibleCount = parseInt(mainRow.attr('data-visible-count'));
-
-                mainRow.find('.group-sn-wrap').css('height', (visibleCount * 36) + 'px');
-            }
-        });
-
-        renderPagination();
-    });
-</script>
+    <script src="~/js/productentry/index.js"></script>
 }

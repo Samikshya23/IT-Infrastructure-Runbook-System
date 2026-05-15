@@ -26,7 +26,10 @@ namespace EmployeeAccessSystem.Pdf.Documents
             container.Page(delegate (PageDescriptor page)
             {
                 page.Size(PageSizes.A3.Landscape());
-                page.Margin(12);
+
+                // Reduced margin so table gets more page width
+                page.Margin(6);
+
                 page.DefaultTextStyle(TextStyle.Default.FontSize(8));
 
                 page.Content().Column(delegate (ColumnDescriptor column)
@@ -35,47 +38,34 @@ namespace EmployeeAccessSystem.Pdf.Documents
                     column.Item().AlignCenter().Text("Product: " + _model.ProductName);
 
                     column.Item().AlignCenter().Text(
-                        "From: " +
-                        _model.FromDate.ToString("dd/MM/yyyy") +
-                        "   To: " +
-                        _model.ToDate.ToString("dd/MM/yyyy")
+                        "From: " + _model.FromDate.ToString("dd/MM/yyyy") +
+                        "   To: " + _model.ToDate.ToString("dd/MM/yyyy")
                     ).Bold();
 
                     column.Item().PaddingTop(8).Table(delegate (TableDescriptor table)
                     {
                         table.ColumnsDefinition(delegate (TableColumnsDefinitionDescriptor columns)
                         {
+                            // Relative columns make table stretch across full PDF page
                             for (int i = 0; i < _model.Headings.Count; i++)
                             {
-                                columns.ConstantColumn(120);
+                                columns.RelativeColumn(3);
                             }
 
                             for (int i = 0; i < _model.Dates.Count; i++)
                             {
-                                columns.ConstantColumn(45);
+                                columns.RelativeColumn(1);
                             }
                         });
 
                         foreach (string heading in _model.Headings)
                         {
-                            table.Cell()
-                                .Element(delegate (IContainer containerItem)
-                                {
-                                    return HeaderCell(containerItem);
-                                })
-                                .Text(heading)
-                                .Bold();
+                            table.Cell().Element(HeaderCell).Text(heading).Bold();
                         }
 
                         foreach (DateTime date in _model.Dates)
                         {
-                            table.Cell()
-                                .Element(delegate (IContainer containerItem)
-                                {
-                                    return HeaderCell(containerItem);
-                                })
-                                .Text(date.ToString("dd") + "\n" + date.ToString("ddd"))
-                                .Bold();
+                            table.Cell().Element(HeaderCell).Text(date.ToString("dd") + "\n" + date.ToString("ddd")).Bold();
                         }
 
                         for (int r = 0; r < _model.Rows.Count; r++)
@@ -84,14 +74,9 @@ namespace EmployeeAccessSystem.Pdf.Documents
                             {
                                 if (ShouldShowCell(r, c))
                                 {
-                                    int rowSpan = GetRowSpan(r, c);
-
                                     table.Cell()
-                                        .RowSpan((uint)rowSpan)
-                                        .Element(delegate (IContainer containerItem)
-                                        {
-                                            return BodyCell(containerItem);
-                                        })
+                                        .RowSpan((uint)GetRowSpan(r, c))
+                                        .Element(BodyCell)
                                         .Text(_model.Rows[r].LeftValues[c]);
                                 }
                             }
@@ -106,13 +91,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
                                     value = _model.Rows[r].DateValues[key];
                                 }
 
-                                table.Cell()
-                                    .Element(delegate (IContainer containerItem)
-                                    {
-                                        return BodyCell(containerItem);
-                                    })
-                                    .AlignCenter()
-                                    .Text(value);
+                                table.Cell().Element(BodyCell).AlignCenter().Text(value);
                             }
                         }
                     });
@@ -135,8 +114,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
             for (int i = 0; i <= columnIndex; i++)
             {
-                if (_model.Rows[rowIndex].LeftValues[i] !=
-                    _model.Rows[rowIndex - 1].LeftValues[i])
+                if (_model.Rows[rowIndex].LeftValues[i] != _model.Rows[rowIndex - 1].LeftValues[i])
                 {
                     return true;
                 }
@@ -155,8 +133,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
                 for (int j = 0; j <= columnIndex; j++)
                 {
-                    if (_model.Rows[i].LeftValues[j] !=
-                        _model.Rows[rowIndex].LeftValues[j])
+                    if (_model.Rows[i].LeftValues[j] != _model.Rows[rowIndex].LeftValues[j])
                     {
                         same = false;
                         break;
@@ -181,7 +158,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
             return container
                 .Background(Colors.Grey.Lighten3)
                 .Border(1)
-                .Padding(4)
+                .Padding(2) // Compact cell padding
                 .AlignCenter()
                 .AlignMiddle();
         }
@@ -190,7 +167,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
         {
             return container
                 .Border(1)
-                .Padding(4)
+                .Padding(2) // Compact cell padding
                 .AlignMiddle();
         }
     }

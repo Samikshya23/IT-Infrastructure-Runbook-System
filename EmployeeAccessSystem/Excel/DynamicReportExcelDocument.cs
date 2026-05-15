@@ -68,8 +68,6 @@ namespace EmployeeAccessSystem.Excel
 
                 currentRow++;
 
-                int dataStartRow = currentRow;
-
                 for (int r = 0; r < _model.Rows.Count; r++)
                 {
                     col = 1;
@@ -87,11 +85,8 @@ namespace EmployeeAccessSystem.Excel
                                 ws.Range(currentRow, col, currentRow + rowSpan - 1, col).Merge();
                             }
 
-                            ws.Cell(currentRow, col).Style.Alignment.Vertical =
-                                XLAlignmentVerticalValues.Center;
-
-                            ws.Cell(currentRow, col).Style.Alignment.Horizontal =
-                                XLAlignmentHorizontalValues.Left;
+                            ws.Cell(currentRow, col).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                            ws.Cell(currentRow, col).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
                         }
 
                         col++;
@@ -108,9 +103,7 @@ namespace EmployeeAccessSystem.Excel
                         }
 
                         ws.Cell(currentRow, col).Value = value;
-                        ws.Cell(currentRow, col).Style.Alignment.Horizontal =
-                            XLAlignmentHorizontalValues.Center;
-
+                        ws.Cell(currentRow, col).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                         col++;
                     }
 
@@ -123,9 +116,21 @@ namespace EmployeeAccessSystem.Excel
                 {
                     usedRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                     usedRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+                    // Center align report content vertically
+                    usedRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
                 }
 
                 ws.Columns().AdjustToContents();
+
+                // Make Excel report wider and more balanced
+                for (int i = 1; i <= totalColumns; i++)
+                {
+                    ws.Column(i).Width = 18;
+                }
+
+                // Freeze title/header area for easier reading
+                ws.SheetView.FreezeRows(headerRow);
 
                 using (MemoryStream stream = new MemoryStream())
                 {
@@ -144,8 +149,7 @@ namespace EmployeeAccessSystem.Excel
 
             for (int i = 0; i <= columnIndex; i++)
             {
-                if (_model.Rows[rowIndex].LeftValues[i] !=
-                    _model.Rows[rowIndex - 1].LeftValues[i])
+                if (_model.Rows[rowIndex].LeftValues[i] != _model.Rows[rowIndex - 1].LeftValues[i])
                 {
                     return true;
                 }
@@ -164,8 +168,7 @@ namespace EmployeeAccessSystem.Excel
 
                 for (int j = 0; j <= columnIndex; j++)
                 {
-                    if (_model.Rows[i].LeftValues[j] !=
-                        _model.Rows[rowIndex].LeftValues[j])
+                    if (_model.Rows[i].LeftValues[j] != _model.Rows[rowIndex].LeftValues[j])
                     {
                         same = false;
                         break;

@@ -4,58 +4,84 @@
     Layout = null;
 }
 
+@* Edit form *@
 <form asp-action="Edit" method="post" id="editProductForm">
+
+    @* Anti-forgery token *@
     @Html.AntiForgeryToken()
+
+    @* Hidden id field *@
     <input type="hidden" asp-for="ProductId" />
 
+    @* Display server-side error message *@
     @if (ViewBag.Error != null)
     {
-        <div class="alert alert-danger">@ViewBag.Error</div>
+        <div class="alert alert-danger">
+            @ViewBag.Error
+        </div>
     }
 
+    @* Name field *@
     <div class="form-group">
-        <label asp-for="ProductName" class="font-weight-bold">Product Name</label>
-        <input asp-for="ProductName" class="form-control" placeholder="Enter product name" maxlength="100" />
-        <span asp-validation-for="ProductName" class="text-danger small"></span>
+
+        <label asp-for="ProductName" class="font-weight-bold">
+            Name
+        </label>
+
+        <input asp-for="ProductName"
+               class="form-control"
+               placeholder="Enter name"
+               maxlength="100" />
+
+        <span asp-validation-for="ProductName"
+              class="text-danger small">
+        </span>
+
     </div>
 
+    @* Active/Inactive switch *@
     <div class="form-group mb-4">
+
         <div class="custom-control custom-switch">
-            <input asp-for="IsActive" class="custom-control-input" id="EditIsActive" />
-            <label class="custom-control-label font-weight-bold" for="EditIsActive" id="editStatusLabel">Active</label>
+
+            <input asp-for="IsActive"
+                   class="custom-control-input"
+                   id="EditIsActive" />
+
+            <label class="custom-control-label font-weight-bold"
+                   for="EditIsActive"
+                   id="editStatusLabel">
+                Active
+            </label>
+
         </div>
-        <span asp-validation-for="IsActive" class="text-danger small"></span>
+
+        <span asp-validation-for="IsActive"
+              class="text-danger small">
+        </span>
+
     </div>
 
+    @* Modal footer buttons *@
     <div class="modal-footer px-0 pb-0">
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
             Back
         </button>
 
-        <button type="submit" class="btn btn-primary btn-sm">
+        <button type="submit"
+                class="btn btn-primary btn-sm">
             Update
         </button>
+
     </div>
+
 </form>
 
+@* Validation scripts *@
 <partial name="_ValidationScriptsPartial" />
 
-<script>
-    $(document).ready(function () {
-
-        function updateEditStatus() {
-            if ($('#EditIsActive').is(':checked')) {
-                $('#editStatusLabel').text('Active');
-            } else {
-                $('#editStatusLabel').text('Inactive');
-            }
-        }
-
-        updateEditStatus();
-
-        $('#EditIsActive').change(function () {
-            updateEditStatus();
-        });
-
-    });
-</script>
+@* Page JavaScript file *@
+<script src="~/js/productsetup/edit.js"></script>

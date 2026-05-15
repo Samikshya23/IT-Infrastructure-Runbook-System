@@ -2,31 +2,47 @@
       method="post"
       id="@ViewBag.FormId">
 
+    @* Anti-forgery token *@
     @Html.AntiForgeryToken()
 
+    @* Hidden id field *@
     <input type="hidden"
            name="@ViewBag.HiddenInputName"
            value="@ViewBag.HiddenInputValue" />
 
     <div class="text-center py-2 px-2">
 
+        @* Warning icon *@
         <div class="mb-2">
+
             <span class="bg-danger rounded-circle d-inline-flex align-items-center justify-content-center"
                   style="width:55px; height:55px;">
+
                 <i class="fas fa-exclamation-triangle text-white"></i>
+
             </span>
+
         </div>
 
+        @* Confirmation title *@
         <h4 class="font-weight-bold mb-2">
             Are you sure?
         </h4>
 
+        @* Confirmation message *@
         <p class="text-muted mb-3">
+
             @ViewBag.Message
-            <strong>"@ViewBag.ItemName"</strong>
+
+            <strong>
+                "@ViewBag.ItemName"
+            </strong>
+
         </p>
 
+        @* Action buttons *@
         <div class="d-flex justify-content-center">
+
             <button type="button"
                     class="btn btn-secondary btn-sm px-4 mr-2"
                     data-dismiss="modal">
@@ -37,7 +53,9 @@
                     class="btn btn-danger btn-sm px-4">
                 Confirm
             </button>
+
         </div>
 
     </div>
+
 </form>

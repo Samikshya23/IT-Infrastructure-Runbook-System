@@ -108,8 +108,4 @@
     <None Remove="C:\Users\acer\.nuget\packages\questpdf\2026.2.4\buildTransitive\..\LatoFont\Lato-Black.ttf" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\ProductStructure\" />
-  </ItemGroup>
-
 </Project>
