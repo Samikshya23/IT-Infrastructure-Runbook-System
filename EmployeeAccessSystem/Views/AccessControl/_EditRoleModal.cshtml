@@ -1,0 +1,50 @@
+﻿@model EmployeeAccessSystem.Models.AccessControlRoleModel
+
+<div class="modal-header">
+    <h5 class="modal-title">Edit Role</h5>
+
+    <button type="button" class="close" data-dismiss="modal">
+        <span>&times;</span>
+    </button>
+</div>
+
+<form asp-action="EditRole" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="modal-body">
+
+        <input type="hidden" asp-for="RoleId" />
+
+        <div class="form-group">
+            <label>Role Name</label>
+
+            <input asp-for="RoleName"
+                   class="form-control form-control-sm" />
+        </div>
+
+        <div class="custom-control custom-switch">
+            <input type="checkbox"
+                   class="custom-control-input"
+                   asp-for="IsActive" />
+
+            <label class="custom-control-label font-weight-bold"
+                   asp-for="IsActive">
+                Active
+            </label>
+        </div>
+
+    </div>
+
+    <div class="modal-footer">
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
+            Back
+        </button>
+
+        <button type="submit"
+                class="btn btn-primary btn-sm">
+            Update
+        </button>
+    </div>
+</form>

@@ -1,0 +1,154 @@
+﻿@model List<EmployeeAccessSystem.Models.AccessControlMenuModel>
+
+@{
+    var selectedUser =
+        ViewBag.SelectedUser as EmployeeAccessSystem.Models.AccessControlUserModel;
+
+    int accountId = ViewBag.AccountId;
+
+    bool isAdministrator = false;
+
+    if (selectedUser != null && selectedUser.RoleName == "Administrator")
+    {
+        isAdministrator = true;
+    }
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">Menu Access</h5>
+
+    <button type="button" class="close" data-dismiss="modal">
+        <span>&times;</span>
+    </button>
+</div>
+<form asp-action="SaveAccess" method="post">
+    @Html.AntiForgeryToken()
+    <div class="modal-body">
+        <input type="hidden"
+               name="accountId"
+               value="@accountId" />
+
+        @if (selectedUser != null)
+        {
+            <div class="callout callout-info mb-3">
+                <h5 class="mb-1">@selectedUser.FullName</h5>
+
+                <p class="mb-0">
+                    @selectedUser.Email
+                    |
+                    Role:
+                    <strong>@selectedUser.RoleName</strong>
+                </p>
+            </div>
+        }
+        @if (isAdministrator)
+        {
+            <div class="alert alert-info py-2">
+                Administrator always has full access. Menu access cannot be changed.
+            </div>
+        }
+
+        <div class="card mb-0">
+
+            <div class="card-header">
+                <h3 class="card-title">Menu Access</h3>
+
+                <div class="card-tools">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox"
+                               class="custom-control-input"
+                               id="selectAllMenus"
+                               @(isAdministrator ? "checked disabled" : "") />
+
+                        <label class="custom-control-label"
+                               for="selectAllMenus">
+                            Select All
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var parent in Model)
+                    {
+                        <div class="mb-2">
+
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox"
+                                       class="custom-control-input parent-menu menu-check"
+                                       id="menu_@parent.MenuId"
+                                       name="menuIds"
+                                       value="@parent.MenuId"
+                                       data-parent="@parent.MenuId"
+                                       @(parent.IsChecked ? "checked" : "")
+                                       @(isAdministrator ? "disabled" : "") />
+
+                                <label class="custom-control-label font-weight-bold"
+                                       for="menu_@parent.MenuId">
+                                    @parent.MenuName
+                                </label>
+                            </div>
+
+                            @if (parent.Children != null && parent.Children.Count > 0)
+                            {
+                                <div class="ml-4 mt-2">
+                                    @foreach (var child in parent.Children)
+                                    {
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox"
+                                                   class="custom-control-input child-menu menu-check child-of-@parent.MenuId"
+                                                   id="menu_@child.MenuId"
+                                                   name="menuIds"
+                                                   value="@child.MenuId"
+                                                   data-parent="@parent.MenuId"
+                                                   @(child.IsChecked ? "checked" : "")
+                                                   @(isAdministrator ? "disabled" : "") />
+
+                                            <label class="custom-control-label"
+                                                   for="menu_@child.MenuId">
+                                                @child.MenuName
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                        </div>
+                    }
+                }
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal-footer">
+
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
+            Cancel
+        </button>
+
+        @if (!isAdministrator)
+        {
+            <button type="submit"
+                    class="btn btn-primary btn-sm">
+                Save Changes
+            </button>
+        }
+        else
+        {
+            <button type="button"
+                    class="btn btn-primary btn-sm"
+                    disabled>
+                Full Access
+            </button>
+        }
+
+    </div>
+
+</form>

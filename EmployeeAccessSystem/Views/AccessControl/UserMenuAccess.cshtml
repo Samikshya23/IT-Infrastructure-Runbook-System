@@ -1,0 +1,192 @@
+﻿@model List<EmployeeAccessSystem.Models.AccessControlUserModel>
+
+@{
+    ViewData["Title"] = "User Menu Access";
+    int sn = 1;
+}
+
+<section class="content pt-2 pb-0">
+
+    <div class="container-fluid px-0">
+
+        <div class="row mb-2 mx-0 align-items-center">
+
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">User Menu Access</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0">
+
+                <a href="/AccessControl/Index"
+                   class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Dashboard
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="card card-outline card-primary mb-0 shadow-none">
+
+            <div class="card-header bg-white border-bottom-0 pt-2 pb-2 px-3">
+
+                <div class="row align-items-center">
+
+                    <div class="col-md-6 d-flex align-items-center">
+                        <label class="mb-0 mr-2 font-weight-normal">Show</label>
+
+                        <select id="accessCustomLength"
+                                class="custom-select custom-select-sm form-control form-control-sm"
+                                style="width:70px;">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+
+                        <label class="mb-0 ml-2 font-weight-normal">entries</label>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-end">
+                            <input type="text"
+                                   id="accessCustomSearch"
+                                   class="form-control form-control-sm"
+                                   placeholder="Search"
+                                   style="width:220px;" />
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body p-0">
+
+                <table id="userMenuAccessTable"
+                       class="table table-bordered table-hover table-sm mb-0 rounded-0">
+
+                    <thead class="bg-light border-bottom">
+
+                        <tr>
+                            <th class="text-center align-middle" style="width:70px;">SN</th>
+                            <th class="align-middle">Full Name</th>
+                            <th class="align-middle">Email</th>
+                            <th class="text-center align-middle" style="width:150px;">Role</th>
+                            <th class="text-center align-middle" style="width:140px;">Actions</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @if (Model != null && Model.Count > 0)
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="text-center align-middle">@sn</td>
+
+                                    <td class="align-middle">@item.FullName</td>
+
+                                    <td class="align-middle">@item.Email</td>
+
+                                    <td class="text-center align-middle">@item.RoleName</td>
+
+                                    <td class="text-center align-middle">
+
+                                        <button type="button"
+                                                class="btn btn-xs btn-light border btnMenuAccess"
+                                                data-account-id="@item.AccountId"
+                                                title="Assign Menu Access">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn btn-xs btn-outline-danger btnRemoveAccess ml-1"
+                                                data-account-id="@item.AccountId"
+                                                data-user-name="@item.FullName"
+                                                title="Remove Access">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+
+                                    </td>
+                                </tr>
+
+                                sn++;
+                            }
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<div class="modal fade" id="accessModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id="accessModalContent"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="removeAccessModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+
+            <form asp-action="RemoveAccess" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove Access</h5>
+
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body text-center">
+
+                    <input type="hidden" id="removeAccountId" name="accountId" />
+
+                    <div class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-danger fa-2x"></i>
+                    </div>
+
+                    <p class="mb-0">
+                        Remove menu access for
+                        <strong id="removeUserName"></strong>?
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary btn-sm"
+                            data-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-danger btn-sm">
+                        Remove
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/AccessControl/userMenuAccess.js"></script>
+}

@@ -1,0 +1,160 @@
+﻿@model List<EmployeeAccessSystem.Models.AccessControlUserModel>
+
+@{
+    ViewData["Title"] = "Manage Users";
+    int sn = 1;
+}
+
+<section class="content pt-2 pb-0">
+
+    <div class="container-fluid px-0">
+
+        <div class="row mb-2 mx-0 align-items-center">
+
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Manage Users</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0">
+
+                <a href="/AccessControl/Index"
+                   class="btn btn-secondary btn-sm mr-1">
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Dashboard
+                </a>
+
+                <a href="/Account/Register"
+                   class="btn btn-primary btn-sm">
+                    <i class="fas fa-user-plus mr-1"></i>
+                    Add User
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="card card-outline card-primary mb-0 shadow-none">
+
+            <div class="card-header bg-white border-bottom-0 pt-2 pb-2 px-3">
+
+                <div class="row align-items-center">
+
+                    <div class="col-md-6 d-flex align-items-center">
+                        <label class="mb-0 mr-2 font-weight-normal">Show</label>
+
+                        <select id="customLength"
+                                class="custom-select custom-select-sm form-control form-control-sm"
+                                style="width:70px;">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+
+                        <label class="mb-0 ml-2 font-weight-normal">entries</label>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-end">
+                            <input type="text"
+                                   id="customSearch"
+                                   class="form-control form-control-sm"
+                                   placeholder="Search"
+                                   style="width:220px;" />
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body p-0">
+
+                <table id="accessControlTable"
+                       class="table table-bordered table-hover table-sm mb-0 rounded-0">
+
+                    <thead class="bg-light border-bottom">
+
+                        <tr>
+                            <th class="text-center align-middle" style="width:70px;">SN</th>
+                            <th class="align-middle">Full Name</th>
+                            <th class="align-middle">Email</th>
+                            <th class="text-center align-middle" style="width:150px;">Role</th>
+                            <th class="text-center align-middle" style="width:130px;">Actions</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @if (Model != null && Model.Count > 0)
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="text-center align-middle">@sn</td>
+
+                                    <td class="align-middle">@item.FullName</td>
+
+                                    <td class="align-middle">@item.Email</td>
+
+                                    <td class="text-center align-middle">@item.RoleName</td>
+
+                                    <td class="text-center align-middle">
+
+                                        <button type="button"
+                                                class="btn btn-xs btn-light border btnDetailsUser"
+                                                data-account-id="@item.AccountId"
+                                                title="Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn btn-xs btn-light border btnEditUser ml-1"
+                                                data-account-id="@item.AccountId"
+                                                title="Edit">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn btn-xs btn-outline-danger btnRemoveUser ml-1"
+                                                data-account-id="@item.AccountId"
+                                                data-user-name="@item.FullName"
+                                                title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+
+                                    </td>
+                                </tr>
+
+                                sn++;
+                            }
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content" id="detailsModalContent"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content" id="editUserModalContent"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/AccessControl/users.js"></script>
+}

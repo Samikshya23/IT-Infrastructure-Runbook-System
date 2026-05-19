@@ -1,0 +1,98 @@
+﻿@model EmployeeAccessSystem.Models.AccessControlDashboardModel
+
+@{
+    ViewData["Title"] = "Access Control Dashboard";
+}
+
+<section class="content pt-2 pb-0">
+
+    <div class="container-fluid px-0">
+
+        <div class="row mb-2 mx-0 align-items-center">
+
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Access Control Dashboard</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0 pt-1">
+                <a href="/Account/Register" class="btn btn-primary btn-sm">
+                    <i class="fas fa-user-plus mr-1"></i>
+                    Add User
+                </a>
+            </div>
+
+        </div>
+
+        <div class="row">
+
+            <div class="col-lg-4 col-6">
+
+                <div class="small-box bg-info">
+
+                    <div class="inner">
+                        <h3>@Model.TotalUsers</h3>
+                        <p>Total Users</p>
+                    </div>
+
+                    <div class="icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+
+                    <a href="/AccessControl/Users" class="small-box-footer">
+                        Manage Users
+                        <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-4 col-6">
+
+                <div class="small-box bg-success">
+
+                    <div class="inner">
+                        <h3>@Model.TotalRoles</h3>
+                        <p>Total Roles</p>
+                    </div>
+
+                    <div class="icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+
+                    <a href="/AccessControl/Roles" class="small-box-footer">
+                        Manage Roles
+                        <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-4 col-6">
+
+                <div class="small-box bg-danger">
+
+                    <div class="inner">
+                        <h3>@Model.AssignedAccess</h3>
+                        <p>Assigned Access</p>
+                    </div>
+
+                    <div class="icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+
+                    <a href="/AccessControl/UserMenuAccess" class="small-box-footer">
+                        User Menu Access
+                        <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>

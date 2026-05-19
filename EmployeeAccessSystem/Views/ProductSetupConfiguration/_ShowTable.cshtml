@@ -2,6 +2,7 @@
 
 @functions {
 
+    // Build dynamic column names from hierarchy
     private void BuildColumnNames(
         EmployeeAccessSystem.Models.ProductSetupConfiguration node,
         List<string> columns)
@@ -26,6 +27,7 @@
         }
     }
 
+    // Build grouped rows
     private void BuildRows(
         EmployeeAccessSystem.Models.ProductSetupConfiguration node,
         List<string> currentRow,
@@ -52,72 +54,13 @@
 
         currentRow.RemoveAt(currentRow.Count - 1);
     }
-
-    private int GetRowSpan(
-        List<List<string>> rows,
-        int startIndex,
-        int columnIndex)
-    {
-        int count = 1;
-
-        for (int i = startIndex + 1; i < rows.Count; i++)
-        {
-            bool sameGroup = true;
-
-            for (int c = 0; c <= columnIndex; c++)
-            {
-                string currentValue = c < rows[startIndex].Count ? rows[startIndex][c] : "";
-                string nextValue = c < rows[i].Count ? rows[i][c] : "";
-
-                if (currentValue != nextValue)
-                {
-                    sameGroup = false;
-                    break;
-                }
-            }
-
-            if (sameGroup)
-            {
-                count++;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return count;
-    }
-
-    private bool ShouldShowCell(
-        List<List<string>> rows,
-        int rowIndex,
-        int columnIndex)
-    {
-        if (rowIndex == 0)
-        {
-            return true;
-        }
-
-        for (int c = 0; c <= columnIndex; c++)
-        {
-            string currentValue = c < rows[rowIndex].Count ? rows[rowIndex][c] : "";
-            string previousValue = c < rows[rowIndex - 1].Count ? rows[rowIndex - 1][c] : "";
-
-            if (currentValue != previousValue)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
 
 @{
     List<string> columns = new List<string>();
-    List<List<string>> rows = new List<List<string>>();
-    List<int> rowRootIndexes = new List<int>();
+
+    List<List<List<string>>> groupedRows =
+        new List<List<List<string>>>();
 
     if (Model != null && Model.Count > 0)
     {
@@ -125,15 +68,16 @@
 
         for (int r = 0; r < Model.Count; r++)
         {
-            List<List<string>> rootRows = new List<List<string>>();
+            List<List<string>> rootRows =
+                new List<List<string>>();
 
-            BuildRows(Model[r], new List<string>(), rootRows);
+            BuildRows(
+                Model[r],
+                new List<string>(),
+                rootRows
+            );
 
-            for (int i = 0; i < rootRows.Count; i++)
-            {
-                rows.Add(rootRows[i]);
-                rowRootIndexes.Add(r);
-            }
+            groupedRows.Add(rootRows);
         }
     }
 }
@@ -174,87 +118,77 @@
 
                 <tbody>
 
-                    @{
-                        int sn = 1;
-                        int previousRootIndex = -1;
-                    }
-
-                    @for (int i = 0; i < rows.Count; i++)
+                    @for (int g = 0; g < groupedRows.Count; g++)
                     {
-                        int currentRootIndex = rowRootIndexes[i];
+                        List<List<string>> rootRows =
+                        groupedRows[g];
 
-                        <tr>
+                        int rowSpan = rootRows.Count;
 
-                            @if (currentRootIndex != previousRootIndex)
-                            {
-                                int rootRowSpan = 0;
+                        for (int i = 0; i < rootRows.Count; i++)
+                        {
+                            <tr>
 
-                                for (int x = 0; x < rowRootIndexes.Count; x++)
+                                @if (i == 0)
                                 {
-                                    if (rowRootIndexes[x] == currentRootIndex)
-                                    {
-                                        rootRowSpan++;
-                                    }
-                                }
+                                    <td class="text-center align-middle"
+                                        rowspan="@rowSpan">
 
-                                <td class="text-center align-middle"
-                                    rowspan="@rootRowSpan">
-
-                                    @sn
-
-                                </td>
-                            }
-
-                            @for (int c = 0; c < columns.Count; c++)
-                            {
-                                if (ShouldShowCell(rows, i, c))
-                                {
-                                    int rowspan = GetRowSpan(rows, i, c);
-
-                                    <td class="align-middle px-2"
-                                        rowspan="@rowspan">
-
-                                        @if (c < rows[i].Count)
-                                        {
-                                            @rows[i][c]
-                                        }
+                                        @(g + 1)
 
                                     </td>
                                 }
-                            }
 
-                            @if (currentRootIndex != previousRootIndex)
-                            {
-                                int rootRowSpan = 0;
-
-                                for (int x = 0; x < rowRootIndexes.Count; x++)
+                                @for (int c = 0; c < columns.Count; c++)
                                 {
-                                    if (rowRootIndexes[x] == currentRootIndex)
+                                    if (c == 0)
                                     {
-                                        rootRowSpan++;
+                                        if (i == 0)
+                                        {
+                                            <td class="align-middle px-2"
+                                                rowspan="@rowSpan">
+
+                                                @if (c < rootRows[i].Count)
+                                                {
+                                                    @rootRows[i][c]
+                                                }
+
+                                            </td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td class="align-middle px-2">
+
+                                            @if (c < rootRows[i].Count)
+                                            {
+                                                @rootRows[i][c]
+                                            }
+
+                                        </td>
                                     }
                                 }
 
-                                <td class="text-center align-middle"
-                                    rowspan="@rootRowSpan">
+                                @if (i == 0)
+                                {
+                                    <td class="text-center align-middle"
+                                        rowspan="@rowSpan">
 
-                                    <button type="button"
-                                            class="btn btn-xs btn-light border btnEditSetupConfiguration"
-                                            data-product-id="@Model[currentRootIndex].ProductId"
-                                            data-root-index="@currentRootIndex"
-                                            title="Edit">
+                                        <button type="button"
+                                                class="btn btn-xs btn-light border btnEditSetupConfiguration"
+                                                data-product-id="@Model[g].ProductId"
+                                                data-root-index="@g"
+                                                title="Edit">
 
-                                        <i class="fas fa-pen"></i>
+                                            <i class="fas fa-pen"></i>
 
-                                    </button>
+                                        </button>
 
-                                </td>
+                                    </td>
+                                }
 
-                                sn++;
-                                previousRootIndex = currentRootIndex;
-                            }
-
-                        </tr>
+                            </tr>
+                        }
                     }
 
                 </tbody>

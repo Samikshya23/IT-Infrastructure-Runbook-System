@@ -1,0 +1,38 @@
+﻿@model EmployeeAccessSystem.Models.AccessControlUserModel
+
+<div class="modal-header">
+    <h5 class="modal-title">User Details</h5>
+
+    <button type="button" class="close" data-dismiss="modal">
+        <span>&times;</span>
+    </button>
+</div>
+
+<div class="modal-body">
+
+    <table class="table table-bordered table-sm mb-0">
+        <tr>
+            <th>Full Name</th>
+            <td>@Model.FullName</td>
+        </tr>
+
+        <tr>
+            <th>Email</th>
+            <td>@Model.Email</td>
+        </tr>
+
+        <tr>
+            <th>Role</th>
+            <td>@Model.RoleName</td>
+        </tr>
+    </table>
+
+</div>
+
+<div class="modal-footer">
+    <button type="button"
+            class="btn btn-secondary btn-sm"
+            data-dismiss="modal">
+        Close
+    </button>
+</div>

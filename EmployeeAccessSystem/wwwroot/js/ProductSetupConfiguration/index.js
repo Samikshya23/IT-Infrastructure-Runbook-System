@@ -9,9 +9,7 @@
         var productId = $(this).val();
 
         if (productId === "") {
-
             $("#setupTableContainer").html("");
-
             return;
         }
 
@@ -28,9 +26,7 @@
                 rootIndex: -1
             },
             function (data) {
-
                 $("#setupConfigurationModalContent").html(data);
-
                 $("#setupConfigurationModal").modal("show");
             });
     });
@@ -48,63 +44,39 @@
                 rootIndex: rootIndex
             },
             function (data) {
-
                 $("#setupConfigurationModalContent").html(data);
-
                 $("#setupConfigurationModal").modal("show");
             });
     });
 
-    function loadToastMessages() {
-
-        var successMessage = $("#successMessage").val();
-        var tempSuccessMessage = $("#tempSuccessMessage").val();
-        var tempErrorMessage = $("#tempErrorMessage").val();
-
-        if (successMessage !== "") {
-            showToastMessage("success", successMessage);
-        }
-
-        if (tempSuccessMessage !== "") {
-            showToastMessage("success", tempSuccessMessage);
-        }
-
-        if (tempErrorMessage !== "") {
-            showToastMessage("error", tempErrorMessage);
-        }
-    }
-
-    function loadSelectedProduct() {
-
-        var selectedProductId = parseInt($("#selectedProductId").val() || "0");
-
-        if (selectedProductId > 0) {
-
-            $("#showProductId").val(selectedProductId);
-
-            loadSetupTable(selectedProductId);
-        }
-    }
-
     function loadSetupTable(productId) {
 
         $("#setupTableContainer").html(
-            '<div class="text-center text-muted py-4">' +
-            'Loading...' +
-            '</div>'
+            '<div class="text-center text-muted py-4">Loading...</div>'
         );
 
-        $("#setupTableContainer").load(
-            "/ProductSetupConfiguration/ShowTable?productId=" + productId,
-            function () {
+        $.get("/ProductSetupConfiguration/ShowTable",
+            {
+                productId: productId
+            },
+            function (data) {
 
-                initializeSetupDataTable();
+                $("#setupTableContainer").html(data);
+
+                setTimeout(function () {
+                    initializeSetupDataTable();
+                }, 100);
             });
     }
 
     function initializeSetupDataTable() {
 
         if ($("#setupDynamicTable").length === 0) {
+            return;
+        }
+
+        if (typeof $.fn.DataTable === "undefined") {
+            console.log("DataTable library is not loaded.");
             return;
         }
 
@@ -130,9 +102,9 @@
             ],
 
             dom:
-                "<'row mb-3 align-items-center'<'col-md-6'l><'col-md-6 text-right'f>>" +
+                "<'row mb-3 px-2 pt-2 align-items-center'<'col-md-6'l><'col-md-6 text-right'f>>" +
                 "<'row'<'col-12'tr>>" +
-                "<'row mt-3 align-items-center'<'col-md-6'i><'col-md-6 text-right'p>>",
+                "<'row mt-3 px-2 pb-2 align-items-center'<'col-md-6'i><'col-md-6 text-right'p>>",
 
             language: {
                 search: "",
@@ -155,25 +127,47 @@
             });
     }
 
+    function loadSelectedProduct() {
+
+        var selectedProductId = parseInt($("#selectedProductId").val() || "0");
+
+        if (selectedProductId > 0) {
+            $("#showProductId").val(selectedProductId);
+            loadSetupTable(selectedProductId);
+        }
+    }
+
+    function loadToastMessages() {
+
+        var successMessage = $("#successMessage").val();
+        var tempSuccessMessage = $("#tempSuccessMessage").val();
+        var tempErrorMessage = $("#tempErrorMessage").val();
+
+        if (successMessage !== "") {
+            showToastMessage("success", successMessage);
+        }
+
+        if (tempSuccessMessage !== "") {
+            showToastMessage("success", tempSuccessMessage);
+        }
+
+        if (tempErrorMessage !== "") {
+            showToastMessage("error", tempErrorMessage);
+        }
+    }
+
     function showToastMessage(type, message) {
 
-        if (
-            message === null ||
-            message === undefined ||
-            message === ""
-        ) {
+        if (message === null || message === undefined || message === "") {
             return;
         }
 
         if (typeof toastr === "undefined") {
-
             alert(message);
-
             return;
         }
 
         toastr.options = {
-
             closeButton: true,
             progressBar: true,
             newestOnTop: true,

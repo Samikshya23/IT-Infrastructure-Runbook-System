@@ -7,6 +7,11 @@ $(document).ready(function () {
     var editRootIndex = parseInt($("#RootIndex").val() || "-1");
     var isFormChanged = false;
 
+    // Get anti-forgery token for secure AJAX POST request
+    function getAntiForgeryToken() {
+        return $('input[name="__RequestVerificationToken"]').val();
+    }
+
     // Generate unique setup node id
     function generateSetupNodeId() {
         return "node_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
@@ -300,7 +305,13 @@ $(document).ready(function () {
         }
 
         var parentContainer = currentRow.parent();
-        var configNode = { id: currentRow.attr("data-config-id"), heading: currentRow.attr("data-heading"), name: currentRow.attr("data-label-name"), inputType: currentRow.attr("data-input-type") };
+        var configNode = {
+            id: currentRow.attr("data-config-id"),
+            heading: currentRow.attr("data-heading"),
+            name: currentRow.attr("data-label-name"),
+            inputType: currentRow.attr("data-input-type")
+        };
+
         var level = parseInt(currentRow.attr("data-level"));
         var isRootLevel = currentRow.attr("data-root") === "true";
 
@@ -312,9 +323,21 @@ $(document).ready(function () {
     });
 
     // Remove selected row
+    // Parent row cannot be removed until all child rows are removed first
     $(document).off("click", ".btn-remove-row");
     $(document).on("click", ".btn-remove-row", function () {
-        $(this).closest(".node-row").remove();
+
+        var currentRow = $(this).closest(".node-row");
+
+        // Check if current row has direct child rows
+        var childCount = currentRow.children(".child-area").children(".node-row").length;
+
+        if (childCount > 0) {
+            showToastMessage("error", "Please remove child items first.");
+            return;
+        }
+
+        currentRow.remove();
 
         isFormChanged = true;
 
@@ -430,6 +453,9 @@ $(document).ready(function () {
         $.ajax({
             url: "/ProductSetupConfiguration/DeleteRoot",
             type: "POST",
+            headers: {
+                "RequestVerificationToken": getAntiForgeryToken()
+            },
             data: {
                 productId: parseInt(productId),
                 rootIndex: editRootIndex
@@ -478,7 +504,14 @@ $(document).ready(function () {
             url: "/ProductSetupConfiguration/SaveData",
             type: "POST",
             contentType: "application/json",
-            data: JSON.stringify({ productId: parseInt(productId), rootIndex: editRootIndex, nodes: nodes }),
+            headers: {
+                "RequestVerificationToken": getAntiForgeryToken()
+            },
+            data: JSON.stringify({
+                productId: parseInt(productId),
+                rootIndex: editRootIndex,
+                nodes: nodes
+            }),
             success: function (response) {
                 if (response.success) {
                     $("#setupConfigurationModal").modal("hide");

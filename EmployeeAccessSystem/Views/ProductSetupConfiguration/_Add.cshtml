@@ -20,6 +20,9 @@
 
 <div class="modal-body">
 
+    @* Anti-forgery token for secure AJAX POST request *@
+    @Html.AntiForgeryToken()
+
     <input type="hidden" id="RootIndex" value="@rootIndex" />
     <input type="hidden" id="SelectedProductId" value="@selectedProductId" />
 
@@ -27,39 +30,41 @@
     <div class="card card-outline card-primary mb-0 shadow-none">
 
         <!-- Card header -->
-        <div class="card-header bg-white border-bottom-0 py-1 px-2 ">
-        <div class="card-body p-2">
-            <div class="form-group mb-0">
-                <label class="font-weight-bold mb-1">Select</label>
+        <div class="card-header bg-white border-bottom-0 py-1 px-2">
+            <div class="card-body p-2">
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold mb-1">Select</label>
 
-                <select id="ProductId" class="form-control form-control-sm" @(rootIndex >= 0 ? "disabled" : "")>
-                    <option value="">Select</option>
+                    <select id="ProductId" class="form-control form-control-sm" @(rootIndex >= 0 ? "disabled" : "")>
+                        <option value="">Select</option>
 
-                    @if (products != null)
-                    {
-                        foreach (var product in products)
+                        @if (products != null)
                         {
-                            if (selectedProductId == product.ProductId)
+                            foreach (var product in products)
                             {
-                                <option value="@product.ProductId" selected>@product.ProductName</option>
-                            }
-                            else
-                            {
-                                <option value="@product.ProductId">@product.ProductName</option>
+                                if (selectedProductId == product.ProductId)
+                                {
+                                    <option value="@product.ProductId" selected>@product.ProductName</option>
+                                }
+                                else
+                                {
+                                    <option value="@product.ProductId">@product.ProductName</option>
+                                }
                             }
                         }
-                    }
-                </select>
+                    </select>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="generatedSetupArea" style="display:none;">
-        <div class="card shadow-none">
-            <div class="card-body p-2">
-                <div id="nodeContainer"></div>
+        <div id="generatedSetupArea" style="display:none;">
+            <div class="card shadow-none">
+                <div class="card-body p-2">
+                    <div id="nodeContainer"></div>
+                </div>
             </div>
         </div>
+
     </div>
 
 </div>
