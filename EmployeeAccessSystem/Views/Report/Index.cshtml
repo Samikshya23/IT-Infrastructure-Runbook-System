@@ -168,34 +168,44 @@
                         </div>
 
                         <div class="btn-group">
-                            <button type="button"
-                                    class="btn btn-danger dropdown-toggle"
-                                    data-toggle="dropdown">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </button>
+    <button type="button"
+            class="btn btn-danger dropdown-toggle"
+            data-toggle="dropdown">
+        <i class="fas fa-download mr-1"></i> Download
+    </button>
 
-                            <div class="dropdown-menu dropdown-menu-right">
-                                <a class="dropdown-item"
-                                   asp-controller="Report"
-                                   asp-action="DownloadPdf"
-                                   asp-route-productId="@selectedProductId"
-                                   asp-route-fromDate="@(fromDate.HasValue? fromDate.Value.ToString("yyyy-MM-dd") : "")"
-                                   asp-route-toDate="@(toDate.HasValue? toDate.Value.ToString("yyyy-MM-dd") : "")">
-                                    <i class="fas fa-file-pdf text-danger mr-2"></i>
-                                    PDF
-                                </a>
+    <div class="dropdown-menu dropdown-menu-right">
 
-                                <a class="dropdown-item"
-                                   asp-controller="Report"
-                                   asp-action="DownloadExcel"
-                                   asp-route-productId="@selectedProductId"
-                                   asp-route-fromDate="@(fromDate.HasValue? fromDate.Value.ToString("yyyy-MM-dd") : "")"
-                                   asp-route-toDate="@(toDate.HasValue? toDate.Value.ToString("yyyy-MM-dd") : "")">
-                                    <i class="fas fa-file-excel text-success mr-2"></i>
-                                    Excel
-                                </a>
-                            </div>
-                        </div>
+        <!-- PDF download -->
+        <a class="dropdown-item report-download-link"
+           href="@Url.Action("DownloadPdf", "Report", new {
+               productId = selectedProductId,
+               fromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "",
+               toDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : ""
+           })"
+           data-file-type="pdf">
+
+            <i class="fas fa-file-pdf text-danger mr-2"></i>
+            PDF
+
+        </a>
+
+        <!-- Excel download -->
+        <a class="dropdown-item report-download-link"
+           href="@Url.Action("DownloadExcel", "Report", new {
+               productId = selectedProductId,
+               fromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "",
+               toDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : ""
+           })"
+           data-file-type="excel">
+
+            <i class="fas fa-file-excel text-success mr-2"></i>
+            Excel
+
+        </a>
+
+    </div>
+</div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-2 report-pagination-bar">
@@ -791,6 +801,7 @@
 @section Scripts {
     <script>
         $(function () {
+
             if ($('#productId').hasClass('select2-hidden-accessible')) {
                 $('#productId').select2('destroy');
             }
@@ -804,6 +815,7 @@
             });
 
             function showReportMessage(message, type) {
+
                 var cssClass = 'alert-danger';
 
                 if (type === 'warning') {
@@ -817,9 +829,33 @@
                 );
             }
 
+            function showDownloadMessage(message) {
+
+                if (typeof toastr !== 'undefined') {
+
+                    toastr.options = {
+                        closeButton: true,
+                        progressBar: true,
+                        newestOnTop: true,
+                        positionClass: 'toast-top-right',
+                        preventDuplicates: true,
+                        timeOut: '3000'
+                    };
+
+                    toastr.error(message, 'Message');
+
+                    return;
+                }
+
+                showReportMessage(message, 'warning');
+            }
+
             function setRangeValues(start, end) {
+
                 $('#fromDate').val(start.format('YYYY-MM-DD'));
+
                 $('#toDate').val(end.format('YYYY-MM-DD'));
+
                 $('#dateRange').val(
                     start.format('DD MMM YYYY') +
                     ' - ' +
@@ -833,12 +869,16 @@
 
             if ($('#fromDate').val() !== '' &&
                 $('#toDate').val() !== '') {
+
                 startDate = moment($('#fromDate').val(), 'YYYY-MM-DD');
                 endDate = moment($('#toDate').val(), 'YYYY-MM-DD');
+
             }
             else {
+
                 startDate = today.clone();
                 endDate = today.clone();
+
             }
 
             $('#dateRange').daterangepicker({
@@ -864,24 +904,32 @@
 
             if ($('#fromDate').val() !== '' &&
                 $('#toDate').val() !== '') {
+
                 setRangeValues(startDate, endDate);
             }
 
             $('#dateRange').on('apply.daterangepicker', function (ev, picker) {
+
                 setRangeValues(picker.startDate, picker.endDate);
+
             });
 
             $('#dateRange').on('cancel.daterangepicker', function () {
+
                 $('#dateRange').val('');
                 $('#fromDate').val('');
                 $('#toDate').val('');
+
             });
 
             $('#dateRangeIcon').on('click', function () {
+
                 $('#dateRange').trigger('click');
+
             });
 
             $('#reportForm').on('submit', function (e) {
+
                 var productId = $('#productId').val();
                 var fromDate = $('#fromDate').val();
                 var toDate = $('#toDate').val();
@@ -889,14 +937,20 @@
                 $('#reportMessageArea').html('');
 
                 if (productId === '' || productId === null) {
+
                     showReportMessage('Please select product.', 'warning');
+
                     e.preventDefault();
+
                     return false;
                 }
 
                 if (fromDate === '' || toDate === '') {
+
                     showReportMessage('Please select date range.', 'warning');
+
                     e.preventDefault();
+
                     return false;
                 }
 
@@ -904,48 +958,147 @@
                 var to = moment(toDate, 'YYYY-MM-DD');
 
                 if (to.isBefore(from)) {
+
                     showReportMessage(
                         'Start date cannot be greater than end date.',
                         'warning'
                     );
+
                     e.preventDefault();
+
                     return false;
                 }
 
                 var dayDifference = to.diff(from, 'days');
 
                 if (dayDifference > 31) {
+
                     showReportMessage(
                         'Maximum report range is 31 days only.',
                         'warning'
                     );
+
                     e.preventDefault();
+
                     return false;
                 }
             });
 
+            function downloadReportFile(url, fileType) {
+
+                $.ajax({
+
+                    url: url,
+                    type: 'GET',
+
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+
+                    success: function (data, status, xhr) {
+
+                        var fileName = 'Report';
+
+                        if (fileType === 'pdf') {
+                            fileName = 'Report.pdf';
+                        }
+
+                        if (fileType === 'excel') {
+                            fileName = 'Report.xlsx';
+                        }
+
+                        var disposition = xhr.getResponseHeader('Content-Disposition');
+
+                        if (disposition != null && disposition !== '') {
+
+                            var fileNameMatch = disposition.match(/filename="?([^"]+)"?/);
+
+                            if (fileNameMatch != null && fileNameMatch.length > 1) {
+                                fileName = fileNameMatch[1];
+                            }
+                        }
+
+                        var blobUrl = window.URL.createObjectURL(data);
+
+                        var link = document.createElement('a');
+
+                        link.href = blobUrl;
+                        link.download = fileName;
+
+                        document.body.appendChild(link);
+
+                        link.click();
+
+                        document.body.removeChild(link);
+
+                        window.URL.revokeObjectURL(blobUrl);
+                    },
+
+                    error: function (xhr) {
+
+                        if (xhr.status === 401) {
+
+                            showDownloadMessage('Please login first.');
+
+                            return;
+                        }
+
+                        if (xhr.status === 403) {
+
+                            showDownloadMessage('Access denied. You do not have permission.');
+
+                            return;
+                        }
+
+                        showDownloadMessage('Unable to download report.');
+                    }
+
+                });
+            }
+
+            $('.report-download-link')
+                .off('click')
+                .on('click', function (e) {
+
+                    e.preventDefault();
+
+                    var url = $(this).attr('href');
+
+                    var fileType = $(this).attr('data-file-type');
+
+                    downloadReportFile(url, fileType);
+
+                });
+
             function buildPagination() {
+
                 var pageSize = parseInt($('#reportPageSize').val());
 
                 function getReportGroups() {
+
                     var rows = $('#dynamicReportTable tbody tr');
                     var groups = [];
                     var currentGroup = [];
 
                     rows.each(function () {
+
                         var row = $(this);
                         var isGroupStart = row.attr('data-group-start') === 'true';
 
                         if (isGroupStart) {
+
                             if (currentGroup.length > 0) {
                                 groups.push(currentGroup);
                             }
 
                             currentGroup = [];
                             currentGroup.push(row);
+
                         }
                         else {
+
                             currentGroup.push(row);
+
                         }
                     });
 
@@ -957,6 +1110,7 @@
                 }
 
                 function renderPage(pageNumber) {
+
                     var groups = getReportGroups();
                     var totalEntries = groups.length;
                     var totalPages = Math.ceil(totalEntries / pageSize);
@@ -983,8 +1137,11 @@
                     }
 
                     for (var i = startIndex; i < endIndex; i++) {
+
                         for (var j = 0; j < groups[i].length; j++) {
+
                             groups[i][j].show();
+
                         }
                     }
 
@@ -1003,7 +1160,9 @@
                 }
 
                 function buildPaginationButtons(currentPage, totalPages) {
+
                     var pagination = $('#reportPagination');
+
                     pagination.empty();
 
                     var prevDisabled = currentPage === 1 ? 'disabled' : '';
@@ -1016,6 +1175,7 @@
                     );
 
                     for (var i = 1; i <= totalPages; i++) {
+
                         var activeClass = currentPage === i ? 'active' : '';
 
                         pagination.append(
@@ -1041,6 +1201,7 @@
                 $('#reportPagination')
                     .off('click', '.report-page-link')
                     .on('click', '.report-page-link', function (e) {
+
                         e.preventDefault();
 
                         var page = parseInt($(this).attr('data-page'));
@@ -1048,13 +1209,17 @@
                         if (!isNaN(page)) {
                             renderPage(page);
                         }
+
                     });
 
                 $('#reportPageSize')
                     .off('change')
                     .on('change', function () {
+
                         pageSize = parseInt($(this).val());
+
                         renderPage(1);
+
                     });
 
                 renderPage(1);
@@ -1063,6 +1228,7 @@
             if ($('#dynamicReportTable').length > 0) {
                 buildPagination();
             }
+
         });
     </script>
 }

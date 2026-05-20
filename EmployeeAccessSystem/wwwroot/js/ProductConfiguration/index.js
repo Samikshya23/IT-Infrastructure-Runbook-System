@@ -7,6 +7,7 @@
     bindEditButton();
 
     showTempMessage();
+
 });
 
 // Initialize datatable
@@ -66,13 +67,8 @@ function bindAddButton() {
         .off("click")
         .on("click", function () {
 
-            $.get("/ProductConfiguration/Add", function (data) {
+            loadConfigurationModal("/ProductConfiguration/Add");
 
-                $("#configurationModalContent").html(data);
-
-                $("#configurationModal").modal("show");
-
-            });
         });
 }
 
@@ -85,28 +81,77 @@ function bindEditButton() {
     $(document)
         .on("click", ".btnEditConfiguration", function () {
 
-            var productId =
-                $(this).attr("data-product-id");
+            var productId = $(this).attr("data-product-id");
 
-            $.get("/ProductConfiguration/Add?productId=" + productId,
-                function (data) {
+            loadConfigurationModal("/ProductConfiguration/Add?productId=" + productId);
 
-                    $("#configurationModalContent").html(data);
-
-                    $("#configurationModal").modal("show");
-
-                });
         });
+}
+
+// Load configuration modal after permission check
+function loadConfigurationModal(url) {
+
+    $.ajax({
+
+        type: "GET",
+        url: url,
+
+        success: function (data) {
+
+            $("#configurationModalContent").html(data);
+
+            $("#configurationModal").modal("show");
+
+        },
+
+        error: function (xhr) {
+
+            if (xhr.status === 401) {
+
+                showToastMessage("error", "Please login first.");
+
+                cleanConfigurationModal();
+
+                return;
+            }
+
+            if (xhr.status === 403) {
+
+                showToastMessage("error", "Access denied. You do not have permission.");
+
+                cleanConfigurationModal();
+
+                return;
+            }
+
+            showToastMessage("error", "An error occurred while loading the form.");
+
+            cleanConfigurationModal();
+        }
+
+    });
+}
+
+// Clean modal
+function cleanConfigurationModal() {
+
+    $("#configurationModal").modal("hide");
+
+    $("#configurationModalContent").html("");
+
+    $(".modal-backdrop").remove();
+
+    $("body").removeClass("modal-open");
+
+    $("body").css("padding-right", "");
 }
 
 // Show tempdata messages
 function showTempMessage() {
 
-    var successMessage =
-        $("#SuccessMessage").val();
+    var successMessage = $("#SuccessMessage").val();
 
-    var errorMessage =
-        $("#ErrorMessage").val();
+    var errorMessage = $("#ErrorMessage").val();
 
     if (successMessage !== "") {
 

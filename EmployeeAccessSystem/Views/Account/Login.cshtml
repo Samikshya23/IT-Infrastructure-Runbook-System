@@ -35,6 +35,8 @@
 
                 <form asp-action="Login" method="post" autocomplete="off">
 
+                    @Html.AntiForgeryToken()
+
                     <div asp-validation-summary="All" class="text-danger mb-2"></div>
 
                     <div class="mb-3">

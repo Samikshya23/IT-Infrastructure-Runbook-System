@@ -228,7 +228,17 @@ namespace EmployeeAccessSystem.Controllers
 
             return userName;
         }
+        [HttpGet]
+        public IActionResult Add()
+        {
+            return Json(new { success = true });
+        }
 
+        [HttpGet]
+        public IActionResult Edit(Guid entryGroupId)
+        {
+            return Json(new { success = true });
+        }
         // Load configured records for dropdown
         private async Task LoadProductDropdown(int? selectedProductId)
         {

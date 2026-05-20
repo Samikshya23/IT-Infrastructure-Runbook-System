@@ -20,6 +20,8 @@ namespace EmployeeAccessSystem.Models
 
         public bool IsActive { get; set; }
 
+        public bool IsVisibleInSidebar { get; set; }
+
         public int SortBy { get; set; }
 
         public bool IsChecked { get; set; }

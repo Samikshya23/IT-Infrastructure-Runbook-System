@@ -15,16 +15,19 @@ namespace EmployeeAccessSystem.Components.Menu
             _menuService = menuService;
         }
 
+        // Load sidebar menu according to logged-in account
         public async Task<IViewComponentResult> InvokeAsync()
         {
-            string accountIdValue =HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             int accountId = 0;
-            if (!string.IsNullOrEmpty(accountIdValue))
+
+            string accountIdValue = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!string.IsNullOrWhiteSpace(accountIdValue))
             {
-                accountId = Convert.ToInt32(accountIdValue);
+                int.TryParse(accountIdValue, out accountId);
             }
 
-            var menus =await _menuService.GetSidebarMenusAsync(accountId);
+            var menus = await _menuService.GetSidebarMenusAsync(accountId);
 
             return View("~/Components/Menu/Default.cshtml", menus);
         }

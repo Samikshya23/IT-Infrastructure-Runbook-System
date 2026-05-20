@@ -1,0 +1,196 @@
+﻿@model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
+
+@{
+    int roleId = ViewBag.RoleId;
+    string roleName = ViewBag.RoleName;
+}
+
+<div class="modal-header bg-white">
+
+    <h5 class="modal-title font-weight-bold">
+        <i class="fas fa-key mr-1"></i>
+        Role Permission
+    </h5>
+
+</div>
+
+<form asp-action="SaveRoleAccess" asp-controller="AccessControl" method="post" id="rolePermissionForm">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="roleId" value="@roleId" />
+
+    <div class="modal-body p-2 overflow-auto" style="max-height:55vh;">
+
+        <div class="card card-outline card-primary shadow-none mb-2">
+
+            <div class="card-header bg-white py-2">
+
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-user-shield mr-1"></i>
+                    Role Detail
+                </h3>
+
+            </div>
+
+            <div class="card-body py-2">
+
+                <div class="row">
+
+                    <div class="col-md-12 mb-1">
+                        Role Name: @roleName
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="card card-outline card-primary shadow-none mb-0">
+
+            <div class="card-header bg-white py-2">
+
+                <div class="row align-items-center">
+
+                    <div class="col-md-6">
+
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-lock mr-1"></i>
+                            Permissions
+                        </h3>
+
+                    </div>
+
+                    <div class="col-md-6 text-right">
+
+                        <div class="custom-control custom-checkbox d-inline-block">
+
+                            <input type="checkbox"
+                                   class="custom-control-input"
+                                   id="selectAllPermission" />
+
+                            <label class="custom-control-label" for="selectAllPermission">
+                                Select All
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body py-2">
+
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var mainGroup in Model.GroupBy(x => new { x.MainMenuId, x.MainMenuName }).OrderBy(x => x.Key.MainMenuId))
+                    {
+                        string mainCollapseId = "roleMainCollapse_" + mainGroup.Key.MainMenuId;
+
+                        <div class="border-bottom pb-2 mb-2">
+
+                            <div class="text-primary mb-2"
+                                 data-toggle="collapse"
+                                 data-target="#@mainCollapseId"
+                                 aria-expanded="true">
+
+                                <i class="fas fa-angle-down mr-1"></i>
+                                @mainGroup.Key.MainMenuName
+
+                            </div>
+
+                            <div id="@mainCollapseId" class="collapse show">
+
+                                @foreach (var pageGroup in mainGroup.GroupBy(x => new { x.PageMenuId, x.PageMenuName }).OrderBy(x => x.Key.PageMenuId))
+                                {
+                                    string pageCollapseId = "rolePageCollapse_" + mainGroup.Key.MainMenuId + "_" + pageGroup.Key.PageMenuId;
+
+                                    <div class="ml-3 mb-2">
+
+                                        <div class="text-dark mb-1"
+                                             data-toggle="collapse"
+                                             data-target="#@pageCollapseId"
+                                             aria-expanded="true">
+
+                                            <i class="fas fa-angle-right mr-1"></i>
+                                            @pageGroup.Key.PageMenuName
+
+                                        </div>
+
+                                        <div id="@pageCollapseId" class="collapse show">
+
+                                            @foreach (var item in pageGroup.OrderByDescending(x => x.IsVisibleInSidebar).ThenBy(x => x.MenuId))
+                                            {
+                                                string checkboxId = "role_permission_" + item.MenuId;
+
+                                                <div class="ml-4 mb-1">
+
+                                                    <div class="custom-control custom-checkbox">
+
+                                                        <input type="checkbox"
+                                                               class="custom-control-input permission-checkbox"
+                                                               id="@checkboxId"
+                                                               name="checkedMenuIds"
+                                                               value="@item.MenuId"
+                                                               @(item.IsChecked ? "checked" : "") />
+
+                                                        <label class="custom-control-label font-weight-normal" for="@checkboxId">
+
+                                                            @item.MenuName
+
+                                                            @if (item.IsVisibleInSidebar)
+                                                            {
+                                                                <span class="badge badge-info ml-1">Page</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge badge-secondary ml-1">Action</span>
+                                                            }
+
+                                                        </label>
+
+                                                    </div>
+
+                                                </div>
+                                            }
+
+                                        </div>
+
+                                    </div>
+                                }
+
+                            </div>
+
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3">
+                        No permissions found.
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="modal-footer bg-white">
+
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+            Back
+        </button>
+
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-save mr-1"></i>
+            Save
+        </button>
+
+    </div>
+
+</form>

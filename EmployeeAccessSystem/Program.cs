@@ -1,24 +1,36 @@
-﻿using EmployeeAccessSystem.Repositories;
+﻿using EmployeeAccessSystem.Filters;
+using EmployeeAccessSystem.Repositories;
 using EmployeeAccessSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using QuestPDF.Infrastructure;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// Antiforgery token validation globally for POST, PUT, DELETE
-builder.Services.AddControllersWithViews(ConfigureMvcOptions);
+// Filter
+builder.Services.AddScoped<PermissionFilter>();
 
+builder.Services.AddControllersWithViews(options =>
+{
+    // Global permission filter
+    options.Filters.AddService<PermissionFilter>();
+
+    // Global antiforgery token for POST forms
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
+
+// Database connection
 builder.Services.AddSingleton<ICoreDbConnection, CoreDbConnection>();
 
+// Repositories
 builder.Services.AddScoped<ICategoryRepositories, CategoryRepositories>();
 builder.Services.AddScoped<ISubCategoryRepositories, SubCategoryRepositories>();
 builder.Services.AddScoped<IAccountRepositories, AccountRepositories>();
@@ -33,6 +45,7 @@ builder.Services.AddScoped<IAccessControlRepository, AccessControlRepository>();
 builder.Services.AddScoped<IProductEntryRepository, ProductEntryRepository>();
 builder.Services.AddScoped<IDropdownRepository, DropdownRepository>();
 
+// Services
 builder.Services.AddScoped<IProductConfigurationService, ProductConfigurationService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
@@ -47,15 +60,18 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ISubCategoryService, SubCategoryService>();
 
+// Cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(ConfigureCookieOptions);
 
 builder.Services.AddAuthorization();
 
+// QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
+// Error handling
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -70,6 +86,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}"
@@ -77,11 +94,7 @@ app.MapControllerRoute(
 
 app.Run();
 
-static void ConfigureMvcOptions(MvcOptions options)
-{
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
-}
-
+// Common authentication paths
 static void ConfigureCookieOptions(CookieAuthenticationOptions options)
 {
     options.LoginPath = "/Account/Login";

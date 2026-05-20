@@ -1,0 +1,181 @@
+﻿@model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
+
+@{
+    ViewData["Title"] = "Role Permission";
+
+    int roleId = ViewBag.RoleId;
+    string roleName = ViewBag.RoleName;
+}
+
+<section class="content pt-2 pb-0">
+
+    <div class="container-fluid px-0">
+
+        <div class="row mb-2 mx-0 align-items-center">
+
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Role Permission</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0">
+
+                <a href="/AccessControl/Roles" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Back
+                </a>
+
+            </div>
+
+        </div>
+
+        <form asp-action="SaveRoleAccess" asp-controller="AccessControl" method="post" id="rolePermissionForm">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="roleId" value="@roleId" />
+
+            <div class="card card-outline card-primary shadow-none mb-2">
+
+                <div class="card-header bg-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user-shield mr-1"></i>
+                        Role Detail
+                    </h3>
+                </div>
+
+                <div class="card-body py-2">
+
+                    <strong>Role:</strong> @roleName
+
+                </div>
+
+            </div>
+
+            <div class="card card-outline card-primary shadow-none mb-0">
+
+                <div class="card-header bg-white">
+
+                    <div class="row align-items-center">
+
+                        <div class="col-md-6">
+                            <h3 class="card-title mb-0">
+                                <i class="fas fa-key mr-1"></i>
+                                Permissions
+                            </h3>
+                        </div>
+
+                        <div class="col-md-6 text-right">
+
+                            <div class="custom-control custom-checkbox d-inline-block">
+                                <input type="checkbox" class="custom-control-input" id="selectAllPermission" />
+                                <label class="custom-control-label" for="selectAllPermission">
+                                    Select All
+                                </label>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var mainGroup in Model.GroupBy(x => new { x.MainMenuId, x.MainMenuName }).OrderBy(x => x.Key.MainMenuId))
+                        {
+                            <div class="border-bottom pb-2 mb-3">
+
+                                <h6 class="font-weight-bold text-primary mb-2">
+                                    <i class="fas fa-folder-open mr-1"></i>
+                                    @mainGroup.Key.MainMenuName
+                                </h6>
+
+                                @foreach (var pageGroup in mainGroup.GroupBy(x => new { x.PageMenuId, x.PageMenuName }).OrderBy(x => x.Key.PageMenuId))
+                                {
+                                    <div class="ml-3 mb-2">
+
+                                        <div class="font-weight-bold mb-1">
+                                            <i class="fas fa-angle-right mr-1"></i>
+                                            @pageGroup.Key.PageMenuName
+                                        </div>
+
+                                        <div class="row ml-2">
+
+                                            @foreach (var item in pageGroup.OrderByDescending(x => x.IsVisibleInSidebar).ThenBy(x => x.MenuId))
+                                            {
+                                                string checkboxId = "permission_" + item.MenuId;
+
+                                                <div class="col-md-4 mb-1">
+
+                                                    <div class="custom-control custom-checkbox">
+
+                                                        <input type="checkbox"
+                                                               class="custom-control-input permission-checkbox"
+                                                               id="@checkboxId"
+                                                               name="checkedMenuIds"
+                                                               value="@item.MenuId"
+                                                               @(item.IsChecked ? "checked" : "") />
+
+                                                        <label class="custom-control-label" for="@checkboxId">
+
+                                                            @item.MenuName
+
+                                                            @if (item.IsVisibleInSidebar)
+                                                            {
+                                                                <span class="badge badge-info ml-1">Page</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge badge-secondary ml-1">Action</span>
+                                                            }
+
+                                                        </label>
+
+                                                    </div>
+
+                                                </div>
+                                            }
+
+                                        </div>
+
+                                    </div>
+                                }
+
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-3">
+                            No permissions found.
+                        </div>
+                    }
+
+                </div>
+
+                <div class="card-footer bg-white text-right">
+
+                    <a href="/AccessControl/Roles" class="btn btn-secondary btn-sm">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-save mr-1"></i>
+                        Save Permission
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</section>
+
+@section Scripts {
+    <script src="~/js/AccessControl/permission.js"></script>
+}

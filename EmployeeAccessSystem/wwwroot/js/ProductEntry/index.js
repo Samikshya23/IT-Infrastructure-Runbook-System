@@ -1,10 +1,14 @@
 ﻿$(document).ready(function () {
+
     showProductEntryToasts();
+
     initializeProductEntryPagination();
+
 });
 
 // Show success/error messages
 function showProductEntryToasts() {
+
     toastr.options = {
         closeButton: true,
         progressBar: true,
@@ -26,6 +30,7 @@ function showProductEntryToasts() {
 
 // Initialize pagination and search
 function initializeProductEntryPagination() {
+
     if ($('#productEntryTableBody tr.group-row').length === 0) {
         return;
     }
@@ -34,27 +39,32 @@ function initializeProductEntryPagination() {
     var currentPage = 1;
 
     function getFilteredRows() {
+
         var searchText = $('#customSearch').val().toLowerCase().trim();
         var filteredRows = [];
 
         $('#productEntryTableBody tr.group-row').each(function () {
+
             var rowSearchText = ($(this).attr('data-search') || '').toLowerCase();
 
             if (searchText === '' || rowSearchText.indexOf(searchText) > -1) {
                 filteredRows.push(this);
             }
+
         });
 
         return filteredRows;
     }
 
     function updateSerialNumbers(filteredRows) {
+
         for (var i = 0; i < filteredRows.length; i++) {
             $(filteredRows[i]).find('.group-sn-wrap').text(i + 1);
         }
     }
 
     function renderPagination() {
+
         var filteredRows = getFilteredRows();
         var totalRows = filteredRows.length;
         var totalPages = Math.ceil(totalRows / rowsPerPage);
@@ -99,6 +109,7 @@ function initializeProductEntryPagination() {
         }
 
         for (var page = 1; page <= totalPages; page++) {
+
             if (page === currentPage) {
                 paginationHtml += '<li class="page-item active"><span class="page-link">' + page + '</span></li>';
             }
@@ -118,20 +129,31 @@ function initializeProductEntryPagination() {
     }
 
     $('#customSearch').on('keyup', function () {
+
         currentPage = 1;
+
         renderPagination();
+
     });
 
     $('#entriesPerPage').on('change', function () {
+
         rowsPerPage = parseInt($(this).val());
+
         currentPage = 1;
+
         renderPagination();
+
     });
 
     $(document).on('click', '.pagination-link', function (event) {
+
         event.preventDefault();
+
         currentPage = parseInt($(this).data('page'));
+
         renderPagination();
+
     });
 
     renderPagination();

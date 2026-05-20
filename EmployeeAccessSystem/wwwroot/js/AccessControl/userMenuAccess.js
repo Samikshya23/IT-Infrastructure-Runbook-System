@@ -1,5 +1,6 @@
 ﻿$(document).ready(function () {
 
+    // User permission table
     var table = $("#userMenuAccessTable").DataTable({
         pageLength: 10,
         lengthChange: false,
@@ -19,79 +20,112 @@
         ]
     });
 
+    // Search
     $("#accessCustomSearch").on("keyup", function () {
         table.search(this.value).draw();
     });
 
+    // Page length
     $("#accessCustomLength").on("change", function () {
         table.page.len($(this).val()).draw();
     });
 
-    $(document).on("click", ".btnMenuAccess", function () {
+    // Open user permission modal
+    $(document).on("click", ".btnUserPermission", function () {
+
         var accountId = $(this).data("account-id");
 
         $.ajax({
-            url: "/AccessControl/AccessModal",
+            url: "/AccessControl/UserPermissionModal",
             type: "GET",
-            data: {
-                accountId: accountId
-            },
+            data: { accountId: accountId },
             success: function (response) {
-                $("#accessModalContent").html(response);
-                $("#accessModal").modal("show");
-                updateSelectAllState();
+
+                if (typeof response === "string" && response.indexOf("error|") === 0) {
+                    toastr.error(response.replace("error|", ""));
+                    return;
+                }
+
+                $("#userPermissionModalContent").html(response);
+                $("#userPermissionModal").modal("show");
+
+                updateSelectAllPermission();
             },
-            error: function () {
-                alert("Unable to load menu access.");
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+                    toastr.error("Please login first.");
+                    return;
+                }
+
+                if (xhr.status === 403) {
+                    toastr.error("Access denied. You do not have permission.");
+                    return;
+                }
+
+                toastr.error("Unable to load user permission.");
             }
         });
+
     });
 
-    $(document).on("click", ".btnRemoveAccess", function () {
+    // Save user permission from modal
+    $(document).on("submit", "#userPermissionForm", function (e) {
+
+        e.preventDefault();
+
+        var form = $(this);
+
+        $.ajax({
+            url: form.attr("action"),
+            type: "POST",
+            data: form.serialize(),
+            success: function (response) {
+
+                if (response != null && response.success === true) {
+                    $("#userPermissionModal").modal("hide");
+                    $("#userPermissionModalContent").html("");
+
+                    toastr.success(response.message);
+                    return;
+                }
+
+                if (response != null && response.success === false) {
+                    toastr.error(response.message);
+                    return;
+                }
+
+                toastr.success("Permission saved successfully.");
+                $("#userPermissionModal").modal("hide");
+            },
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+                    toastr.error("Please login first.");
+                    return;
+                }
+
+                if (xhr.status === 403) {
+                    toastr.error("Access denied. You do not have permission.");
+                    return;
+                }
+
+                toastr.error("Unable to save permission.");
+            }
+        });
+
+    });
+
+    // Clear user permission modal
+    $(document).on("click", ".btnClearUserAccess", function () {
+
         var accountId = $(this).data("account-id");
         var userName = $(this).data("user-name");
 
-        $("#removeAccountId").val(accountId);
-        $("#removeUserName").text(userName);
+        $("#clearAccountId").val(accountId);
+        $("#clearUserName").text(userName);
+        $("#clearUserAccessModal").modal("show");
 
-        $("#removeAccessModal").modal("show");
     });
-
-    $(document).on("change", "#selectAllMenus", function () {
-        var isChecked = $(this).is(":checked");
-
-        $(".menu-check").prop("checked", isChecked);
-
-        updateSelectAllState();
-    });
-
-    $(document).on("change", ".parent-menu", function () {
-        var parentId = $(this).data("parent");
-        var isChecked = $(this).is(":checked");
-
-        $(".child-of-" + parentId).prop("checked", isChecked);
-
-        updateSelectAllState();
-    });
-
-    $(document).on("change", ".child-menu", function () {
-        var parentId = $(this).data("parent");
-        var anyChildChecked = $(".child-of-" + parentId + ":checked").length > 0;
-
-        $("#menu_" + parentId).prop("checked", anyChildChecked);
-
-        updateSelectAllState();
-    });
-
-    function updateSelectAllState() {
-        var totalMenus = $(".menu-check").length;
-        var checkedMenus = $(".menu-check:checked").length;
-
-        if (totalMenus > 0 && totalMenus === checkedMenus) {
-            $("#selectAllMenus").prop("checked", true);
-        } else {
-            $("#selectAllMenus").prop("checked", false);
-        }
-    }
 
 });

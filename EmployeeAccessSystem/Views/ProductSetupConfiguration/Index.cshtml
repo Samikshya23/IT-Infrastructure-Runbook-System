@@ -20,6 +20,7 @@
         <input type="hidden" id="tempErrorMessage" value="@TempData["Error"]" />
         <input type="hidden" id="selectedProductId" value="@selectedProductId" />
 
+        <!-- Page header -->
         <div class="row mb-2 mx-0 align-items-center">
 
             <div class="col-sm-6 px-0">
@@ -45,6 +46,7 @@
 
         </div>
 
+        <!-- Main card -->
         <div class="card card-outline card-primary mb-0 shadow-none">
 
             <div class="card-header bg-white py-2 px-2">
@@ -99,6 +101,7 @@
 
 </section>
 
+<!-- Setup configuration modal -->
 <div class="modal fade"
      id="setupConfigurationModal"
      tabindex="-1"
@@ -109,8 +112,10 @@
     <div class="modal-dialog modal-xl"
          role="document">
 
-        <div class="modal-content"
-             id="setupConfigurationModalContent"></div>
+        <!-- Empty by default. Do not keep Loading here. -->
+        <div class="modal-content rounded-0"
+             id="setupConfigurationModalContent">
+        </div>
 
     </div>
 

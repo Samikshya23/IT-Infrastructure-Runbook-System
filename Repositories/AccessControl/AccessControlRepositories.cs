@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using Dapper;
@@ -17,164 +18,424 @@ namespace EmployeeAccessSystem.Repositories
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        private SqlConnection GetConnection()
+        private IDbConnection CreateConnection()
         {
             return new SqlConnection(_connectionString);
         }
 
+        // Dashboard
         public async Task<AccessControlDashboardModel> GetDashboardCountsAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETDASHBOARDCOUNTS");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "DASHBOARD");
 
-            return await conn.QueryFirstOrDefaultAsync<AccessControlDashboardModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryFirstOrDefaultAsync<AccessControlDashboardModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading dashboard counts.", ex);
+            }
         }
 
+        // Users
         public async Task<IEnumerable<AccessControlUserModel>> GetUsersAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETUSERS");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETUSERS");
 
-            return await conn.QueryAsync<AccessControlUserModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryAsync<AccessControlUserModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading users.", ex);
+            }
         }
 
         public async Task<AccessControlUserModel> GetUserDetailAsync(int accountId)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETUSERDETAIL");
-            parameters.Add("AccountId", accountId);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETUSERDETAIL");
+                parameters.Add("AccountId", accountId);
 
-            return await conn.QueryFirstOrDefaultAsync<AccessControlUserModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryFirstOrDefaultAsync<AccessControlUserModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading user detail.", ex);
+            }
         }
 
+        public async Task<int> UpdateUserAsync(AccessControlUserModel model, int modifiedBy)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "UPDATEUSER");
+                parameters.Add("AccountId", model.AccountId);
+                parameters.Add("FullName", model.FullName);
+                parameters.Add("Email", model.Email);
+                parameters.Add("RoleId", model.RoleId);
+                parameters.Add("IsActive", model.IsActive);
+                parameters.Add("ModifiedBy", modifiedBy);
+
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while updating user.", ex);
+            }
+        }
+
+        public async Task<int> DeleteUserAsync(int accountId, int deletedBy)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "DELETEUSER");
+                parameters.Add("AccountId", accountId);
+                parameters.Add("DeletedBy", deletedBy);
+
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while deleting user.", ex);
+            }
+        }
+
+        // Roles
         public async Task<IEnumerable<AccessControlRoleModel>> GetRolesAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETROLES");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETROLES");
 
-            return await conn.QueryAsync<AccessControlRoleModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
-        }
-
-        public async Task<int> UpdateUserAsync(AccessControlUserModel model)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "UPDATEUSER");
-            parameters.Add("AccountId", model.AccountId);
-            parameters.Add("FullName", model.FullName);
-            parameters.Add("Email", model.Email);
-            parameters.Add("RoleId", model.RoleId);
-
-            return await conn.ExecuteScalarAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
-        }
-
-        public async Task<IEnumerable<AccessControlMenuModel>> GetMenusAsync()
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETALLMENUS");
-
-            return await conn.QueryAsync<AccessControlMenuModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
-        }
-
-        public async Task<IEnumerable<int>> GetUserMenuIdsAsync(int accountId)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETUSERMENUS");
-            parameters.Add("AccountId", accountId);
-
-            return await conn.QueryAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
-        }
-
-        public async Task<int> SaveAccessAsync(int accountId, string menuIds)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "SAVEACCESS");
-            parameters.Add("AccountId", accountId);
-            parameters.Add("MenuIds", menuIds);
-
-            return await conn.ExecuteScalarAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
-        }
-
-        public async Task<int> RemoveAccessAsync(int accountId)
-        {
-            using var conn = GetConnection();
-
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "REMOVEACCESS");
-            parameters.Add("AccountId", accountId);
-
-            return await conn.ExecuteScalarAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryAsync<AccessControlRoleModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading roles.", ex);
+            }
         }
 
         public async Task<IEnumerable<AccessControlRoleModel>> GetRoleListAsync()
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETROLELIST");
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETROLELIST");
 
-            return await conn.QueryAsync<AccessControlRoleModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryAsync<AccessControlRoleModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading role list.", ex);
+            }
         }
 
         public async Task<AccessControlRoleModel> GetRoleByIdAsync(int roleId)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "GETROLEBYID");
-            parameters.Add("RoleId", roleId);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETROLEBYID");
+                parameters.Add("RoleId", roleId);
 
-            return await conn.QueryFirstOrDefaultAsync<AccessControlRoleModel>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryFirstOrDefaultAsync<AccessControlRoleModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading role detail.", ex);
+            }
         }
 
-        public async Task<int> SaveRoleAsync(string roleName)
+        public async Task<int> SaveRoleAsync(string roleName, int createdBy)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "SAVEROLE");
-            parameters.Add("RoleName", roleName);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "SAVEROLE");
+                parameters.Add("RoleName", roleName);
+                parameters.Add("CreatedBy", createdBy);
 
-            return await conn.ExecuteScalarAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while saving role.", ex);
+            }
         }
 
-        public async Task<int> UpdateRoleAsync(AccessControlRoleModel model)
+        public async Task<int> UpdateRoleAsync(AccessControlRoleModel model, int modifiedBy)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "UPDATEROLE");
-            parameters.Add("RoleId", model.RoleId);
-            parameters.Add("RoleName", model.RoleName);
-            parameters.Add("IsActive", model.IsActive);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "UPDATEROLE");
+                parameters.Add("RoleId", model.RoleId);
+                parameters.Add("RoleName", model.RoleName);
+                parameters.Add("IsActive", model.IsActive);
+                parameters.Add("ModifiedBy", modifiedBy);
 
-            return await conn.ExecuteScalarAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while updating role.", ex);
+            }
         }
 
-        public async Task<int> DeleteRoleAsync(int roleId)
+        public async Task<int> DeleteRoleAsync(int roleId, int deletedBy)
         {
-            using var conn = GetConnection();
+            try
+            {
+                using var conn = CreateConnection();
 
-            DynamicParameters parameters = new DynamicParameters();
-            parameters.Add("Flag", "DELETEROLE");
-            parameters.Add("RoleId", roleId);
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "DELETEROLE");
+                parameters.Add("RoleId", roleId);
+                parameters.Add("DeletedBy", deletedBy);
 
-            return await conn.ExecuteScalarAsync<int>("dbo.sp_AccessControl_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while deleting role.", ex);
+            }
+        }
+
+        // Permission items
+        public async Task<IEnumerable<AccessControlRoleActionModel>> GetPermissionItemsAsync()
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETPERMISSIONITEMS");
+
+                return await conn.QueryAsync<AccessControlRoleActionModel>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading permission items.", ex);
+            }
+        }
+
+        // User permission
+        public async Task<IEnumerable<int>> GetUserSelectedAsync(int accountId)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETUSERSELECTED");
+                parameters.Add("AccountId", accountId);
+
+                return await conn.QueryAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading selected user permission.", ex);
+            }
+        }
+
+        public async Task<int> SaveUserAccessAsync(int accountId, string checkedMenuIds, string uncheckedMenuIds, int createdBy)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "SAVEUSERACCESS");
+                parameters.Add("AccountId", accountId);
+                parameters.Add("CheckedMenuIds", checkedMenuIds);
+                parameters.Add("UncheckedMenuIds", uncheckedMenuIds);
+                parameters.Add("CreatedBy", createdBy);
+
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while saving user permission.", ex);
+            }
+        }
+
+        public async Task<int> ClearUserAccessAsync(int accountId, int deletedBy)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "CLEARUSERACCESS");
+                parameters.Add("AccountId", accountId);
+                parameters.Add("DeletedBy", deletedBy);
+
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while clearing user permission.", ex);
+            }
+        }
+
+        // Role permission
+        public async Task<IEnumerable<int>> GetRoleSelectedAsync(int roleId)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETROLESELECTED");
+                parameters.Add("RoleId", roleId);
+
+                return await conn.QueryAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading selected role permission.", ex);
+            }
+        }
+
+        public async Task<int> SaveRoleAccessAsync(int roleId, string checkedMenuIds, int createdBy)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "SAVEROLEACCESS");
+                parameters.Add("RoleId", roleId);
+                parameters.Add("CheckedMenuIds", checkedMenuIds);
+                parameters.Add("CreatedBy", createdBy);
+
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while saving role permission.", ex);
+            }
+        }
+
+        public async Task<int> ClearRoleAccessAsync(int roleId, int deletedBy)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "CLEARROLEACCESS");
+                parameters.Add("RoleId", roleId);
+                parameters.Add("DeletedBy", deletedBy);
+
+                return await conn.ExecuteScalarAsync<int>(
+                    "dbo.sp_AccessControl_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while clearing role permission.", ex);
+            }
         }
     }
 }

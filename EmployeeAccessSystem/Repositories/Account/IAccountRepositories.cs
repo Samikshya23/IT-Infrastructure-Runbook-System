@@ -1,16 +1,19 @@
-﻿using System.Threading.Tasks;
-using EmployeeAccessSystem.Models;
+﻿using EmployeeAccessSystem.Models;
 
 namespace EmployeeAccessSystem.Repositories
 {
     public interface IAccountRepositories
     {
-        Task<int> CreateAsync(Account account);
+        Task<DbResult> RegisterAsync(RegisterModel model, byte[] passwordHash, byte[] passwordSalt, int createdBy);
+
         Task<Account?> GetByEmailAsync(string email);
-        Task<Account?> GetByIdAsync(int id);
-        Task<int> UpdateAsync(Account account);
-        Task<int> DeleteAsync(int accountId);
-        Task<int> AssignRoleAsync(int accountId, int roleId);
-        Task<int> UpdateRoleAsync(int accountId, int roleId);
+
+        Task<Account?> GetByIdAsync(int accountId);
+
+        Task<List<Account>> GetAllAsync();
+
+        Task<DbResult> UpdateAsync(int accountId, RegisterModel model, int modifiedBy);
+
+        Task<DbResult> DeleteAsync(int accountId, int deletedBy);
     }
 }

@@ -1,36 +1,44 @@
 ﻿@model EmployeeAccessSystem.Models.AccessControlRoleModel
 
-<div class="modal-header">
-    <h5 class="modal-title">Add Role</h5>
+<div class="modal-header bg-white">
 
-    <button type="button" class="close" data-dismiss="modal">
-        <span>&times;</span>
-    </button>
+    <h5 class="modal-title">
+        <i class="fas fa-plus mr-1"></i>
+        Add Role
+    </h5>
+
 </div>
 
-<form asp-action="CreateRole" method="post">
+<form asp-action="CreateRole" asp-controller="AccessControl" method="post">
+
     @Html.AntiForgeryToken()
 
     <div class="modal-body">
+
         <div class="form-group mb-0">
+
             <label>Role Name</label>
 
             <input asp-for="RoleName"
                    class="form-control form-control-sm"
-                   placeholder="Enter role name" />
+                   placeholder="Enter role name"
+                   required />
+
         </div>
+
     </div>
 
     <div class="modal-footer">
-        <button type="button"
-                class="btn btn-secondary btn-sm"
-                data-dismiss="modal">
-            Cancel
+
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+            Back
         </button>
 
-        <button type="submit"
-                class="btn btn-primary btn-sm">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-save mr-1"></i>
             Save
         </button>
+
     </div>
+
 </form>

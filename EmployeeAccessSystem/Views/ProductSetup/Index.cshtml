@@ -15,7 +15,7 @@
             <div class="col-sm-6 px-0">
 
                 <h3 class="mb-0">
-                 Product Setup
+                    Product Setup
                 </h3>
 
             </div>
@@ -225,17 +225,9 @@
 
             </div>
 
-            <!-- Modal body -->
+            <!-- Modal body must be empty by default -->
             <div class="modal-body"
                  id="mainActionModalBody">
-
-                <div class="text-center py-3">
-
-                    <i class="fas fa-spinner fa-spin mr-2"></i>
-                    Loading...
-
-                </div>
-
             </div>
 
         </div>
@@ -324,6 +316,6 @@
 @section Scripts {
 
     <!-- Product setup page JavaScript -->
-    <script src="~/js/productsetup/index.js"></script>
+    <script src="~/js/productsetup/index.js" asp-append-version="true"></script>
 
 }

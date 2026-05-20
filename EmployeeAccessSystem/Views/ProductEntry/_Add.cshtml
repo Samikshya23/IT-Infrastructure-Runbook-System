@@ -96,12 +96,71 @@
         }
     }
 
-    function openAddEntryModal() {
+    function cleanProductEntryModal() {
+
+        $('#productEntryModal').modal('hide');
+        $('#closeConfirmModal').modal('hide');
+
         $('#EntryGroupId').val('');
         $('#dynamicEntryArea').html('');
-        $('#productEntryModal').modal('show');
 
-        loadTodayEntryValues();
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+        $('body').css('padding-right', '');
+    }
+
+    function showEntryAccessError(message) {
+        if (message == null || message === '') {
+            message = 'Access denied. You do not have permission.';
+        }
+
+        showEntryToast(message);
+    }
+
+    function getAjaxErrorMessage(xhr) {
+        if (xhr != null && xhr.responseJSON != null && xhr.responseJSON.message != null) {
+            return xhr.responseJSON.message;
+        }
+
+        return 'Access denied. You do not have permission.';
+    }
+
+    function openAddEntryModal() {
+
+        $('#EntryGroupId').val('');
+        $('#dynamicEntryArea').html('');
+
+        $.ajax({
+            url: '/ProductEntry/Add',
+            type: 'GET',
+            headers: {
+                'RequestVerificationToken': getAntiForgeryToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function () {
+
+                $('#productEntryModal').modal('show');
+
+                loadTodayEntryValues();
+            },
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+                    showEntryToast('Please login first.');
+                    cleanProductEntryModal();
+                    return;
+                }
+
+                if (xhr.status === 403) {
+                    showEntryToast('Access denied. You do not have permission.');
+                    cleanProductEntryModal();
+                    return;
+                }
+
+                showEntryToast('An error occurred while loading the form.');
+                cleanProductEntryModal();
+            }
+        });
     }
 
     function loadTodayEntryValues() {
@@ -116,35 +175,92 @@
             url: '/ProductEntry/GetTodayByProduct',
             type: 'GET',
             headers: {
-                'RequestVerificationToken': getAntiForgeryToken()
+                'RequestVerificationToken': getAntiForgeryToken(),
+                'X-Requested-With': 'XMLHttpRequest'
             },
             data: {
                 productId: productId
             },
             success: function (entries) {
+                if (entries != null && entries.success === false) {
+                    showEntryAccessError(entries.message);
+                    return;
+                }
+
                 loadProductEntryForm(entries);
             },
-            error: function () {
+            error: function (xhr) {
+                if (xhr.status === 401 || xhr.status === 403) {
+                    showEntryAccessError(getAjaxErrorMessage(xhr));
+                    return;
+                }
+
                 loadProductEntryForm(null);
             }
         });
     }
 
     function openEditEntryModal(entryGroupId) {
+
         $('#EntryGroupId').val(entryGroupId);
+        $('#dynamicEntryArea').html('');
+
+        $.ajax({
+            url: '/ProductEntry/Edit',
+            type: 'GET',
+            headers: {
+                'RequestVerificationToken': getAntiForgeryToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            data: {
+                entryGroupId: entryGroupId
+            },
+            success: function () {
+
+                loadEditEntryDetails(entryGroupId);
+            },
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+                    showEntryToast('Please login first.');
+                    cleanProductEntryModal();
+                    return;
+                }
+
+                if (xhr.status === 403) {
+                    showEntryToast('Access denied. You do not have permission.');
+                    cleanProductEntryModal();
+                    return;
+                }
+
+                showEntryToast('Failed to load entry.');
+                cleanProductEntryModal();
+            }
+        });
+    }
+
+    function loadEditEntryDetails(entryGroupId) {
 
         $.ajax({
             url: '/ProductEntry/GetDetails',
             type: 'GET',
             headers: {
-                'RequestVerificationToken': getAntiForgeryToken()
+                'RequestVerificationToken': getAntiForgeryToken(),
+                'X-Requested-With': 'XMLHttpRequest'
             },
             data: {
                 entryGroupId: entryGroupId
             },
             success: function (entries) {
+                if (entries != null && entries.success === false) {
+                    showEntryToast(entries.message);
+                    cleanProductEntryModal();
+                    return;
+                }
+
                 if (entries == null || entries.length === 0) {
                     showEntryToast('Entry not found.');
+                    cleanProductEntryModal();
                     return;
                 }
 
@@ -160,8 +276,15 @@
 
                 loadProductEntryForm(entries);
             },
-            error: function () {
+            error: function (xhr) {
+                if (xhr.status === 401 || xhr.status === 403) {
+                    showEntryToast('Access denied. You do not have permission.');
+                    cleanProductEntryModal();
+                    return;
+                }
+
                 showEntryToast('Failed to load entry.');
+                cleanProductEntryModal();
             }
         });
     }
@@ -178,12 +301,18 @@
             url: '/ProductEntry/GetSetup',
             type: 'GET',
             headers: {
-                'RequestVerificationToken': getAntiForgeryToken()
+                'RequestVerificationToken': getAntiForgeryToken(),
+                'X-Requested-With': 'XMLHttpRequest'
             },
             data: {
                 productId: productId
             },
             success: function (setupJson) {
+                if (setupJson != null && setupJson.success === false) {
+                    showEntryAccessError(setupJson.message);
+                    return;
+                }
+
                 if (setupJson == null || setupJson === '') {
                     $('#dynamicEntryArea').html('<div class="alert alert-warning m-2">No setup configuration found.</div>');
                     return;
@@ -192,10 +321,15 @@
                 var setupObject = null;
 
                 try {
-                    setupObject = JSON.parse(setupJson);
+                    if (typeof setupJson === 'string') {
+                        setupObject = JSON.parse(setupJson);
+                    }
+                    else {
+                        setupObject = setupJson;
+                    }
                 }
                 catch (e) {
-                    $('#dynamicEntryArea').html('<div class="alert alert-danger m-2">Invalid setup configuration JSON.</div>');
+                    $('#dynamicEntryArea').html('<div class="alert alert-danger m-2">Unable to load setup configuration. Please contact administrator.</div>');
                     return;
                 }
 
@@ -217,7 +351,12 @@
 
                 renderEntryForm(existingEntries);
             },
-            error: function () {
+            error: function (xhr) {
+                if (xhr.status === 401 || xhr.status === 403) {
+                    showEntryAccessError(getAjaxErrorMessage(xhr));
+                    return;
+                }
+
                 $('#dynamicEntryArea').html('<div class="alert alert-danger m-2">Failed to load setup.</div>');
             }
         });

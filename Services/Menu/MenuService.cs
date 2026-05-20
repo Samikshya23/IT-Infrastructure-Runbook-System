@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
@@ -15,42 +14,55 @@ namespace EmployeeAccessSystem.Services
             _menuRepository = menuRepository;
         }
 
+        // Load sidebar menu according to logged-in user permission
         public async Task<List<MenuModel>> GetSidebarMenusAsync(int accountId)
         {
-            IEnumerable<MenuModel> menus =
-                await _menuRepository.GetMenusByAccountIdAsync(accountId);
-
-            List<MenuModel> menuList =
-                menus.ToList();
-
-            List<MenuModel> parentMenus =
-                new List<MenuModel>();
-
-            foreach (MenuModel menu in menuList)
+            try
             {
-                if (menu.ParentMenuId == null)
+                if (accountId <= 0)
                 {
-                    parentMenus.Add(menu);
+                    return new List<MenuModel>();
                 }
-            }
 
-            foreach (MenuModel parent in parentMenus)
-            {
-                List<MenuModel> childMenus =
-                    new List<MenuModel>();
+                IEnumerable<MenuModel> result = await _menuRepository.GetMenusByAccountIdAsync(accountId);
+                List<MenuModel> menuList = new List<MenuModel>();
+                List<MenuModel> parentMenus = new List<MenuModel>();
 
-                foreach (MenuModel child in menuList)
+                if (result != null)
                 {
-                    if (child.ParentMenuId == parent.MenuId)
+                    foreach (MenuModel menu in result)
                     {
-                        childMenus.Add(child);
+                        menuList.Add(menu);
                     }
                 }
 
-                parent.Children = childMenus;
-            }
+                foreach (MenuModel menu in menuList)
+                {
+                    if (menu.ParentMenuId == null)
+                    {
+                        parentMenus.Add(menu);
+                    }
+                }
 
-            return parentMenus;
+                foreach (MenuModel parent in parentMenus)
+                {
+                    parent.Children = new List<MenuModel>();
+
+                    foreach (MenuModel child in menuList)
+                    {
+                        if (child.ParentMenuId == parent.MenuId)
+                        {
+                            parent.Children.Add(child);
+                        }
+                    }
+                }
+
+                return parentMenus;
+            }
+            catch
+            {
+                return new List<MenuModel>();
+            }
         }
     }
 }

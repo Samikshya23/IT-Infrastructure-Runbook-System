@@ -1,50 +1,64 @@
 ﻿@model EmployeeAccessSystem.Models.AccessControlRoleModel
 
-<div class="modal-header">
-    <h5 class="modal-title">Edit Role</h5>
+<div class="modal-header bg-white">
 
-    <button type="button" class="close" data-dismiss="modal">
-        <span>&times;</span>
-    </button>
+    <h5 class="modal-title">
+        <i class="fas fa-pen mr-1"></i>
+        Edit Role
+    </h5>
+
 </div>
 
-<form asp-action="EditRole" method="post">
+<form asp-action="EditRole" asp-controller="AccessControl" method="post">
+
     @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="RoleId" />
 
     <div class="modal-body">
 
-        <input type="hidden" asp-for="RoleId" />
-
         <div class="form-group">
+
             <label>Role Name</label>
 
             <input asp-for="RoleName"
-                   class="form-control form-control-sm" />
+                   class="form-control form-control-sm"
+                   required />
+
         </div>
 
-        <div class="custom-control custom-switch">
-            <input type="checkbox"
-                   class="custom-control-input"
-                   asp-for="IsActive" />
+        <div class="form-group mb-0">
 
-            <label class="custom-control-label font-weight-bold"
-                   asp-for="IsActive">
-                Active
-            </label>
+            <label>Status</label>
+
+            <div class="custom-control custom-switch">
+
+                <input asp-for="IsActive"
+                       type="checkbox"
+                       class="custom-control-input"
+                       id="editRoleStatus" />
+
+                <label class="custom-control-label" for="editRoleStatus">
+                    Active
+                </label>
+
+            </div>
+
         </div>
 
     </div>
 
     <div class="modal-footer">
-        <button type="button"
-                class="btn btn-secondary btn-sm"
-                data-dismiss="modal">
+
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
             Back
         </button>
 
-        <button type="submit"
-                class="btn btn-primary btn-sm">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-save mr-1"></i>
             Update
         </button>
+
     </div>
+
 </form>

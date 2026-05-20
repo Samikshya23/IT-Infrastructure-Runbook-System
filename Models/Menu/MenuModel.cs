@@ -12,11 +12,19 @@ namespace EmployeeAccessSystem.Models
 
         public string ActionName { get; set; }
 
+        public string MenuSlug { get; set; }
+
+        public string IconClass { get; set; }
+
+        public string Url { get; set; }
+
         public int? ParentMenuId { get; set; }
 
         public bool IsSubMenu { get; set; }
 
         public bool IsActive { get; set; }
+
+        public bool IsVisibleInSidebar { get; set; }
 
         public int SortBy { get; set; }
 

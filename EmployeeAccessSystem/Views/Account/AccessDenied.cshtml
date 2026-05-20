@@ -1,11 +1,46 @@
 ﻿@{
     ViewData["Title"] = "Access Denied";
+
+    string message = "You do not have permission to access this page.";
+
+    if (TempData["Error"] != null)
+    {
+        message = TempData["Error"].ToString();
+    }
 }
 
-<div class="container mt-5">
-    <div class="alert alert-danger text-center p-4 rounded shadow-sm">
-        <h2>Access Denied</h2>
-        <p>You do not have permission to access this page.</p>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Go Home</a>
+<section class="content pt-3">
+
+    <div class="container-fluid">
+
+        <div class="card card-danger card-outline">
+
+            <div class="card-body">
+
+                <h5 class="text-danger mb-2">
+
+                    <i class="fas fa-ban mr-1"></i>
+                    Access Denied
+
+                </h5>
+
+                <p class="mb-3">
+                    @message
+                </p>
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="btn btn-secondary btn-sm">
+
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Back to Dashboard
+
+                </a>
+
+            </div>
+
+        </div>
+
     </div>
-</div><a href="c:\users\acer\source\repos\employeeaccesssystem\employeeaccesssystem\views\account\accessdenied.cshtml">c:\users\acer\source\repos\employeeaccesssystem\employeeaccesssystem\views\account\accessdenied.cshtml</a>
+
+</section>

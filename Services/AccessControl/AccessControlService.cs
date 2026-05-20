@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
@@ -13,54 +15,60 @@ namespace EmployeeAccessSystem.Services
         {
             _repository = repository;
         }
+
+        // Dashboard
         public async Task<AccessControlDashboardModel> GetDashboardAsync()
         {
-            AccessControlDashboardModel dashboard = await _repository.GetDashboardCountsAsync();
+            AccessControlDashboardModel model = await _repository.GetDashboardCountsAsync();
 
-            if (dashboard == null)
+            if (model == null)
             {
-                dashboard = new AccessControlDashboardModel();
+                model = new AccessControlDashboardModel();
             }
 
-            dashboard.Users = await GetUsersAsync();
-
-            return dashboard;
+            return model;
         }
+
+        // Users
         public async Task<List<AccessControlUserModel>> GetUsersAsync()
         {
-            IEnumerable<AccessControlUserModel> result = await _repository.GetUsersAsync();
+            IEnumerable<AccessControlUserModel> users = await _repository.GetUsersAsync();
 
-            List<AccessControlUserModel> users = new List<AccessControlUserModel>();
-
-            foreach (AccessControlUserModel item in result)
+            if (users == null)
             {
-                users.Add(item);
+                return new List<AccessControlUserModel>();
             }
 
-            return users;
+            return users.ToList();
         }
+
         public async Task<AccessControlUserModel> GetUserDetailAsync(int accountId)
         {
-            return await _repository.GetUserDetailAsync(accountId);
-        }
-        public async Task<List<AccessControlRoleModel>> GetRolesAsync()
-        {
-            IEnumerable<AccessControlRoleModel> result = await _repository.GetRolesAsync();
-
-            List<AccessControlRoleModel> roles = new List<AccessControlRoleModel>();
-
-            foreach (AccessControlRoleModel item in result)
+            if (accountId <= 0)
             {
-                roles.Add(item);
+                return new AccessControlUserModel();
             }
 
-            return roles;
+            AccessControlUserModel model = await _repository.GetUserDetailAsync(accountId);
+
+            if (model == null)
+            {
+                model = new AccessControlUserModel();
+            }
+
+            return model;
         }
-        public async Task<string> UpdateUserAsync(AccessControlUserModel model)
+
+        public async Task<string> UpdateUserAsync(AccessControlUserModel model, int currentUserId)
         {
+            if (model == null)
+            {
+                return "Invalid user information.";
+            }
+
             if (model.AccountId <= 0)
             {
-                return "Invalid user selected.";
+                return "Please select a valid user.";
             }
 
             if (string.IsNullOrWhiteSpace(model.FullName))
@@ -75,156 +83,130 @@ namespace EmployeeAccessSystem.Services
 
             if (model.RoleId <= 0)
             {
-                return "Please select role.";
+                return "Please select a role.";
             }
 
-            await _repository.UpdateUserAsync(model);
+            int result = await _repository.UpdateUserAsync(model, currentUserId);
 
-            return "";
+            if (result > 0)
+            {
+                return "User updated successfully.";
+            }
+
+            return "Unable to update user.";
         }
 
-        public async Task<List<AccessControlMenuModel>> GetMenusByUserAsync(int accountId)
-        {
-            AccessControlUserModel user = await _repository.GetUserDetailAsync(accountId);
-
-            IEnumerable<AccessControlMenuModel> menuResult = await _repository.GetMenusAsync();
-            IEnumerable<int> selectedResult = await _repository.GetUserMenuIdsAsync(accountId);
-
-            List<int> selectedIds = new List<int>();
-
-            foreach (int id in selectedResult)
-            {
-                selectedIds.Add(id);
-            }
-
-            List<AccessControlMenuModel> menuList = new List<AccessControlMenuModel>();
-
-            foreach (AccessControlMenuModel menu in menuResult)
-            {
-                if (user != null && user.RoleName == "Administrator")
-                {
-                    menu.IsChecked = true;
-                }
-                else
-                {
-                    foreach (int selectedId in selectedIds)
-                    {
-                        if (menu.MenuId == selectedId)
-                        {
-                            menu.IsChecked = true;
-                            break;
-                        }
-                    }
-                }
-
-                menuList.Add(menu);
-            }
-
-            List<AccessControlMenuModel> parents = new List<AccessControlMenuModel>();
-
-            foreach (AccessControlMenuModel menu in menuList)
-            {
-                if (menu.ParentMenuId == null)
-                {
-                    parents.Add(menu);
-                }
-            }
-
-            foreach (AccessControlMenuModel parent in parents)
-            {
-                foreach (AccessControlMenuModel child in menuList)
-                {
-                    if (child.ParentMenuId == parent.MenuId)
-                    {
-                        parent.Children.Add(child);
-                    }
-                }
-            }
-
-            return parents;
-        }
-
-        public async Task<string> SaveAccessAsync(int accountId, List<int> menuIds)
+        public async Task<string> DeleteUserAsync(int accountId, int currentUserId)
         {
             if (accountId <= 0)
             {
-                return "Invalid user selected.";
+                return "Please select a valid user.";
             }
 
-            AccessControlUserModel user = await _repository.GetUserDetailAsync(accountId);
-
-            if (user != null && user.RoleName == "Administrator")
+            if (accountId == currentUserId)
             {
-                return "Administrator always has full access. No need to assign menu access.";
+                return "You cannot delete your own account.";
             }
 
-            string ids = "";
+            int result = await _repository.DeleteUserAsync(accountId, currentUserId);
 
-            if (menuIds != null && menuIds.Count > 0)
+            if (result == 1)
             {
-                ids = string.Join(",", menuIds);
+                return "User deleted successfully.";
             }
 
-            await _repository.SaveAccessAsync(accountId, ids);
+            if (result == -1)
+            {
+                return "Administrator user cannot be deleted.";
+            }
 
-            return "";
+            if (result == -2)
+            {
+                return "You cannot delete your own account.";
+            }
+
+            if (result == -3)
+            {
+                return "User not found.";
+            }
+
+            return "Unable to delete user.";
         }
 
-        public async Task<string> RemoveAccessAsync(int accountId)
+        // Roles
+        public async Task<List<AccessControlRoleModel>> GetRolesAsync()
         {
-            if (accountId <= 0)
+            IEnumerable<AccessControlRoleModel> roles = await _repository.GetRolesAsync();
+
+            if (roles == null)
             {
-                return "Invalid user selected.";
+                return new List<AccessControlRoleModel>();
             }
 
-            AccessControlUserModel user = await _repository.GetUserDetailAsync(accountId);
-
-            if (user != null && user.RoleName == "Administrator")
-            {
-                return "Administrator access cannot be removed.";
-            }
-
-            await _repository.RemoveAccessAsync(accountId);
-
-            return "";
+            return roles.ToList();
         }
 
         public async Task<List<AccessControlRoleModel>> GetRoleListAsync()
         {
-            IEnumerable<AccessControlRoleModel> result = await _repository.GetRoleListAsync();
+            IEnumerable<AccessControlRoleModel> roles = await _repository.GetRoleListAsync();
 
-            List<AccessControlRoleModel> roles = new List<AccessControlRoleModel>();
-
-            foreach (AccessControlRoleModel item in result)
+            if (roles == null)
             {
-                roles.Add(item);
+                return new List<AccessControlRoleModel>();
             }
 
-            return roles;
+            return roles.ToList();
         }
 
         public async Task<AccessControlRoleModel> GetRoleByIdAsync(int roleId)
         {
-            return await _repository.GetRoleByIdAsync(roleId);
+            if (roleId <= 0)
+            {
+                return new AccessControlRoleModel();
+            }
+
+            AccessControlRoleModel role = await _repository.GetRoleByIdAsync(roleId);
+
+            if (role == null)
+            {
+                role = new AccessControlRoleModel();
+            }
+
+            return role;
         }
 
-        public async Task<string> SaveRoleAsync(string roleName)
+        public async Task<string> SaveRoleAsync(string roleName, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(roleName))
             {
                 return "Role name is required.";
             }
 
-            await _repository.SaveRoleAsync(roleName);
+            int result = await _repository.SaveRoleAsync(roleName.Trim(), currentUserId);
 
-            return "";
+            if (result == 1)
+            {
+                return "Role saved successfully.";
+            }
+
+            if (result == -1)
+            {
+                return "Role already exists.";
+            }
+
+            return "Unable to save role.";
         }
 
-        public async Task<string> UpdateRoleAsync(AccessControlRoleModel model)
+        public async Task<string> UpdateRoleAsync(AccessControlRoleModel model, int currentUserId)
         {
+            if (model == null)
+            {
+                return "Invalid role information.";
+            }
+
             if (model.RoleId <= 0)
             {
-                return "Invalid role selected.";
+                return "Please select a valid role.";
             }
 
             if (string.IsNullOrWhiteSpace(model.RoleName))
@@ -232,26 +214,193 @@ namespace EmployeeAccessSystem.Services
                 return "Role name is required.";
             }
 
-            await _repository.UpdateRoleAsync(model);
+            int result = await _repository.UpdateRoleAsync(model, currentUserId);
 
-            return "";
-        }
-
-        public async Task<string> DeleteRoleAsync(int roleId)
-        {
-            if (roleId <= 0)
+            if (result == 1)
             {
-                return "Invalid role selected.";
+                return "Role updated successfully.";
             }
-
-            int result = await _repository.DeleteRoleAsync(roleId);
 
             if (result == -1)
             {
-                return "This role is assigned to a user. Please change that user role first.";
+                return "Role already exists.";
             }
 
-            return "";
+            if (result == -2)
+            {
+                return "Administrator role cannot be modified.";
+            }
+
+            return "Unable to update role.";
+        }
+
+        public async Task<string> DeleteRoleAsync(int roleId, int currentUserId)
+        {
+            if (roleId <= 0)
+            {
+                return "Please select a valid role.";
+            }
+
+            int result = await _repository.DeleteRoleAsync(roleId, currentUserId);
+
+            if (result == 1)
+            {
+                return "Role deleted successfully.";
+            }
+
+            if (result == -1)
+            {
+                return "Administrator role cannot be deleted.";
+            }
+
+            if (result == -2)
+            {
+                return "This role is assigned to users and cannot be deleted.";
+            }
+
+            return "Unable to delete role.";
+        }
+
+        // User permission
+        public async Task<List<AccessControlRoleActionModel>> GetUserPermissionItemsAsync(int accountId)
+        {
+            IEnumerable<AccessControlRoleActionModel> items = await _repository.GetPermissionItemsAsync();
+            IEnumerable<int> selectedIds = await _repository.GetUserSelectedAsync(accountId);
+
+            List<AccessControlRoleActionModel> permissionItems = new List<AccessControlRoleActionModel>();
+            List<int> selectedMenuIds = new List<int>();
+
+            if (items != null)
+            {
+                permissionItems = items.ToList();
+            }
+
+            if (selectedIds != null)
+            {
+                selectedMenuIds = selectedIds.ToList();
+            }
+
+            foreach (AccessControlRoleActionModel item in permissionItems)
+            {
+                item.IsChecked = selectedMenuIds.Contains(item.MenuId);
+            }
+
+            return permissionItems;
+        }
+
+        public async Task<string> SaveUserAccessAsync(int accountId, List<int> checkedMenuIds, List<int> uncheckedMenuIds, int currentUserId)
+        {
+            if (accountId <= 0)
+            {
+                return "Please select a valid user.";
+            }
+
+            if (checkedMenuIds == null)
+            {
+                checkedMenuIds = new List<int>();
+            }
+
+            if (uncheckedMenuIds == null)
+            {
+                uncheckedMenuIds = new List<int>();
+            }
+
+            string checkedIds = string.Join(",", checkedMenuIds);
+            string uncheckedIds = string.Join(",", uncheckedMenuIds);
+
+            int result = await _repository.SaveUserAccessAsync(accountId, checkedIds, uncheckedIds, currentUserId);
+
+            if (result >= 0)
+            {
+                return "Permission saved successfully.";
+            }
+
+            return "Unable to save permission.";
+        }
+
+        public async Task<string> ClearUserAccessAsync(int accountId, int currentUserId)
+        {
+            if (accountId <= 0)
+            {
+                return "Please select a valid user.";
+            }
+
+            int result = await _repository.ClearUserAccessAsync(accountId, currentUserId);
+
+            if (result >= 0)
+            {
+                return "User permission cleared successfully.";
+            }
+
+            return "Unable to clear user permission.";
+        }
+
+        // Role permission
+        public async Task<List<AccessControlRoleActionModel>> GetRolePermissionItemsAsync(int roleId)
+        {
+            IEnumerable<AccessControlRoleActionModel> items = await _repository.GetPermissionItemsAsync();
+            IEnumerable<int> selectedIds = await _repository.GetRoleSelectedAsync(roleId);
+
+            List<AccessControlRoleActionModel> permissionItems = new List<AccessControlRoleActionModel>();
+            List<int> selectedMenuIds = new List<int>();
+
+            if (items != null)
+            {
+                permissionItems = items.ToList();
+            }
+
+            if (selectedIds != null)
+            {
+                selectedMenuIds = selectedIds.ToList();
+            }
+
+            foreach (AccessControlRoleActionModel item in permissionItems)
+            {
+                item.IsChecked = selectedMenuIds.Contains(item.MenuId);
+            }
+
+            return permissionItems;
+        }
+
+        public async Task<string> SaveRoleAccessAsync(int roleId, List<int> checkedMenuIds, int currentUserId)
+        {
+            if (roleId <= 0)
+            {
+                return "Please select a valid role.";
+            }
+
+            if (checkedMenuIds == null)
+            {
+                checkedMenuIds = new List<int>();
+            }
+
+            string checkedIds = string.Join(",", checkedMenuIds);
+
+            int result = await _repository.SaveRoleAccessAsync(roleId, checkedIds, currentUserId);
+
+            if (result >= 0)
+            {
+                return "Permission saved successfully.";
+            }
+
+            return "Unable to save permission.";
+        }
+
+        public async Task<string> ClearRoleAccessAsync(int roleId, int currentUserId)
+        {
+            if (roleId <= 0)
+            {
+                return "Please select a valid role.";
+            }
+
+            int result = await _repository.ClearRoleAccessAsync(roleId, currentUserId);
+
+            if (result >= 0)
+            {
+                return "Role permission cleared successfully.";
+            }
+
+            return "Unable to clear role permission.";
         }
     }
 }

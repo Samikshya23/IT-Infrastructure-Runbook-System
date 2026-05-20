@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
 using EmployeeAccessSystem.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace EmployeeAccessSystem.Controllers
 {
@@ -15,16 +16,14 @@ namespace EmployeeAccessSystem.Controllers
         private readonly IDepartmentRepositories _departmentRepo;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(
-            IAccountService accountService,
-            IDepartmentRepositories departmentRepo,
-            ILogger<AccountController> logger)
+        public AccountController(IAccountService accountService, IDepartmentRepositories departmentRepo, ILogger<AccountController> logger)
         {
             _accountService = accountService;
             _departmentRepo = departmentRepo;
             _logger = logger;
         }
 
+        // Internal user registration page
         [HttpGet]
         public async Task<IActionResult> Register()
         {
@@ -36,7 +35,9 @@ namespace EmployeeAccessSystem.Controllers
             return View();
         }
 
+        // Save registered user
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterModel model)
         {
             _logger.LogInformation("Register submitted. Email: {Email}", model.Email);
@@ -61,20 +62,24 @@ namespace EmployeeAccessSystem.Controllers
 
             _logger.LogInformation("Registration successful. Email: {Email}", model.Email);
 
-            TempData["Success"] = "Registration successful. Please login.";
+            TempData["Success"] = "User registered successfully.";
 
-            return RedirectToAction("Login");
+            return RedirectToAction("Users", "AccessControl");
         }
 
+        // Login page
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult Login()
         {
             _logger.LogInformation("Login page opened.");
-
             return View();
         }
 
+        // Login submit
+        [AllowAnonymous]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginModel model)
         {
             _logger.LogInformation("Login submitted. Email: {Email}", model.Email);
@@ -110,49 +115,23 @@ namespace EmployeeAccessSystem.Controllers
             claims.Add(new Claim(ClaimTypes.Email, account.Email ?? ""));
             claims.Add(new Claim(ClaimTypes.Role, account.RoleName ?? ""));
 
-            ClaimsIdentity claimsIdentity =
-                new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            ClaimsPrincipal claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-            ClaimsPrincipal claimsPrincipal =
-                new ClaimsPrincipal(claimsIdentity);
-
-            AuthenticationProperties authProperties =
-                new AuthenticationProperties();
-
+            AuthenticationProperties authProperties = new AuthenticationProperties();
             authProperties.IsPersistent = true;
 
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                claimsPrincipal,
-                authProperties);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal, authProperties);
 
-            _logger.LogInformation(
-                "Login successful. AccountId: {AccountId}, Email: {Email}, Role: {Role}",
-                account.AccountId,
-                account.Email,
-                account.RoleName);
+            _logger.LogInformation("Login successful. AccountId: {AccountId}, Email: {Email}, Role: {Role}", account.AccountId, account.Email, account.RoleName);
 
-            string roleName = "";
-
-            if (account.RoleName != null)
-            {
-                roleName = account.RoleName.Trim();
-            }
-
-            if (roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction("Index", "Employee");
-            }
-            else if (roleName.Equals("User", StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction("Index", "Employee");
-            }
-            else
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // After login, open main dashboard/page
+            return RedirectToAction("Index", "Employee");
         }
 
+        // Logout
+        [AllowAnonymous]
+        [HttpGet]
         public async Task<IActionResult> Logout()
         {
             string email = User.FindFirst(ClaimTypes.Email)?.Value ?? "";
@@ -161,9 +140,11 @@ namespace EmployeeAccessSystem.Controllers
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Login", "Account");
         }
 
+        // Common access denied page
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult AccessDenied()
         {

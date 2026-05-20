@@ -3,91 +3,124 @@
 
 @{
     string currentController = "";
+    string currentAction = "";
 
     if (ViewContext.RouteData.Values["controller"] != null)
     {
-        currentController =
-            ViewContext.RouteData.Values["controller"].ToString();
+        currentController = ViewContext.RouteData.Values["controller"].ToString();
+    }
+
+    if (ViewContext.RouteData.Values["action"] != null)
+    {
+        currentAction = ViewContext.RouteData.Values["action"].ToString();
     }
 }
 
-@foreach (MenuModel menu in Model)
+@if (Model != null && Model.Count > 0)
 {
-    bool isParentActive = false;
+    foreach (MenuModel menu in Model)
+    {
+        bool hasChildren = menu.Children != null && menu.Children.Count > 0;
+        bool isParentActive = false;
 
-    if (menu.ControllerName == currentController)
-    {
-        isParentActive = true;
-    }
-    foreach (MenuModel child in menu.Children)
-    {
-        if (child.ControllerName == currentController)
+        if (!string.IsNullOrWhiteSpace(menu.ControllerName) && menu.ControllerName == currentController)
         {
             isParentActive = true;
         }
-    }
-    if (menu.Children.Count > 0)
-    {
-        <li class="nav-item has-treeview @(isParentActive ? "menu-open" : "")">
 
-            <a href="#"
-               class="nav-link @(isParentActive ? "active" : "")">
-
-                <p class="mb-0">
-                    @menu.MenuName
-                    <i class="right fas fa-angle-left"></i>
-                </p>
-
-            </a>
-            <ul class="nav nav-treeview">
-
-                @foreach (MenuModel child in menu.Children)
-                {
-                    bool isChildActive = false;
-
-                    if (child.ControllerName == currentController)
-                    {
-                        isChildActive = true;
-                    }
-
-                    <li class="nav-item">
-
-                        <a href="/@child.ControllerName/@child.ActionName"
-                           class="nav-link px-2 @(isChildActive ? "active" : "")">
-
-                            <p class="mb-0 text-nowrap">
-                                @child.MenuName
-                            </p>
-
-                        </a>
-
-                    </li>
-                }
-
-            </ul>
-
-        </li>
-    }
-    else
-    {
-        bool isMenuActive = false;
-
-        if (menu.ControllerName == currentController)
+        if (hasChildren)
         {
-            isMenuActive = true;
+            foreach (MenuModel child in menu.Children)
+            {
+                if (!string.IsNullOrWhiteSpace(child.ControllerName) && child.ControllerName == currentController)
+                {
+                    isParentActive = true;
+                    break;
+                }
+            }
         }
 
-        <li class="nav-item">
+        if (hasChildren)
+        {
+            <li class="nav-item has-treeview @(isParentActive ? "menu-open" : "")">
 
-            <a href="/@menu.ControllerName/@menu.ActionName"
-               class="nav-link @(isMenuActive ? "active" : "")">
+                <a href="#" class="nav-link @(isParentActive ? "active" : "")">
 
-                <p class="mb-0">
-                    @menu.MenuName
-                </p>
+                    <i class="nav-icon @(string.IsNullOrWhiteSpace(menu.IconClass) ? "fas fa-folder" : menu.IconClass)"></i>
 
-            </a>
+                    <p>
+                        @menu.MenuName
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
 
-        </li>
+                </a>
+
+                <ul class="nav nav-treeview">
+
+                    @foreach (MenuModel child in menu.Children)
+                    {
+                        bool isChildActive = false;
+
+                        if (!string.IsNullOrWhiteSpace(child.ControllerName) &&
+                        child.ControllerName == currentController)
+                        {
+                            isChildActive = true;
+                        }
+
+                        string childUrl = "#";
+
+                        if (!string.IsNullOrWhiteSpace(child.ControllerName) &&
+                        !string.IsNullOrWhiteSpace(child.ActionName))
+                        {
+                            childUrl = Url.Action(child.ActionName, child.ControllerName);
+                        }
+
+                        <li class="nav-item">
+
+                            <a href="@childUrl" class="nav-link @(isChildActive ? "active" : "")">
+
+                                <i class="far fa-circle nav-icon"></i>
+
+                                <p>@child.MenuName</p>
+
+                            </a>
+
+                        </li>
+                    }
+
+                </ul>
+
+            </li>
+        }
+        else
+        {
+            bool isMenuActive = false;
+
+            if (!string.IsNullOrWhiteSpace(menu.ControllerName) &&
+                menu.ControllerName == currentController)
+            {
+                isMenuActive = true;
+            }
+
+            string menuUrl = "#";
+
+            if (!string.IsNullOrWhiteSpace(menu.ControllerName) &&
+                !string.IsNullOrWhiteSpace(menu.ActionName))
+            {
+                menuUrl = Url.Action(menu.ActionName, menu.ControllerName);
+            }
+
+            <li class="nav-item">
+
+                <a href="@menuUrl" class="nav-link @(isMenuActive ? "active" : "")">
+
+                    <i class="nav-icon @(string.IsNullOrWhiteSpace(menu.IconClass) ? "fas fa-circle" : menu.IconClass)"></i>
+
+                    <p>@menu.MenuName</p>
+
+                </a>
+
+            </li>
+        }
     }
 }

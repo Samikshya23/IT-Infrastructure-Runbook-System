@@ -36,7 +36,7 @@
 
     });
 
-    // Open modal
+    // Open modal for Add, Edit and Delete
     $(document).on('click', '.open-modal-btn', function (e) {
 
         e.preventDefault();
@@ -44,25 +44,62 @@
         var url = $(this).attr('href');
         var title = $(this).data('title');
 
-        if (title) {
+        // Important:
+        // Do not open modal before permission is checked.
+        // First call the action through AJAX.
+        $.ajax({
 
-            $('#mainActionModal .modal-header').show();
-            $('#mainActionModalTitle').text(title);
+            type: 'GET',
+            url: url,
 
-        }
-        else {
+            success: function (response) {
 
-            $('#mainActionModal .modal-header').hide();
+                // Set modal title only after successful permission check
+                if (title) {
 
-        }
+                    $('#mainActionModal .modal-header').show();
+                    $('#mainActionModalTitle').text(title);
 
-        $('#mainActionModalBody').html(
-            '<div class="text-center py-3"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>'
-        );
+                }
+                else {
 
-        $('#mainActionModalBody').load(url, function () {
+                    $('#mainActionModal .modal-header').hide();
 
-            $('#mainActionModal').modal('show');
+                }
+
+                // Load response into modal body
+                $('#mainActionModalBody').html(response);
+
+                // Open modal only after successful response
+                $('#mainActionModal').modal('show');
+
+            },
+
+            error: function (xhr) {
+
+                // If user is not logged in
+                if (xhr.status === 401) {
+
+                    toastr.error('Please login first.');
+                    cleanMainActionModal();
+                    return;
+
+                }
+
+                // If user does not have permission
+                if (xhr.status === 403) {
+
+                    toastr.error('Access denied. You do not have permission.');
+                    cleanMainActionModal();
+                    return;
+
+                }
+
+                // Other error
+                toastr.error('An error occurred while loading the form.');
+                cleanMainActionModal();
+
+            }
 
         });
 
@@ -140,10 +177,28 @@
 
                 },
 
-                // Ajax error
-                error: function () {
+                error: function (xhr) {
 
-                    alert('An error occurred while processing your request.');
+                    // If user is not logged in
+                    if (xhr.status === 401) {
+
+                        toastr.error('Please login first.');
+                        cleanMainActionModal();
+                        return;
+
+                    }
+
+                    // If user does not have permission
+                    if (xhr.status === 403) {
+
+                        toastr.error('Access denied. You do not have permission.');
+                        cleanMainActionModal();
+                        return;
+
+                    }
+
+                    // Other error
+                    toastr.error('An error occurred while processing your request.');
 
                 }
 
@@ -177,3 +232,15 @@
     }
 
 });
+
+// Common function to fully close and clean modal
+function cleanMainActionModal() {
+
+    $('#mainActionModal').modal('hide');
+    $('#mainActionModalBody').html('');
+
+    $('.modal-backdrop').remove();
+    $('body').removeClass('modal-open');
+    $('body').css('padding-right', '');
+
+}

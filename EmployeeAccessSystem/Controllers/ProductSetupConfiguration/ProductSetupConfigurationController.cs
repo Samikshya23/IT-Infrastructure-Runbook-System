@@ -73,7 +73,6 @@ namespace EmployeeAccessSystem.Controllers
                 data = data
             });
         }
-
         public async Task<IActionResult> GetChildLevels(int productId, int? parentConfigurationNodeId)
         {
             List<ProductConfiguration> children =

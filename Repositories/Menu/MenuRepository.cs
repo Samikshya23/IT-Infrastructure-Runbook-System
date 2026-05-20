@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using Dapper;
@@ -14,36 +15,30 @@ namespace EmployeeAccessSystem.Repositories
 
         public MenuRepository(IConfiguration configuration)
         {
-            _connectionString =
-                configuration.GetConnectionString("DefaultConnection");
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
         private SqlConnection GetConnection()
         {
-            SqlConnection connection =
-                new SqlConnection(_connectionString);
-
-            return connection;
+            return new SqlConnection(_connectionString);
         }
 
+        // Load sidebar menus according to logged-in user's account permission
         public async Task<IEnumerable<MenuModel>> GetMenusByAccountIdAsync(int accountId)
         {
-            using SqlConnection conn = GetConnection();
+            try
+            {
+                using var conn = GetConnection();
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("Flag", "GETBYACCOUNT");
+                parameters.Add("AccountId", accountId);
 
-            DynamicParameters parameters =
-                new DynamicParameters();
-
-            parameters.Add("Flag", "GETBYACCOUNT");
-            parameters.Add("AccountId", accountId);
-
-            IEnumerable<MenuModel> result =
-                await conn.QueryAsync<MenuModel>(
-                    "dbo.sp_Menu_Manage",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-
-            return result;
+                return await conn.QueryAsync<MenuModel>("dbo.sp_Menu_Manage", parameters, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while loading sidebar menus.", ex);
+            }
         }
     }
 }

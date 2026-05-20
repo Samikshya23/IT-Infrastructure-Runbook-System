@@ -20,15 +20,44 @@
 
         var productId = $("#showProductId").val();
 
-        $.get("/ProductSetupConfiguration/Add",
-            {
+        $.ajax({
+
+            type: "GET",
+            url: "/ProductSetupConfiguration/Add",
+            data: {
                 productId: productId,
                 rootIndex: -1
             },
-            function (data) {
+
+            success: function (data) {
+
                 $("#setupConfigurationModalContent").html(data);
                 $("#setupConfigurationModal").modal("show");
-            });
+
+            },
+
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+
+                    showToastMessage("error", "Please login first.");
+                    cleanSetupConfigurationModal();
+                    return;
+                }
+
+                if (xhr.status === 403) {
+
+                    showToastMessage("error", "Access denied. You do not have permission.");
+                    cleanSetupConfigurationModal();
+                    return;
+                }
+
+                showToastMessage("error", "An error occurred while loading the form.");
+                cleanSetupConfigurationModal();
+            }
+
+        });
+
     });
 
     $(document).off("click", ".btnEditSetupConfiguration");
@@ -38,15 +67,44 @@
         var productId = $(this).data("product-id");
         var rootIndex = $(this).data("root-index");
 
-        $.get("/ProductSetupConfiguration/Add",
-            {
+        $.ajax({
+
+            type: "GET",
+            url: "/ProductSetupConfiguration/Add",
+            data: {
                 productId: productId,
                 rootIndex: rootIndex
             },
-            function (data) {
+
+            success: function (data) {
+
                 $("#setupConfigurationModalContent").html(data);
                 $("#setupConfigurationModal").modal("show");
-            });
+
+            },
+
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+
+                    showToastMessage("error", "Please login first.");
+                    cleanSetupConfigurationModal();
+                    return;
+                }
+
+                if (xhr.status === 403) {
+
+                    showToastMessage("error", "Access denied. You do not have permission.");
+                    cleanSetupConfigurationModal();
+                    return;
+                }
+
+                showToastMessage("error", "An error occurred while loading the form.");
+                cleanSetupConfigurationModal();
+            }
+
+        });
+
     });
 
     function loadSetupTable(productId) {
@@ -55,18 +113,43 @@
             '<div class="text-center text-muted py-4">Loading...</div>'
         );
 
-        $.get("/ProductSetupConfiguration/ShowTable",
-            {
+        $.ajax({
+
+            type: "GET",
+            url: "/ProductSetupConfiguration/ShowTable",
+            data: {
                 productId: productId
             },
-            function (data) {
+
+            success: function (data) {
 
                 $("#setupTableContainer").html(data);
 
                 setTimeout(function () {
                     initializeSetupDataTable();
                 }, 100);
-            });
+            },
+
+            error: function (xhr) {
+
+                $("#setupTableContainer").html("");
+
+                if (xhr.status === 401) {
+
+                    showToastMessage("error", "Please login first.");
+                    return;
+                }
+
+                if (xhr.status === 403) {
+
+                    showToastMessage("error", "Access denied. You do not have permission.");
+                    return;
+                }
+
+                showToastMessage("error", "An error occurred while loading setup table.");
+            }
+
+        });
     }
 
     function initializeSetupDataTable() {
@@ -154,6 +237,19 @@
         if (tempErrorMessage !== "") {
             showToastMessage("error", tempErrorMessage);
         }
+    }
+
+    function cleanSetupConfigurationModal() {
+
+        $("#setupConfigurationModal").modal("hide");
+
+        $("#setupConfigurationModalContent").html("");
+
+        $(".modal-backdrop").remove();
+
+        $("body").removeClass("modal-open");
+
+        $("body").css("padding-right", "");
     }
 
     function showToastMessage(type, message) {
