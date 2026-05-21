@@ -60,7 +60,19 @@ namespace EmployeeAccessSystem.Filters
                     return;
                 }
 
-                bool hasPermission = await CheckPermissionAsync(accountId, controllerName, actionName);
+                // Administrator / full access role should bypass permission table check
+                bool hasFullAccess = HasFullAccess(context);
+
+                if (hasFullAccess)
+                {
+                    await next();
+                    return;
+                }
+
+                // Internal actions should use visible action permission
+                string permissionActionName = GetPermissionActionName(controllerName, actionName);
+
+                bool hasPermission = await CheckPermissionAsync(accountId, controllerName, permissionActionName);
 
                 if (!hasPermission)
                 {
@@ -74,6 +86,36 @@ namespace EmployeeAccessSystem.Filters
             {
                 SetDeniedResult(context, "Access denied. Permission check failed.", 403, false);
             }
+        }
+
+        // Map internal controller actions to visible permission actions
+        private string GetPermissionActionName(string controllerName, string actionName)
+        {
+            // Form Configuration internal save uses Add permission
+            if (controllerName == "FormConfiguration" && actionName == "SaveStructure")
+            {
+                return "Add";
+            }
+
+            // Category Setup internal table load uses Index permission
+            if (controllerName == "CategorySetup" && actionName == "ShowTable")
+            {
+                return "Index";
+            }
+
+            // Category Setup internal add/edit/save helper actions use Add permission
+            if (controllerName == "CategorySetup" &&
+                (
+                    actionName == "SaveData" ||
+                    actionName == "GetRootLevels" ||
+                    actionName == "GetChildLevels" ||
+                    actionName == "GetRootForEdit"
+                ))
+            {
+                return "Add";
+            }
+
+            return actionName;
         }
 
         // Call sp_Menu_Manage CHECKPERMISSION
@@ -122,6 +164,22 @@ namespace EmployeeAccessSystem.Filters
             int.TryParse(accountIdText, out accountId);
 
             return accountId;
+        }
+
+        // Check HasFullAccess claim
+        private bool HasFullAccess(ActionExecutingContext context)
+        {
+            string hasFullAccessText = context.HttpContext.User.FindFirst("HasFullAccess")?.Value;
+
+            if (string.IsNullOrWhiteSpace(hasFullAccessText))
+            {
+                return false;
+            }
+
+            bool hasFullAccess = false;
+            bool.TryParse(hasFullAccessText, out hasFullAccess);
+
+            return hasFullAccess;
         }
 
         // Public pages

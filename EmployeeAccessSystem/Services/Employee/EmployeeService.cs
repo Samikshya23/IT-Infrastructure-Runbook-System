@@ -8,12 +8,12 @@ namespace EmployeeAccessSystem.Services
     public class EmployeeService : IEmployeeService
     {
         private readonly IEmployeeRepositories _employeeRepo;
-        private readonly IAccountRepositories _accountRepo;
-        public EmployeeService(IEmployeeRepositories employeeRepo, IAccountRepositories accountRepo)
+
+        public EmployeeService(IEmployeeRepositories employeeRepo)
         {
             _employeeRepo = employeeRepo;
-            _accountRepo = accountRepo;
         }
+
         public async Task<IEnumerable<Employee>> GetAllAsync()
         {
             return await _employeeRepo.GetAllAsync();
@@ -60,7 +60,8 @@ namespace EmployeeAccessSystem.Services
             model.Email = model.Email.Trim().ToLower();
             model.Role = model.Role.Trim();
 
-            var existing = await _employeeRepo.GetByEmailAsync(model.Email);
+            Employee? existing = await _employeeRepo.GetByEmailAsync(model.Email);
+
             if (existing != null && existing.EmployeeId != model.EmployeeId)
             {
                 return "Email already used by another employee";
@@ -72,64 +73,46 @@ namespace EmployeeAccessSystem.Services
             }
 
             int result = await _employeeRepo.UpdateAsync(model);
+
             if (result <= 0)
             {
                 return "Employee update failed";
             }
 
-            int roleId = GetRoleIdByName(model.Role);
-            if (roleId <= 0)
-            {
-                return "Invalid role selected";
-            }
-
-            int roleResult = await _accountRepo.UpdateRoleAsync(model.AccountId, roleId);
-            if (roleResult <= 0)
-            {
-                return "Role update failed";
-            }
-
             return "";
         }
+
         public async Task<string> ToggleAsync(int id)
         {
-            var emp = await _employeeRepo.GetByIdAsync(id);
+            Employee? emp = await _employeeRepo.GetByIdAsync(id);
+
             if (emp == null)
             {
                 return "Employee not found";
             }
 
             await _employeeRepo.ToggleAsync(id);
+
             return "";
         }
+
         public async Task<string> DeleteAsync(int id)
         {
-            var emp = await _employeeRepo.GetByIdAsync(id);
+            Employee? emp = await _employeeRepo.GetByIdAsync(id);
+
             if (emp == null)
             {
                 return "Employee not found";
             }
 
-            await _accountRepo.DeleteAsync(emp.AccountId);
+            int result = await _employeeRepo.DeleteAsync(id);
+
+            if (result <= 0)
+            {
+                return "Employee delete failed";
+            }
+
             return "";
-        }
-        private int GetRoleIdByName(string roleName)
-        {
-            if (roleName == "Admin")
-            {
-                return 1;
-            }
-
-            if (roleName == "Employee")
-            {
-                return 2;
-            }
-
-            if (roleName == "Supervisor")
-            {
-                return 3;
-            }
-            return 0;
         }
     }
 }

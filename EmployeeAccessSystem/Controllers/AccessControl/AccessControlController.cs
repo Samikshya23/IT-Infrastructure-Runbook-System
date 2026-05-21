@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
@@ -6,6 +7,7 @@ using EmployeeAccessSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Logging;
 
 namespace EmployeeAccessSystem.Controllers
 {
@@ -13,10 +15,20 @@ namespace EmployeeAccessSystem.Controllers
     public class AccessControlController : Controller
     {
         private readonly IAccessControlService _service;
+        private readonly IAccountService _accountService;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<AccessControlController> _logger;
 
-        public AccessControlController(IAccessControlService service)
+        public AccessControlController(
+            IAccessControlService service,
+            IAccountService accountService,
+            IEmailService emailService,
+            ILogger<AccessControlController> logger)
         {
             _service = service;
+            _accountService = accountService;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         // Dashboard
@@ -33,6 +45,55 @@ namespace EmployeeAccessSystem.Controllers
             List<AccessControlUserModel> users = await _service.GetUsersAsync();
 
             return View(users);
+        }
+
+        // Add user modal
+        public async Task<IActionResult> CreateUserModal()
+        {
+            RegisterModel model = new RegisterModel();
+
+            List<AccessControlRoleModel> roles = await _service.GetRoleListAsync();
+
+            ViewBag.Roles = new SelectList(roles, "RoleId", "RoleName");
+
+            return PartialView("_CreateUserModal", model);
+        }
+
+        // Save new user
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateUser(RegisterModel model)
+        {
+            string plainPassword = model.Password;
+
+            string message = await _accountService.RegisterAsync(model);
+
+            // AccountService.RegisterAsync returns empty string when registration is successful
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                try
+                {
+                    await _emailService.SendUserPasswordEmailAsync(
+                        model.Email,
+                        model.FullName,
+                        plainPassword
+                    );
+
+                    TempData["Success"] = "User registered successfully and password email sent.";
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "User registered but password email sending failed. Email: {Email}", model.Email);
+
+                    TempData["Success"] = "User registered successfully, but password email could not be sent.";
+                }
+
+                return RedirectToAction(nameof(Users));
+            }
+
+            TempData["Error"] = message;
+
+            return RedirectToAction(nameof(Users));
         }
 
         // User permission list page
@@ -233,11 +294,6 @@ namespace EmployeeAccessSystem.Controllers
                 checkedMenuIds = new List<int>();
             }
 
-            /*
-                Your current UserMenuAccess table does not have IsAllowed column.
-                So unchecked permissions are simply removed from UserMenuAccess.
-                We still pass empty unchecked list to keep service method compatible.
-            */
             List<int> uncheckedMenuIds = new List<int>();
 
             string message = await _service.SaveUserAccessAsync(accountId, checkedMenuIds, uncheckedMenuIds, GetCurrentUserId());
@@ -274,94 +330,41 @@ namespace EmployeeAccessSystem.Controllers
             return RedirectToAction(nameof(UserMenuAccess));
         }
 
-        // Role permission modal
-        public async Task<IActionResult> RolePermissionModal(int roleId)
+        /*
+            Role permission is not used in the final flow.
+
+            Final rule:
+            Administrator has full access automatically.
+            Normal user permission is assigned from Manage Users only.
+            Roles are only user category.
+        */
+
+        public IActionResult RolePermissionModal(int roleId)
         {
-            if (roleId <= 0)
-            {
-                return Content("error|Please select a valid role.");
-            }
-
-            AccessControlRoleModel role = await _service.GetRoleByIdAsync(roleId);
-
-            if (role == null || role.RoleId <= 0)
-            {
-                return Content("error|Role not found.");
-            }
-
-            List<AccessControlRoleActionModel> permissions = await _service.GetRolePermissionItemsAsync(roleId);
-
-            ViewBag.RoleId = role.RoleId;
-            ViewBag.RoleName = role.RoleName;
-
-            return PartialView("_RolePermissionModal", permissions);
+            return Content("error|Role permission is not used. Please assign permission from Manage Users.");
         }
 
-        // Old direct role permission page
-        public async Task<IActionResult> RolePermission(int roleId)
+        public IActionResult RolePermission(int roleId)
         {
-            if (roleId <= 0)
-            {
-                TempData["Error"] = "Please select a valid role.";
-                return RedirectToAction(nameof(Roles));
-            }
+            TempData["Error"] = "Role permission is not used. Please assign permission from Manage Users.";
 
-            AccessControlRoleModel role = await _service.GetRoleByIdAsync(roleId);
-
-            if (role == null || role.RoleId <= 0)
-            {
-                TempData["Error"] = "Role not found.";
-                return RedirectToAction(nameof(Roles));
-            }
-
-            List<AccessControlRoleActionModel> permissions = await _service.GetRolePermissionItemsAsync(roleId);
-
-            ViewBag.RoleId = role.RoleId;
-            ViewBag.RoleName = role.RoleName;
-
-            return View(permissions);
+            return RedirectToAction(nameof(Roles));
         }
 
-        // Save role permission
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveRoleAccess(int roleId, List<int> checkedMenuIds)
+        public IActionResult SaveRoleAccess(int roleId, List<int> checkedMenuIds)
         {
-            if (checkedMenuIds == null)
-            {
-                checkedMenuIds = new List<int>();
-            }
+            TempData["Error"] = "Role permission is not used. Please assign permission from Manage Users.";
 
-            string message = await _service.SaveRoleAccessAsync(roleId, checkedMenuIds, GetCurrentUserId());
-
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                if (!string.IsNullOrWhiteSpace(message) && message.Contains("successfully"))
-                {
-                    return Json(new { success = true, message = message });
-                }
-
-                if (string.IsNullOrWhiteSpace(message))
-                {
-                    return Json(new { success = false, message = "Something went wrong. Please try again." });
-                }
-
-                return Json(new { success = false, message = message });
-            }
-
-            SetMessage(message);
-
-            return RedirectToAction(nameof(RolePermission), new { roleId = roleId });
+            return RedirectToAction(nameof(Roles));
         }
 
-        // Clear role permission
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ClearRoleAccess(int roleId)
+        public IActionResult ClearRoleAccess(int roleId)
         {
-            string message = await _service.ClearRoleAccessAsync(roleId, GetCurrentUserId());
-
-            SetMessage(message);
+            TempData["Error"] = "Role permission is not used. Please assign permission from Manage Users.";
 
             return RedirectToAction(nameof(Roles));
         }

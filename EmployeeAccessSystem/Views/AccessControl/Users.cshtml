@@ -23,10 +23,14 @@
                     Dashboard
                 </a>
 
-                <a href="/Account/Register" class="btn btn-primary btn-sm">
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        id="btnCreateUser">
+
                     <i class="fas fa-user-plus mr-1"></i>
                     Add User
-                </a>
+
+                </button>
 
             </div>
 
@@ -167,6 +171,18 @@
     </div>
 
 </section>
+
+@* Create User Modal *@
+<div class="modal fade" id="createUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <div class="modal-dialog modal-md" role="document">
+
+        <div class="modal-content" id="createUserModalContent">
+        </div>
+
+    </div>
+
+</div>
 
 @* Details Modal *@
 <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-hidden="true">

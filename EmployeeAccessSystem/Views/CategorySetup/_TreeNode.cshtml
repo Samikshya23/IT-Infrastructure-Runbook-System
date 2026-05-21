@@ -1,0 +1,40 @@
+﻿@model EmployeeAccessSystem.Models.CategorySetup
+
+<div class="mb-2">
+
+    <div class="border rounded bg-white px-3 py-2">
+
+        <div class="row align-items-center">
+
+            <div class="col-md-12">
+
+                <strong>
+                    @Model.NodeValue
+                </strong>
+
+                @if (!string.IsNullOrWhiteSpace(Model.FieldType))
+                {
+                    <span class="badge badge-secondary ml-2">
+                        @Model.FieldType
+                    </span>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+
+    @if (Model.Children != null && Model.Children.Count > 0)
+    {
+        <div class="border-left ml-4 pl-3 mt-2">
+
+            @foreach (var child in Model.Children)
+            {
+                <partial name="_TreeNode" model="child" />
+            }
+
+        </div>
+    }
+
+</div>

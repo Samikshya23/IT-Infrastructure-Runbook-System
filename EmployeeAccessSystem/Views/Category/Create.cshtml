@@ -1,84 +1,77 @@
 ﻿@model EmployeeAccessSystem.Models.Category
 
 @{
-    ViewData["Title"] = "";
+    Layout = null;
 }
 
-<section class="content pt-3">
-    <div class="container-fluid">
+<!-- Create form -->
+<form asp-action="Create" asp-controller="Category" method="post" id="createCategoryForm">
 
-        <div class="row">
-            <div class="col-12">
+    @Html.AntiForgeryToken()
 
-                <div class="card category-full-card">
-                    <div class="card-header bg-white">
-                        <h3 class="card-title mb-0">Add Category</h3>
-                    </div>
-
-                    <div class="card-body">
-                        <form asp-action="Create" method="post">
-
-                            <div asp-validation-summary="All" class="text-danger mb-3"></div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Category Name</label>
-                                <input asp-for="CategoryName"
-                                       class="form-control form-control-lg"
-                                       placeholder="Enter category name" />
-                                <span asp-validation-for="CategoryName" class="text-danger"></span>
-                            </div>
-
-                            <div class="form-check mb-4">
-                                <input class="form-check-input" asp-for="IsActive" />
-                                <label class="form-check-label fw-semibold">
-                                    Is Active
-                                </label>
-                            </div>
-
-                            <div class="form-actions">
-                                <a asp-action="Index" class="btn btn-outline-secondary btn-smx">
-                                    Back
-                                </a>
-
-                                <button type="submit" class="btn btn-success btn-smx">
-                                    Save
-                                </button>
-                            </div>
-
-                        </form>
-                    </div>
-                </div>
-
-            </div>
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.Error
         </div>
+    }
+
+    <div class="form-group">
+
+        <label asp-for="Name" class="font-weight-bold">
+            Name
+        </label>
+
+        <input asp-for="Name"
+               class="form-control"
+               placeholder="Enter name"
+               maxlength="100" />
+
+        <span asp-validation-for="Name"
+              class="text-danger small">
+        </span>
 
     </div>
-</section>
 
-@section Styles {
-    <style>
-        .category-full-card {
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        }
+    <div class="form-group mb-4">
 
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
+        <div class="custom-control custom-switch">
 
-        .btn-smx {
-            padding: 8px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            min-width: 90px;
-        }
-    </style>
-}
+            <input asp-for="IsActive"
+                   class="custom-control-input"
+                   id="CreateIsActive" />
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+            <label class="custom-control-label font-weight-bold"
+                   for="CreateIsActive"
+                   id="createStatusLabel">
+                Active
+            </label>
+
+        </div>
+
+        <span asp-validation-for="IsActive"
+              class="text-danger small">
+        </span>
+
+    </div>
+
+    <div class="modal-footer px-0 pb-0">
+
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
+            Back
+        </button>
+
+        <button type="submit"
+                class="btn btn-primary btn-sm">
+            Save
+        </button>
+
+    </div>
+
+</form>
+
+<partial name="_ValidationScriptsPartial" />
+
+<script src="~/js/category/create.js"></script>

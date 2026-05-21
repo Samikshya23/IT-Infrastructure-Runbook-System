@@ -1,0 +1,224 @@
+﻿@model List<EmployeeAccessSystem.Models.FormConfigurationIndexItem>
+
+@{
+    ViewData["Title"] = "Form Configuration";
+
+    int sn = 1;
+}
+
+<section class="content pt-2 pb-0">
+
+    <div class="container-fluid px-0">
+
+        <!-- Page header -->
+        <div class="row mb-2 mx-0 align-items-center">
+
+            <div class="col-sm-6 px-0">
+
+                <h3 class="mb-0">
+                    Form Configuration
+                </h3>
+
+            </div>
+
+            <div class="col-sm-6 text-right px-0 pt-1">
+
+                <!-- Add button -->
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        id="btnAddConfiguration">
+
+                    <i class="fas fa-plus mr-1"></i>
+                    Add
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- Main card -->
+        <div class="card card-outline card-primary mb-0 shadow-none">
+
+            <div class="card-body p-0">
+
+                @if (Model != null && Model.Count > 0)
+                {
+                    <table id="configurationTable"
+                           class="table table-bordered table-hover table-sm mb-0 rounded-0"
+                           style="border-color:#dee2e6;">
+
+                        <thead class="bg-light border-bottom">
+
+                            <tr>
+
+                                <th class="text-center align-middle"
+                                    style="width:70px;">
+                                    SN
+                                </th>
+
+                                <th class="text-center align-middle">
+                                    Name
+                                </th>
+
+                                <th class="text-center align-middle"
+                                    style="width:90px;">
+                                    Actions
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+
+                                    <td class="text-center align-middle">
+                                        @sn
+                                    </td>
+
+                                    <td class="align-middle">
+                                        @item.Name
+                                    </td>
+
+                                    <td class="text-center align-middle">
+
+                                        <!-- Edit button -->
+                                        <button type="button"
+                                                class="btn btn-xs btn-light border btnEditConfiguration"
+                                                data-category-id="@item.CategoryId"
+                                                title="Edit">
+
+                                            <i class="fas fa-pen"></i>
+
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                                sn++;
+                            }
+
+                        </tbody>
+
+                    </table>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+
+                        Click <strong>Add</strong> to create configuration.
+
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- Configuration modal -->
+<div class="modal fade"
+     id="configurationModal"
+     tabindex="-1"
+     role="dialog"
+     data-backdrop="static"
+     data-keyboard="false">
+
+    <div class="modal-dialog modal-xl"
+         role="document">
+
+        <div class="modal-content rounded-0"
+             id="configurationModalContent">
+        </div>
+
+    </div>
+
+</div>
+
+@if (TempData["Success"] != null || TempData["Error"] != null)
+{
+    <div class="position-fixed"
+         style="top:15px; right:15px; z-index:1055;">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="toast bg-success text-white fade"
+                 id="successToast"
+                 data-delay="3000">
+
+                <div class="toast-header bg-success text-white border-0">
+
+                    <strong class="mr-auto">
+                        Success
+                    </strong>
+
+                    <small>
+                        Now
+                    </small>
+
+                    <button type="button"
+                            class="close text-white"
+                            data-dismiss="toast">
+
+                        <span>&times;</span>
+
+                    </button>
+
+                </div>
+
+                <div class="toast-body">
+                    @TempData["Success"]
+                </div>
+
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="toast bg-danger text-white fade"
+                 id="errorToast"
+                 data-delay="4000">
+
+                <div class="toast-header bg-danger text-white border-0">
+
+                    <strong class="mr-auto">
+                        Error
+                    </strong>
+
+                    <small>
+                        Now
+                    </small>
+
+                    <button type="button"
+                            class="close text-white"
+                            data-dismiss="toast">
+
+                        <span>&times;</span>
+
+                    </button>
+
+                </div>
+
+                <div class="toast-body">
+                    @TempData["Error"]
+                </div>
+
+            </div>
+        }
+
+    </div>
+}
+
+@section Scripts {
+
+    <script src="~/js/formconfiguration/index.js" asp-append-version="true"></script>
+
+}

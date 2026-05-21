@@ -1,6 +1,7 @@
 ﻿using EmployeeAccessSystem.Filters;
-using EmployeeAccessSystem.Repositories;
+using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Services;
+using EmployeeAccessSystem.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using QuestPDF.Infrastructure;
@@ -31,34 +32,54 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddSingleton<ICoreDbConnection, CoreDbConnection>();
 
 // Repositories
+builder.Services.AddScoped<IProductSetupRepositories, ProductSetupRepositories>();
 builder.Services.AddScoped<ICategoryRepositories, CategoryRepositories>();
+
 builder.Services.AddScoped<ISubCategoryRepositories, SubCategoryRepositories>();
 builder.Services.AddScoped<IAccountRepositories, AccountRepositories>();
 builder.Services.AddScoped<IEmployeeRepositories, EmployeeRepositories>();
 builder.Services.AddScoped<IDepartmentRepositories, DepartmentRepositories>();
-builder.Services.AddScoped<IProductSetupRepositories, ProductSetupRepositories>();
+
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
+
+// Old Product Configuration repository kept temporarily
 builder.Services.AddScoped<IProductConfigurationRepository, ProductConfigurationRepository>();
+
+// New Form Configuration repository
+builder.Services.AddScoped<IFormConfigurationRepository, FormConfigurationRepository>();
+
+// Old Product Setup Configuration repository kept temporarily
 builder.Services.AddScoped<IProductSetupConfigurationRepository, ProductSetupConfigurationRepository>();
+
+// New Category Setup repository
+builder.Services.AddScoped<ICategorySetupRepository, CategorySetupRepository>();
+
 builder.Services.AddScoped<IMenuRepository, MenuRepository>();
 builder.Services.AddScoped<IAccessControlRepository, AccessControlRepository>();
 builder.Services.AddScoped<IProductEntryRepository, ProductEntryRepository>();
 builder.Services.AddScoped<IDropdownRepository, DropdownRepository>();
-
+builder.Services.AddScoped<ICategoryChecklistRepository, CategoryChecklistRepository>();
 // Services
-builder.Services.AddScoped<IProductConfigurationService, ProductConfigurationService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// New Form Configuration service
+builder.Services.AddScoped<IFormConfigurationService, FormConfigurationService>();
+
+// New Category Setup service
+builder.Services.AddScoped<ICategorySetupService, CategorySetupService>();
+
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
-builder.Services.AddScoped<IProductEntryService, ProductEntryService>();
+builder.Services.AddScoped<ICategoryChecklistService, CategoryChecklistService>();
 builder.Services.AddScoped<IDropdownService, DropdownService>();
-builder.Services.AddScoped<IProductSetupConfigurationService, ProductSetupConfigurationService>();
 builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IProductSetupService, ProductSetupService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ISubCategoryService, SubCategoryService>();
+
+// Email service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

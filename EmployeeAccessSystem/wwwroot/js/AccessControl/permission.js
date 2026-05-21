@@ -1,16 +1,48 @@
 ﻿$(document).ready(function () {
 
+    // Initial permission state
+    initializePermissionState();
+
     // Select all permission
     $(document).on("change", "#selectAllPermission", function () {
 
         var isChecked = $(this).is(":checked");
 
-        $(".permission-checkbox").prop("checked", isChecked);
+        if (isChecked) {
+            $(".permission-page-checkbox").prop("checked", true);
+            $(".permission-action-checkbox").prop("disabled", false).prop("checked", true);
+        }
+        else {
+            $(".permission-checkbox").prop("checked", false);
+            $(".permission-action-checkbox").prop("disabled", true);
+        }
+
+        updateSelectAllPermission();
 
     });
 
-    // Update select all checkbox when single permission changes
-    $(document).on("change", ".permission-checkbox", function () {
+    // Parent page permission change
+    $(document).on("change", ".permission-page-checkbox", function () {
+
+        var pageMenuId = $(this).data("page-menu-id");
+        var isChecked = $(this).is(":checked");
+
+        var actionCheckboxes = $(".permission-action-checkbox[data-page-menu-id='" + pageMenuId + "']");
+
+        if (isChecked) {
+            actionCheckboxes.prop("disabled", false);
+        }
+        else {
+            actionCheckboxes.prop("checked", false);
+            actionCheckboxes.prop("disabled", true);
+        }
+
+        updateSelectAllPermission();
+
+    });
+
+    // Child action permission change
+    $(document).on("change", ".permission-action-checkbox", function () {
 
         updateSelectAllPermission();
 
@@ -40,11 +72,35 @@
 
     });
 
-    // Initial select all state
-    updateSelectAllPermission();
-
 });
 
+
+// Set child action enabled/disabled according to parent page permission
+function initializePermissionState() {
+
+    $(".permission-page-checkbox").each(function () {
+
+        var pageMenuId = $(this).data("page-menu-id");
+        var isChecked = $(this).is(":checked");
+
+        var actionCheckboxes = $(".permission-action-checkbox[data-page-menu-id='" + pageMenuId + "']");
+
+        if (isChecked) {
+            actionCheckboxes.prop("disabled", false);
+        }
+        else {
+            actionCheckboxes.prop("checked", false);
+            actionCheckboxes.prop("disabled", true);
+        }
+
+    });
+
+    updateSelectAllPermission();
+
+}
+
+
+// Update select all checkbox state
 function updateSelectAllPermission() {
 
     var total = $(".permission-checkbox").length;

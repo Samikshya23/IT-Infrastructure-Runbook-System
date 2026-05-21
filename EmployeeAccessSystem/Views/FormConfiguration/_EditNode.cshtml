@@ -1,0 +1,101 @@
+﻿@model EmployeeAccessSystem.Models.FormConfiguration
+
+@{
+    Layout = null;
+}
+
+<div class="modal-header bg-white border-bottom">
+
+    <h5 class="modal-title font-weight-bold">
+        Edit
+    </h5>
+
+    <button type="button"
+            class="close"
+            data-dismiss="modal">
+
+        <span>&times;</span>
+
+    </button>
+
+</div>
+
+<form asp-action="EditNode"
+      asp-controller="FormConfiguration"
+      method="post"
+      id="editNodeForm">
+
+    @Html.AntiForgeryToken()
+
+    <div class="modal-body">
+
+        <input type="hidden"
+               asp-for="NodeId" />
+
+        <input type="hidden"
+               asp-for="CategoryId" />
+
+        <div class="form-group">
+
+            <label class="font-weight-bold">
+                Name
+            </label>
+
+            <input asp-for="NodeName"
+                   class="form-control form-control-sm"
+                   maxlength="50"
+                   placeholder="Enter name" />
+
+        </div>
+
+        <div class="form-group">
+
+            <label class="font-weight-bold">
+                Input Type
+            </label>
+
+            <select asp-for="InputType"
+                    class="form-control form-control-sm">
+
+                <option value="Text">
+                    Text
+                </option>
+
+                <option value="Date">
+                    Date
+                </option>
+
+                <option value="Single">
+                    Single
+                </option>
+
+                <option value="Multiple">
+                    Multiple
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+    <div class="modal-footer justify-content-center">
+
+        <button type="button"
+                class="btn btn-secondary btn-sm px-4"
+                data-dismiss="modal">
+
+            Cancel
+
+        </button>
+
+        <button type="submit"
+                class="btn btn-warning btn-sm px-4">
+
+            Update
+
+        </button>
+
+    </div>
+
+</form>

@@ -1,0 +1,459 @@
+﻿@model IEnumerable<EmployeeAccessSystem.Models.CategoryChecklistModel>
+@using System
+@using System.Collections.Generic
+
+@{
+    ViewData["Title"] = "Category Checklist List";
+
+    int sn = 1;
+    int? selectedCategoryId = ViewBag.SelectedCategoryId as int?;
+    int visibleLimit = 4;
+
+    List<string> headings = ViewBag.Headings as List<string>;
+
+    if (headings == null)
+    {
+        headings = new List<string>();
+    }
+
+    string GetGroupName(EmployeeAccessSystem.Models.CategoryChecklistModel item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.ParentPath))
+        {
+            if (item.ParentPath.Contains("/"))
+            {
+                return item.ParentPath.Split('/')[0].Trim();
+            }
+
+            if (item.ParentPath.Contains(">"))
+            {
+                return item.ParentPath.Split('>')[0].Trim();
+            }
+
+            return item.ParentPath.Trim();
+        }
+
+        return "-";
+    }
+
+    string GetResultText(EmployeeAccessSystem.Models.CategoryChecklistModel item)
+    {
+        if (string.IsNullOrWhiteSpace(item.ResultValue))
+        {
+            return "-";
+        }
+
+        if (item.ValueTypeId == 3)
+        {
+            return item.ResultValue.Replace("%", "") + "%";
+        }
+
+        return item.ResultValue;
+    }
+
+    List<string> GetHierarchyValues(EmployeeAccessSystem.Models.CategoryChecklistModel item)
+    {
+        List<string> values = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(item.ParentPath))
+        {
+            string path = item.ParentPath;
+
+            if (path.Contains(">"))
+            {
+                string[] parts = path.Split('>');
+
+                foreach (string part in parts)
+                {
+                    if (!string.IsNullOrWhiteSpace(part))
+                    {
+                        values.Add(part.Trim());
+                    }
+                }
+            }
+            else if (path.Contains("/"))
+            {
+                string[] parts = path.Split('/');
+
+                foreach (string part in parts)
+                {
+                    if (!string.IsNullOrWhiteSpace(part))
+                    {
+                        values.Add(part.Trim());
+                    }
+                }
+            }
+            else
+            {
+                values.Add(path.Trim());
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.DisplayName))
+        {
+            values.Add(item.DisplayName.Trim());
+        }
+
+        return values;
+    }
+
+    List<EmployeeAccessSystem.Models.CategoryChecklistModel> todayData =
+        new List<EmployeeAccessSystem.Models.CategoryChecklistModel>();
+
+    if (Model != null)
+    {
+        foreach (EmployeeAccessSystem.Models.CategoryChecklistModel item in Model)
+        {
+            if (item.EntryDate.Date == DateTime.Today)
+            {
+                todayData.Add(item);
+            }
+        }
+    }
+
+    List<dynamic> groupedData = new List<dynamic>();
+
+    if (selectedCategoryId.HasValue && selectedCategoryId.Value > 0)
+    {
+        Dictionary<string, List<EmployeeAccessSystem.Models.CategoryChecklistModel>> groups =
+            new Dictionary<string, List<EmployeeAccessSystem.Models.CategoryChecklistModel>>();
+
+        foreach (EmployeeAccessSystem.Models.CategoryChecklistModel item in todayData)
+        {
+            string groupName = GetGroupName(item);
+            string key = "";
+
+            if (item.EntryGroupId.HasValue)
+            {
+                key = item.EntryGroupId.Value.ToString() + "_" + groupName;
+            }
+            else
+            {
+                key = "empty_" + groupName;
+            }
+
+            if (!groups.ContainsKey(key))
+            {
+                groups.Add(key, new List<EmployeeAccessSystem.Models.CategoryChecklistModel>());
+            }
+
+            groups[key].Add(item);
+        }
+
+        foreach (KeyValuePair<string, List<EmployeeAccessSystem.Models.CategoryChecklistModel>> group in groups)
+        {
+            if (group.Value.Count > 0)
+            {
+                groupedData.Add(new
+                {
+                    EntryGroupId = group.Value[0].EntryGroupId,
+                    CategoryId = group.Value[0].CategoryId,
+                    GroupName = GetGroupName(group.Value[0]),
+                    Items = group.Value
+                });
+            }
+        }
+    }
+
+    int totalColumnCount = headings.Count + 5;
+}
+
+<section class="content pt-2 pb-0">
+    <div class="container-fluid px-2">
+
+        <div class="row mb-2 mx-0 align-items-center">
+            <div class="col-sm-6 px-0">
+                <h3 class="mb-0">Category Checklist List</h3>
+            </div>
+
+            <div class="col-sm-6 text-right px-0">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openAddChecklistModal()">
+                    <i class="fas fa-plus mr-1"></i> Add
+                </button>
+            </div>
+        </div>
+
+        <div class="card card-outline card-primary mb-0 shadow-none">
+
+            <div class="card-header bg-white py-2 px-2">
+                <div class="row mx-0">
+
+                    <div class="col-md-4 px-0">
+                        <form asp-action="Index" method="get">
+                            <select name="categoryId" class="form-control form-control-sm" onchange="this.form.submit()">
+                                @foreach (var category in ViewBag.Categories)
+                                {
+                                    <option value="@category.Value" selected="@category.Selected">
+                                        @category.Text
+                                    </option>
+                                }
+                            </select>
+                        </form>
+
+                        @if (selectedCategoryId.HasValue && selectedCategoryId.Value > 0)
+                        {
+                            <div class="d-flex align-items-center mt-2">
+                                <span class="mr-2">Show</span>
+
+                                <select id="entriesPerPage" class="custom-select custom-select-sm w-auto">
+                                    <option value="10" selected>10</option>
+                                    <option value="15">15</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                </select>
+
+                                <span class="ml-2">entries</span>
+                            </div>
+                        }
+                    </div>
+
+                    @if (selectedCategoryId.HasValue && selectedCategoryId.Value > 0)
+                    {
+                        <div class="col-md-8 px-0 mt-2 mt-md-0">
+                            <div class="d-flex justify-content-md-end">
+                                <div style="width:220px;">
+                                    <input type="text" id="customSearch" class="form-control form-control-sm" placeholder="Search" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (selectedCategoryId.HasValue && selectedCategoryId.Value > 0)
+            {
+                <div class="card-body p-0">
+                    <table id="categoryChecklistTable" class="table table-bordered table-hover table-sm mb-0 rounded-0" style="table-layout:fixed;width:100%;">
+
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-center align-middle" style="width:60px;">SN</th>
+
+                                @foreach (string heading in headings)
+                                {
+                                    <th class="text-center align-middle">@heading</th>
+                                }
+
+                                <th class="text-center align-middle" style="width:15%;">Date / Time</th>
+                                <th class="text-center align-middle" style="width:23%;">User</th>
+                                <th class="text-center align-middle" style="width:9%;">Result</th>
+                                <th class="text-center align-middle" style="width:100px;">Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="categoryChecklistTableBody">
+                            @if (groupedData.Count > 0)
+                            {
+                                foreach (var group in groupedData)
+                                {
+                                    List<EmployeeAccessSystem.Models.CategoryChecklistModel> items = group.Items;
+
+                                    int displayCount = items.Count;
+
+                                    if (items.Count > visibleLimit)
+                                    {
+                                        displayCount = visibleLimit;
+                                    }
+
+                                    string groupClass = "entry_group_" + sn;
+                                    string searchText = group.GroupName;
+
+                                    foreach (EmployeeAccessSystem.Models.CategoryChecklistModel item in items)
+                                    {
+                                        List<string> hierarchyValues = GetHierarchyValues(item);
+
+                                        foreach (string value in hierarchyValues)
+                                        {
+                                            searchText += " " + value;
+                                        }
+
+                                        searchText += " " + item.EntryDate.ToString("yyyy-MM-dd HH:mm");
+                                        searchText += " " + item.CreatedBy;
+                                        searchText += " " + GetResultText(item);
+                                    }
+
+                                    <tr class="group-row" data-search="@searchText" data-full-count="@items.Count" data-visible-count="@visibleLimit">
+
+                                        <td class="text-center align-middle p-0 group-sn">
+                                            <div class="d-flex align-items-center justify-content-center px-2 group-sn-wrap" style="height:@(displayCount * 36)px;">
+                                                @sn
+                                            </div>
+                                        </td>
+
+                                        @for (int headingIndex = 0; headingIndex < headings.Count; headingIndex++)
+                                        {
+                                            <td class="p-0 align-top">
+                                                @if (headingIndex == 0)
+                                                {
+                                                    <div class="d-flex align-items-center px-2 font-weight-normal" style="height:@(displayCount * 36)px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@group.GroupName">
+                                                        @group.GroupName
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
+                                                        <tbody>
+                                                            @for (int i = 0; i < items.Count; i++)
+                                                            {
+                                                                List<string> values = GetHierarchyValues(items[i]);
+                                                                string columnValue = "-";
+
+                                                                if (headingIndex < values.Count)
+                                                                {
+                                                                    columnValue = values[headingIndex];
+                                                                }
+
+                                                                <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                                    <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                                        <div class="d-flex align-items-center px-2" style="height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@columnValue">
+                                                                            @columnValue
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                }
+                                            </td>
+                                        }
+
+                                        <td class="p-0 align-top">
+                                            <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
+                                                <tbody>
+                                                    @for (int i = 0; i < items.Count; i++)
+                                                    {
+                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                            <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                                <div class="d-flex justify-content-center align-items-center px-2" style="height:36px;">
+                                                                    @items[i].EntryDate.ToString("yyyy-MM-dd HH:mm")
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </td>
+
+                                        <td class="p-0 align-top">
+                                            <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
+                                                <tbody>
+                                                    @for (int i = 0; i < items.Count; i++)
+                                                    {
+                                                        string userText = "-";
+
+                                                        if (!string.IsNullOrWhiteSpace(items[i].CreatedBy))
+                                                        {
+                                                            userText = items[i].CreatedBy;
+                                                        }
+
+                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                            <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                                <div class="px-2" style="height:36px;line-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@userText">
+                                                                    @userText
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </td>
+
+                                        <td class="p-0 align-top">
+                                            <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
+                                                <tbody>
+                                                    @for (int i = 0; i < items.Count; i++)
+                                                    {
+                                                        string resultText = GetResultText(items[i]);
+
+                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
+                                                            <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
+                                                                <div class="d-flex justify-content-center align-items-center px-2" style="height:36px;">
+                                                                    @if (resultText == "Tick" || resultText == "8")
+                                                                    {
+                                                                        <i class="fas fa-check text-success"></i>
+                                                                    }
+                                                                    else if (resultText == "Cross" || resultText == "9")
+                                                                    {
+                                                                        <i class="fas fa-times text-danger"></i>
+                                                                    }
+                                                                    else if (resultText == "Up" || resultText == "10")
+                                                                    {
+                                                                        <span class="text-success font-weight-bold">Up</span>
+                                                                    }
+                                                                    else if (resultText == "Down" || resultText == "11")
+                                                                    {
+                                                                        <span class="text-danger font-weight-bold">Down</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>@resultText</span>
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </td>
+
+                                        <td class="p-0 align-top">
+                                            @{
+                                                string groupIdText = "";
+
+                                                if (group.EntryGroupId != null)
+                                                {
+                                                    groupIdText = group.EntryGroupId.ToString();
+                                                }
+                                            }
+
+                                            <div class="d-flex justify-content-center align-items-center" style="height:@(displayCount * 36)px;">
+                                                <button type="button" class="btn btn-light border btn-sm p-0" onclick="openEditChecklistModal('@groupIdText')" title="Edit" style="width:24px;height:24px;line-height:22px;">
+                                                    <i class="fas fa-pen" style="font-size:10px;"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    sn++;
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="@totalColumnCount" class="text-center align-middle py-3">
+                                        No checklist entry found for today.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (selectedCategoryId.HasValue && selectedCategoryId.Value > 0)
+        {
+            <div class="row mt-2 mx-0 align-items-center">
+                <div class="col-md-6 px-0">
+                    <div id="paginationInfo" class="text-muted"></div>
+                </div>
+
+                <div class="col-md-6 text-right px-0 mt-2 mt-md-0">
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-md-end mb-0" id="customPagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        }
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Add")
+
+<input type="hidden" id="tempSuccessMessage" value="@TempData["Success"]" />
+<input type="hidden" id="tempErrorMessage" value="@TempData["Error"]" />
+
+@section Scripts {
+    <script src="~/js/categorychecklist/index.js" asp-append-version="true"></script>
+}

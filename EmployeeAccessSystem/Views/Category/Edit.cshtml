@@ -1,104 +1,78 @@
 ﻿@model EmployeeAccessSystem.Models.Category
 
 @{
-    ViewData["Title"] = "";
+    Layout = null;
 }
 
-<section class="content edit-content">
-    <div class="container-fluid edit-container">
+<form asp-action="Edit" asp-controller="Category" method="post" id="editCategoryForm">
 
-        <div class="card edit-card">
-            <div class="card-header bg-white">
-                <h3 class="card-title mb-0">Edit Category</h3>
-            </div>
+    @Html.AntiForgeryToken()
 
-            <div class="card-body">
+    <input type="hidden" asp-for="CategoryId" />
 
-                <form asp-action="Edit" method="post">
-                    <input type="hidden" asp-for="CategoryId" />
-
-                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
-
-                    <div class="mb-3">
-                        <label asp-for="CategoryName" class="form-label fw-semibold"></label>
-                        <input asp-for="CategoryName" class="form-control" />
-                        <span asp-validation-for="CategoryName" class="text-danger"></span>
-                    </div>
-
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" asp-for="IsActive" />
-                        <label class="form-check-label fw-semibold" asp-for="IsActive">
-                            Is Active
-                        </label>
-                    </div>
-                    <div class="edit-actions">
-                        <button type="submit" class="btn btn-warning btn-pill-sm">
-                            Update
-                        </button>
-
-                        <a asp-action="Index" class="btn btn-pill-sm btn-back">
-                            Back
-                        </a>
-                    </div>
-                </form>
-
-            </div>
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.Error
         </div>
+    }
+
+    <div class="form-group">
+
+        <label asp-for="Name" class="font-weight-bold">
+            Name
+        </label>
+
+        <input asp-for="Name"
+               class="form-control"
+               placeholder="Enter name"
+               maxlength="100" />
+
+        <span asp-validation-for="Name"
+              class="text-danger small">
+        </span>
 
     </div>
-</section>
 
-@section Styles {
-    <style>
-        .edit-content {
-            padding-top: 4px !important;
-            padding-bottom: 4px !important;
-        }
+    <div class="form-group mb-4">
 
-        .edit-container {
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-        }
-        .edit-card {
-            border-radius: 14px;
-            margin-bottom: 8px;
-            overflow: hidden;
-        }
+        <div class="custom-control custom-switch">
 
-            .edit-card .card-body {
-                padding: 22px 24px;
-            }
-        .edit-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 14px;
-            margin-top: 20px;
-        }
+            <input asp-for="IsActive"
+                   class="custom-control-input"
+                   id="EditIsActive" />
 
-        .btn-pill-sm {
-            border-radius: 999px;
-            padding: 6px 18px; 
-            font-size: 14px; 
-            font-weight: 500;
-            min-width: 90px;
-            border: 2px solid transparent;
-            box-shadow: none;
-        }
+            <label class="custom-control-label font-weight-bold"
+                   for="EditIsActive"
+                   id="editStatusLabel">
+                Active
+            </label>
 
-        .btn-back {
-            background-color: #fff;
-            color: #6c757d;
-            border-color: #6c757d;
-        }
+        </div>
 
-            .btn-back:hover {
-                background-color: #f4f6f9;
-                color: #6c757d;
-                border-color: #6c757d;
-            }
-    </style>
-}
+        <span asp-validation-for="IsActive"
+              class="text-danger small">
+        </span>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+    </div>
+
+    <div class="modal-footer px-0 pb-0">
+
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
+            Back
+        </button>
+
+        <button type="submit"
+                class="btn btn-primary btn-sm">
+            Update
+        </button>
+
+    </div>
+
+</form>
+
+<partial name="_ValidationScriptsPartial" />
+
+<script src="~/js/category/edit.js"></script>

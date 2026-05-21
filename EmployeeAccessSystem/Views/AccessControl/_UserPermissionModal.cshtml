@@ -136,30 +136,31 @@
                                             {
                                                 string checkboxId = "permission_" + item.MenuId;
 
+                                                string checkboxClass = "custom-control-input permission-checkbox";
+
+                                                if (item.IsVisibleInSidebar)
+                                                {
+                                                    checkboxClass = checkboxClass + " permission-page-checkbox";
+                                                }
+                                                else
+                                                {
+                                                    checkboxClass = checkboxClass + " permission-action-checkbox";
+                                                }
+
                                                 <div class="ml-4 mb-1">
 
                                                     <div class="custom-control custom-checkbox">
 
                                                         <input type="checkbox"
-                                                               class="custom-control-input permission-checkbox"
+                                                               class="@checkboxClass"
                                                                id="@checkboxId"
                                                                name="checkedMenuIds"
                                                                value="@item.MenuId"
+                                                               data-page-menu-id="@pageGroup.Key.PageMenuId"
                                                                @(item.IsChecked ? "checked" : "") />
 
                                                         <label class="custom-control-label font-weight-normal" for="@checkboxId">
-
                                                             @item.MenuName
-
-                                                            @if (item.IsVisibleInSidebar)
-                                                            {
-                                                                <span class="badge badge-info ml-1">Page</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span class="badge badge-secondary ml-1">Action</span>
-                                                            }
-
                                                         </label>
 
                                                     </div>

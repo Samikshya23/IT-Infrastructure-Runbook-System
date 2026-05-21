@@ -1,7 +1,7 @@
 ﻿using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
+using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace EmployeeAccessSystem.Services
@@ -15,35 +15,174 @@ namespace EmployeeAccessSystem.Services
             _repo = repo;
         }
 
-        public async Task<List<Category>> GetAllAsync()
+        // Get all records
+        public async Task<IEnumerable<Category>> GetAllAsync()
         {
-            var data = await _repo.GetAllAsync();
-            return data.ToList();
+            return await _repo.GetAllAsync();
         }
 
-        public Task<Category?> GetByIdAsync(int id)
+        // Get single record by id
+        public async Task<Category> GetByIdAsync(int id)
         {
-            return _repo.GetByIdAsync(id);
+            return await _repo.GetByIdAsync(id);
         }
 
-        public Task AddAsync(Category category)
+        // Save new record
+        public async Task<string> AddAsync(Category category)
         {
-            return _repo.AddAsync(category);
+            if (category == null)
+            {
+                return "Invalid request.";
+            }
+
+            if (string.IsNullOrWhiteSpace(category.Name))
+            {
+                return "Name is required.";
+            }
+
+            category.Name = category.Name.Trim();
+
+            if (category.Name.Length > 100)
+            {
+                return "Name cannot exceed 100 characters.";
+            }
+
+            try
+            {
+                int result = await _repo.AddAsync(category);
+
+                if (result > 0)
+                {
+                    return "Added successfully.";
+                }
+
+                return "Failed to save record.";
+            }
+            catch (SqlException)
+            {
+                return "Database error while saving record.";
+            }
+            catch
+            {
+                return "Error while saving record.";
+            }
         }
 
-        public Task UpdateAsync(Category category)
+        // Update existing record
+        public async Task<string> UpdateAsync(Category category)
         {
-            return _repo.UpdateAsync(category);
+            if (category == null)
+            {
+                return "Invalid request.";
+            }
+
+            if (category.CategoryId <= 0)
+            {
+                return "Invalid record.";
+            }
+
+            if (string.IsNullOrWhiteSpace(category.Name))
+            {
+                return "Name is required.";
+            }
+
+            category.Name = category.Name.Trim();
+
+            if (category.Name.Length > 100)
+            {
+                return "Name cannot exceed 100 characters.";
+            }
+
+            Category existing = await _repo.GetByIdAsync(category.CategoryId);
+
+            if (existing == null)
+            {
+                return "Record not found.";
+            }
+
+            try
+            {
+                int result = await _repo.UpdateAsync(category);
+
+                if (result > 0)
+                {
+                    return "Updated successfully.";
+                }
+
+                return "Failed to update record.";
+            }
+            catch (SqlException)
+            {
+                return "Database error while updating record.";
+            }
+            catch
+            {
+                return "Error while updating record.";
+            }
         }
 
-        public Task DeleteAsync(int id)
+        // Delete record
+        public async Task<string> DeleteAsync(int id)
         {
-            return _repo.DeleteAsync(id);
+            if (id <= 0)
+            {
+                return "Invalid record.";
+            }
+
+            Category existing = await _repo.GetByIdAsync(id);
+
+            if (existing == null)
+            {
+                return "Record not found.";
+            }
+
+            try
+            {
+                int result = await _repo.DeleteAsync(id);
+
+                if (result > 0)
+                {
+                    return "Deleted successfully.";
+                }
+
+                return "Failed to delete record.";
+            }
+            catch
+            {
+                return "This record cannot be deleted because it is used somewhere.";
+            }
         }
 
-        public Task ToggleAsync(int id)
+        // Activate or deactivate record
+        public async Task<string> ToggleAsync(int id)
         {
-            return _repo.ToggleAsync(id);
+            if (id <= 0)
+            {
+                return "Invalid record.";
+            }
+
+            Category existing = await _repo.GetByIdAsync(id);
+
+            if (existing == null)
+            {
+                return "Record not found.";
+            }
+
+            try
+            {
+                int result = await _repo.ToggleAsync(id);
+
+                if (result > 0)
+                {
+                    return "Status updated successfully.";
+                }
+
+                return "Failed to update status.";
+            }
+            catch
+            {
+                return "Error while updating status.";
+            }
         }
     }
 }

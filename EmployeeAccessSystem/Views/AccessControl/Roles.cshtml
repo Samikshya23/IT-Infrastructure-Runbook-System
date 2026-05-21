@@ -112,13 +112,6 @@
                                             </button>
 
                                             <button type="button"
-                                                    class="btn btn-xs btn-light border btnRolePermission ml-1"
-                                                    data-role-id="@item.RoleId"
-                                                    title="Permission">
-                                                <i class="fas fa-key"></i>
-                                            </button>
-
-                                            <button type="button"
                                                     class="btn btn-xs btn-outline-danger btnDeleteRole ml-1"
                                                     data-role-id="@item.RoleId"
                                                     data-role-name="@item.RoleName"
@@ -161,18 +154,6 @@
     <div class="modal-dialog modal-sm" role="document">
 
         <div class="modal-content" id="roleModalContent">
-        </div>
-
-    </div>
-
-</div>
-
-@* Role Permission Modal *@
-<div class="modal fade" id="rolePermissionModal" tabindex="-1" role="dialog" aria-hidden="true">
-
-    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
-
-        <div class="modal-content" id="rolePermissionModalContent">
         </div>
 
     </div>
@@ -236,6 +217,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/AccessControl/permission.js" asp-append-version="true"></script>
     <script src="~/js/AccessControl/roles.js" asp-append-version="true"></script>
 }

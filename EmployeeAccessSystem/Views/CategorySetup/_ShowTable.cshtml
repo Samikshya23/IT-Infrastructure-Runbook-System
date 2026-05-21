@@ -1,0 +1,219 @@
+﻿@model List<EmployeeAccessSystem.Models.CategorySetup>
+
+@functions {
+
+    private void BuildColumnNames(
+        EmployeeAccessSystem.Models.CategorySetup node,
+        List<string> columns)
+    {
+        if (node == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(node.ConfigurationNodeName))
+        {
+            columns.Add("Level " + (columns.Count + 1));
+        }
+        else
+        {
+            columns.Add(node.ConfigurationNodeName);
+        }
+
+        if (node.Children != null && node.Children.Count > 0)
+        {
+            BuildColumnNames(node.Children[0], columns);
+        }
+    }
+
+    private void BuildRows(
+        EmployeeAccessSystem.Models.CategorySetup node,
+        List<string> currentRow,
+        List<List<string>> rows)
+    {
+        if (node == null)
+        {
+            return;
+        }
+
+        currentRow.Add(node.NodeValue);
+
+        if (node.Children == null || node.Children.Count == 0)
+        {
+            rows.Add(new List<string>(currentRow));
+        }
+        else
+        {
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                BuildRows(node.Children[i], currentRow, rows);
+            }
+        }
+
+        currentRow.RemoveAt(currentRow.Count - 1);
+    }
+}
+
+@{
+    List<string> columns = new List<string>();
+
+    List<List<List<string>>> groupedRows =
+        new List<List<List<string>>>();
+
+    if (Model != null && Model.Count > 0)
+    {
+        BuildColumnNames(Model[0], columns);
+
+        for (int r = 0; r < Model.Count; r++)
+        {
+            List<List<string>> rootRows =
+                new List<List<string>>();
+
+            BuildRows(
+                Model[r],
+                new List<string>(),
+                rootRows
+            );
+
+            groupedRows.Add(rootRows);
+        }
+    }
+}
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="card mb-0 shadow-none border-0">
+
+        <div class="card-body p-0">
+
+            <table id="setupDynamicTable"
+                   class="table table-bordered table-hover table-sm mb-0 rounded-0">
+
+                <thead class="bg-light border-bottom">
+
+                    <tr>
+
+                        <th class="text-center align-middle"
+                            style="width:70px;">
+                            SN
+                        </th>
+
+                        @for (int c = 0; c < columns.Count; c++)
+                        {
+                            <th class="text-center align-middle">
+                                @columns[c]
+                            </th>
+                        }
+
+                        <th class="text-center align-middle"
+                            style="width:90px;">
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    @for (int g = 0; g < groupedRows.Count; g++)
+                    {
+                        List<List<string>> rootRows =
+                        groupedRows[g];
+
+                        int rowSpan = rootRows.Count;
+
+                        for (int i = 0; i < rootRows.Count; i++)
+                        {
+                            <tr>
+
+                                @if (i == 0)
+                                {
+                                    <td class="text-center align-middle"
+                                        rowspan="@rowSpan">
+
+                                        @(g + 1)
+
+                                    </td>
+                                }
+
+                                @for (int c = 0; c < columns.Count; c++)
+                                {
+                                    if (c == 0)
+                                    {
+                                        if (i == 0)
+                                        {
+                                            <td class="align-middle"
+                                                rowspan="@rowSpan">
+                                                @rootRows[i][c]
+                                            </td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td class="align-middle">
+                                            @rootRows[i][c]
+                                        </td>
+                                    }
+                                }
+
+                                @if (i == 0)
+                                {
+                                    <td class="text-center align-middle"
+                                        rowspan="@rowSpan">
+
+                                        <button type="button"
+                                                class="btn btn-xs btn-light border btnEditRoot"
+                                                data-root-index="@g"
+                                                title="Edit">
+
+                                            <i class="fas fa-pen"></i>
+
+                                        </button>
+
+                                        <form asp-action="Delete"
+                                              asp-controller="CategorySetup"
+                                              method="post"
+                                              class="d-inline delete-root-form">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="categoryId"
+                                                   value="@Model[g].CategoryId" />
+
+                                            <input type="hidden"
+                                                   name="rootIndex"
+                                                   value="@g" />
+
+                                            <button type="submit"
+                                                    class="btn btn-xs btn-outline-danger ml-1"
+                                                    title="Delete">
+
+                                                <i class="fas fa-trash-alt"></i>
+
+                                            </button>
+
+                                        </form>
+
+                                    </td>
+                                }
+
+                            </tr>
+                        }
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+}
+else
+{
+    <div class="text-center text-muted py-4">
+        No setup data found.
+    </div>
+}

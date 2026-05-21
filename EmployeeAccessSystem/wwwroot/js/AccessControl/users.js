@@ -30,6 +30,40 @@
         table.page.len($(this).val()).draw();
     });
 
+    // Create user modal
+    $(document).on("click", "#btnCreateUser", function () {
+
+        $.ajax({
+            url: "/AccessControl/CreateUserModal",
+            type: "GET",
+            success: function (response) {
+
+                if (typeof response === "string" && response.indexOf("error|") === 0) {
+                    toastr.error(response.replace("error|", ""));
+                    return;
+                }
+
+                $("#createUserModalContent").html(response);
+                $("#createUserModal").modal("show");
+            },
+            error: function (xhr) {
+
+                if (xhr.status === 401) {
+                    toastr.error("Please login first.");
+                    return;
+                }
+
+                if (xhr.status === 403) {
+                    toastr.error("Access denied. You do not have permission.");
+                    return;
+                }
+
+                toastr.error("Unable to load add user form.");
+            }
+        });
+
+    });
+
     // Details modal
     $(document).on("click", ".btnDetailsUser", function () {
 

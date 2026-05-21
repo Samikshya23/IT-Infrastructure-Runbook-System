@@ -4,39 +4,37 @@ using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EmployeeAccessSystem.Components.ProductConfiguration
+namespace EmployeeAccessSystem.Components.FormConfiguration
 {
-    public class ProductConfigurationViewComponent : ViewComponent
+    public class FormConfigurationViewComponent : ViewComponent
     {
-        private readonly IProductConfigurationService _service;
+        private readonly IFormConfigurationService _service;
 
-        public ProductConfigurationViewComponent(IProductConfigurationService service)
+        public FormConfigurationViewComponent(IFormConfigurationService service)
         {
             _service = service;
         }
 
-        public async Task<IViewComponentResult> InvokeAsync(int selectedProductId)
+        public async Task<IViewComponentResult> InvokeAsync(int selectedCategoryId)
         {
-            List<ProductConfigurationIndexItem> result =
-                new List<ProductConfigurationIndexItem>();
+            List<FormConfigurationIndexItem> result = new List<FormConfigurationIndexItem>();
 
-            if (selectedProductId > 0)
+            if (selectedCategoryId > 0)
             {
-                List<ProductConfigurationIndexItem> data =
-                    await _service.GetIndexAsync();
+                List<FormConfigurationIndexItem> data = await _service.GetIndexAsync();
 
-                foreach (ProductConfigurationIndexItem item in data)
+                foreach (FormConfigurationIndexItem item in data)
                 {
-                    if (item.ProductId == selectedProductId)
+                    if (item.CategoryId == selectedCategoryId)
                     {
                         result.Add(item);
                     }
                 }
             }
 
-            ViewBag.SelectedProductId = selectedProductId;
+            ViewBag.SelectedCategoryId = selectedCategoryId;
 
-            return View("~/Components/ProductConfiguration/Default.cshtml", result);
+            return View("~/Views/Shared/Components/FormConfiguration/Default.cshtml", result);
         }
     }
 }
