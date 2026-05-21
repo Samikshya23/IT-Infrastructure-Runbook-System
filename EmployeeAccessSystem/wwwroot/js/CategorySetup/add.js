@@ -2,23 +2,19 @@
 
 $(document).ready(function () {
 
-    // Global variables
     var valueTypeList = window.categorySetupValueTypes || [];
     var selectedCategoryId = parseInt($("#SelectedCategoryId").val() || "0");
     var editRootIndex = parseInt($("#RootIndex").val() || "-1");
     var isFormChanged = false;
 
-    // Get anti-forgery token for secure AJAX POST request
     function getAntiForgeryToken() {
         return $('input[name="__RequestVerificationToken"]').val();
     }
 
-    // Generate unique setup node id
     function generateSetupNodeId() {
         return "node_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
     }
 
-    // Encode html value
     function encodeHtml(value) {
         if (value == null) {
             return "";
@@ -27,7 +23,6 @@ $(document).ready(function () {
         return $("<div/>").text(value).html();
     }
 
-    // Show toastr message
     function showToastMessage(type, message) {
         if (message == null || message === "") {
             return;
@@ -64,7 +59,6 @@ $(document).ready(function () {
         }
     }
 
-    // Initial load
     if (selectedCategoryId > 0) {
         $("#CategoryId").val(selectedCategoryId);
 
@@ -76,13 +70,11 @@ $(document).ready(function () {
         }
     }
 
-    // Track form changes
     $(document).off("input change", ".node-value, .field-type");
     $(document).on("input change", ".node-value, .field-type", function () {
         isFormChanged = true;
     });
 
-    // Category dropdown change
     $("#CategoryId").off("change").on("change", function () {
         var categoryId = $(this).val();
 
@@ -96,7 +88,6 @@ $(document).ready(function () {
         loadGeneratedForm(categoryId);
     });
 
-    // Load generated form from form configuration
     function loadGeneratedForm(categoryId) {
         $("#generatedSetupArea").show();
         $("#nodeContainer").html('<div class="text-muted text-center py-3">Loading...</div>');
@@ -140,7 +131,6 @@ $(document).ready(function () {
             });
     }
 
-    // Load selected root for edit
     function loadRootForEdit(categoryId, rootIndex) {
         $("#generatedSetupArea").show();
         $("#nodeContainer").html('<div class="text-muted text-center py-3">Loading...</div>');
@@ -175,7 +165,6 @@ $(document).ready(function () {
             });
     }
 
-    // Add row from form configuration
     function addConfiguredRow(container, level, configNode, isRootLevel) {
         var margin = level * 30;
         var setupNodeId = generateSetupNodeId();
@@ -222,7 +211,6 @@ $(document).ready(function () {
         loadDefaultChildren(currentRow);
     }
 
-    // Add row from saved setup json
     function addSavedRow(container, level, savedNode, isRootLevel) {
         var margin = level * 30;
         var setupNodeId = savedNode.id || savedNode.Id;
@@ -287,7 +275,6 @@ $(document).ready(function () {
         }
     }
 
-    // Generate field type dropdown
     function getFieldTypeDropdown(selectedValue, selectedId) {
         var html = "";
 
@@ -321,7 +308,6 @@ $(document).ready(function () {
         return html;
     }
 
-    // Generate field type option
     function getFieldTypeOption(id, text, selectedValue, selectedId) {
         var selected = "";
 
@@ -332,7 +318,6 @@ $(document).ready(function () {
         return '<option value="' + id + '" data-text="' + encodeHtml(text) + '"' + selected + '>' + encodeHtml(text) + '</option>';
     }
 
-    // Generate add/remove buttons
     function getActionButtons() {
         var html = "";
 
@@ -351,7 +336,6 @@ $(document).ready(function () {
         return html;
     }
 
-    // Load default child levels
     function loadDefaultChildren(parentRow) {
         var categoryId = $("#CategoryId").val();
         var configId = parentRow.attr("data-config-id");
@@ -376,7 +360,6 @@ $(document).ready(function () {
         });
     }
 
-    // Add same level row
     $(document).off("click", ".btn-add-same");
     $(document).on("click", ".btn-add-same", function () {
         var currentRow = $(this).closest(".node-row");
@@ -408,6 +391,7 @@ $(document).ready(function () {
         var level = parseInt(currentRow.attr("data-level"));
         var isRootLevel = currentRow.attr("data-root") === "true";
 
+        // Original concept: plus button adds same-level row
         addConfiguredRow(parentContainer, level, configNode, isRootLevel);
 
         isFormChanged = true;
@@ -415,7 +399,6 @@ $(document).ready(function () {
         refreshActionButtons();
     });
 
-    // Remove selected row
     $(document).off("click", ".btn-remove-row");
     $(document).on("click", ".btn-remove-row", function () {
         var currentRow = $(this).closest(".node-row");
@@ -427,19 +410,27 @@ $(document).ready(function () {
             return;
         }
 
+        var isRootLevel = currentRow.attr("data-root") === "true";
+
+        if (isRootLevel === true) {
+            showToastMessage("error", "Parent row cannot be removed.");
+            return;
+        }
+
+        var siblingCount = currentRow.parent().children(".node-row").length;
+
+        if (siblingCount <= 1) {
+            showToastMessage("error", "At least one child item is required.");
+            return;
+        }
+
         currentRow.remove();
 
         isFormChanged = true;
 
-        if ($("#nodeContainer").children(".node-row").length === 0 && editRootIndex < 0) {
-            $("#generatedSetupArea").hide();
-            $("#nodeContainer").html("");
-        }
-
         refreshActionButtons();
     });
 
-    // Refresh add/remove buttons
     function refreshActionButtons() {
         $("#nodeContainer").find(".node-row").each(function () {
             var row = $(this);
@@ -457,11 +448,13 @@ $(document).ready(function () {
                     row.find("> .row .btn-add-same").show();
                 }
 
-                row.find("> .row .btn-remove-row").show();
+                // Parent delete icon hidden
+                row.find("> .row .btn-remove-row").hide();
                 return;
             }
 
             if (inputType === "Single") {
+                row.find("> .row .btn-remove-row").show();
                 return;
             }
 
@@ -478,7 +471,6 @@ $(document).ready(function () {
         });
     }
 
-    // Validate rows before save
     function validateRows(container) {
         var valid = true;
 
@@ -501,12 +493,23 @@ $(document).ready(function () {
                     return false;
                 }
             }
+
+            var isRootLevel = row.attr("data-root") === "true";
+
+            if (isRootLevel === true) {
+                var rootChildCount = row.children(".child-area").children(".node-row").length;
+
+                if (rootChildCount === 0) {
+                    showToastMessage("error", "At least one child item is required.");
+                    valid = false;
+                    return false;
+                }
+            }
         });
 
         return valid;
     }
 
-    // Collect recursive rows
     function collectRows(container) {
         var data = [];
 
@@ -538,39 +541,6 @@ $(document).ready(function () {
         return data;
     }
 
-    // Delete root when edit row is removed
-    function deleteCurrentRoot(categoryId) {
-        $.ajax({
-            url: "/CategorySetup/Delete",
-            type: "POST",
-            headers: {
-                "RequestVerificationToken": getAntiForgeryToken()
-            },
-            data: {
-                categoryId: parseInt(categoryId),
-                rootIndex: editRootIndex
-            },
-            success: function () {
-                $("#setupConfigurationModal").modal("hide");
-
-                window.location.href =
-                    "/CategorySetup?selectedCategoryId="
-                    + categoryId
-                    + "&successMessage="
-                    + encodeURIComponent("Deleted successfully.");
-            },
-            error: function (xhr) {
-                if (xhr.status === 403) {
-                    showToastMessage("error", "Access denied. You do not have permission.");
-                    return;
-                }
-
-                showToastMessage("error", "Delete failed.");
-            }
-        });
-    }
-
-    // Save setup configuration
     $("#btnSave").off("click").on("click", function () {
         var categoryId = $("#CategoryId").val();
 
@@ -580,11 +550,6 @@ $(document).ready(function () {
         }
 
         if ($("#nodeContainer").children(".node-row").length === 0) {
-            if (editRootIndex >= 0) {
-                deleteCurrentRoot(categoryId);
-                return;
-            }
-
             showToastMessage("error", "Please add setup values.");
             return;
         }
@@ -637,7 +602,6 @@ $(document).ready(function () {
         });
     });
 
-    // Close modal
     $("#btnFooterClose").off("click").on("click", function () {
         if (isFormChanged === false) {
             $("#setupConfigurationModal").modal("hide");
@@ -647,12 +611,10 @@ $(document).ready(function () {
         $("#confirmCloseModal").modal("show");
     });
 
-    // Continue editing
     $("#btnContinueEditing").off("click").on("click", function () {
         $("#confirmCloseModal").modal("hide");
     });
 
-    // Confirm close modal
     $("#btnConfirmClose").off("click").on("click", function () {
         $("#confirmCloseModal").modal("hide");
         $("#setupConfigurationModal").modal("hide");

@@ -1,219 +1,254 @@
 ﻿@model List<EmployeeAccessSystem.Models.CategorySetup>
+@using System.Collections.Generic
 
 @functions {
-
-    private void BuildColumnNames(
-        EmployeeAccessSystem.Models.CategorySetup node,
-        List<string> columns)
+    private int GetMaxDepth(List<EmployeeAccessSystem.Models.CategorySetup> nodes)
     {
-        if (node == null)
+        int maxDepth = 0;
+
+        if (nodes == null)
         {
-            return;
+            return maxDepth;
         }
 
-        if (string.IsNullOrWhiteSpace(node.ConfigurationNodeName))
+        foreach (var node in nodes)
         {
-            columns.Add("Level " + (columns.Count + 1));
-        }
-        else
-        {
-            columns.Add(node.ConfigurationNodeName);
-        }
+            int depth = GetNodeDepth(node, 1);
 
-        if (node.Children != null && node.Children.Count > 0)
-        {
-            BuildColumnNames(node.Children[0], columns);
-        }
-    }
-
-    private void BuildRows(
-        EmployeeAccessSystem.Models.CategorySetup node,
-        List<string> currentRow,
-        List<List<string>> rows)
-    {
-        if (node == null)
-        {
-            return;
-        }
-
-        currentRow.Add(node.NodeValue);
-
-        if (node.Children == null || node.Children.Count == 0)
-        {
-            rows.Add(new List<string>(currentRow));
-        }
-        else
-        {
-            for (int i = 0; i < node.Children.Count; i++)
+            if (depth > maxDepth)
             {
-                BuildRows(node.Children[i], currentRow, rows);
+                maxDepth = depth;
             }
         }
 
-        currentRow.RemoveAt(currentRow.Count - 1);
-    }
-}
-
-@{
-    List<string> columns = new List<string>();
-
-    List<List<List<string>>> groupedRows =
-        new List<List<List<string>>>();
-
-    if (Model != null && Model.Count > 0)
-    {
-        BuildColumnNames(Model[0], columns);
-
-        for (int r = 0; r < Model.Count; r++)
+        if (maxDepth < 2)
         {
-            List<List<string>> rootRows =
-                new List<List<string>>();
-
-            BuildRows(
-                Model[r],
-                new List<string>(),
-                rootRows
-            );
-
-            groupedRows.Add(rootRows);
+            maxDepth = 2;
         }
+
+        return maxDepth;
+    }
+
+    private int GetNodeDepth(EmployeeAccessSystem.Models.CategorySetup node, int currentDepth)
+    {
+        if (node == null || node.Children == null || node.Children.Count == 0)
+        {
+            return currentDepth;
+        }
+
+        int maxDepth = currentDepth;
+
+        foreach (var child in node.Children)
+        {
+            int childDepth = GetNodeDepth(child, currentDepth + 1);
+
+            if (childDepth > maxDepth)
+            {
+                maxDepth = childDepth;
+            }
+        }
+
+        return maxDepth;
+    }
+
+    private void BuildLeafRows(
+        EmployeeAccessSystem.Models.CategorySetup node,
+        List<EmployeeAccessSystem.Models.CategorySetup> path,
+        List<List<EmployeeAccessSystem.Models.CategorySetup>> rows)
+    {
+        if (node == null)
+        {
+            return;
+        }
+
+        path.Add(node);
+
+        if (node.Children == null || node.Children.Count == 0)
+        {
+            rows.Add(new List<EmployeeAccessSystem.Models.CategorySetup>(path));
+        }
+        else
+        {
+            foreach (var child in node.Children)
+            {
+                BuildLeafRows(child, path, rows);
+            }
+        }
+
+        path.RemoveAt(path.Count - 1);
+    }
+
+    private string GetHeadingName(List<EmployeeAccessSystem.Models.CategorySetup> model, int level)
+    {
+        if (model == null)
+        {
+            return "Level " + level;
+        }
+
+        foreach (var root in model)
+        {
+            string name = FindHeadingName(root, 1, level);
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                return name;
+            }
+        }
+
+        return "Level " + level;
+    }
+
+    private string FindHeadingName(EmployeeAccessSystem.Models.CategorySetup node, int currentLevel, int requiredLevel)
+    {
+        if (node == null)
+        {
+            return "";
+        }
+
+        if (currentLevel == requiredLevel)
+        {
+            return node.ConfigurationNodeName;
+        }
+
+        if (node.Children != null)
+        {
+            foreach (var child in node.Children)
+            {
+                string result = FindHeadingName(child, currentLevel + 1, requiredLevel);
+
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    return result;
+                }
+            }
+        }
+
+        return "";
+    }
+
+    private string GetColumnValue(List<EmployeeAccessSystem.Models.CategorySetup> row, int index)
+    {
+        if (row == null)
+        {
+            return "-";
+        }
+
+        if (index >= row.Count)
+        {
+            return "-";
+        }
+
+        if (string.IsNullOrWhiteSpace(row[index].NodeValue))
+        {
+            return "-";
+        }
+
+        return row[index].NodeValue;
     }
 }
 
-@if (Model != null && Model.Count > 0)
+@if (Model == null || Model.Count == 0)
 {
-    <div class="card mb-0 shadow-none border-0">
-
-        <div class="card-body p-0">
-
-            <table id="setupDynamicTable"
-                   class="table table-bordered table-hover table-sm mb-0 rounded-0">
-
-                <thead class="bg-light border-bottom">
-
-                    <tr>
-
-                        <th class="text-center align-middle"
-                            style="width:70px;">
-                            SN
-                        </th>
-
-                        @for (int c = 0; c < columns.Count; c++)
-                        {
-                            <th class="text-center align-middle">
-                                @columns[c]
-                            </th>
-                        }
-
-                        <th class="text-center align-middle"
-                            style="width:90px;">
-                            Actions
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    @for (int g = 0; g < groupedRows.Count; g++)
-                    {
-                        List<List<string>> rootRows =
-                        groupedRows[g];
-
-                        int rowSpan = rootRows.Count;
-
-                        for (int i = 0; i < rootRows.Count; i++)
-                        {
-                            <tr>
-
-                                @if (i == 0)
-                                {
-                                    <td class="text-center align-middle"
-                                        rowspan="@rowSpan">
-
-                                        @(g + 1)
-
-                                    </td>
-                                }
-
-                                @for (int c = 0; c < columns.Count; c++)
-                                {
-                                    if (c == 0)
-                                    {
-                                        if (i == 0)
-                                        {
-                                            <td class="align-middle"
-                                                rowspan="@rowSpan">
-                                                @rootRows[i][c]
-                                            </td>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <td class="align-middle">
-                                            @rootRows[i][c]
-                                        </td>
-                                    }
-                                }
-
-                                @if (i == 0)
-                                {
-                                    <td class="text-center align-middle"
-                                        rowspan="@rowSpan">
-
-                                        <button type="button"
-                                                class="btn btn-xs btn-light border btnEditRoot"
-                                                data-root-index="@g"
-                                                title="Edit">
-
-                                            <i class="fas fa-pen"></i>
-
-                                        </button>
-
-                                        <form asp-action="Delete"
-                                              asp-controller="CategorySetup"
-                                              method="post"
-                                              class="d-inline delete-root-form">
-
-                                            @Html.AntiForgeryToken()
-
-                                            <input type="hidden"
-                                                   name="categoryId"
-                                                   value="@Model[g].CategoryId" />
-
-                                            <input type="hidden"
-                                                   name="rootIndex"
-                                                   value="@g" />
-
-                                            <button type="submit"
-                                                    class="btn btn-xs btn-outline-danger ml-1"
-                                                    title="Delete">
-
-                                                <i class="fas fa-trash-alt"></i>
-
-                                            </button>
-
-                                        </form>
-
-                                    </td>
-                                }
-
-                            </tr>
-                        }
-                    }
-
-                </tbody>
-
-            </table>
-
-        </div>
-
+    <div class="p-3 text-center text-muted">
+        No setup data found.
     </div>
 }
 else
 {
-    <div class="text-center text-muted py-4">
-        No setup data found.
+    int sn = 1;
+    int maxDepth = GetMaxDepth(Model);
+    int totalColumnCount = maxDepth + 2;
+
+    <div class="card-body p-0">
+        <table id="setupDynamicTable"
+               class="table table-bordered table-hover table-sm mb-0"
+               style="table-layout:fixed;width:100%;">
+
+            <thead class="bg-light">
+                <tr>
+                    <th class="text-center align-middle" style="width:60px;">SN</th>
+
+                    @for (int i = 1; i <= maxDepth; i++)
+                    {
+                        <th class="text-center align-middle">
+                            @GetHeadingName(Model, i)
+                        </th>
+                    }
+
+                    
+                    <th class="text-center align-middle" style="width:100px;">Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @for (int rootIndex = 0; rootIndex < Model.Count; rootIndex++)
+                {
+                    var root = Model[rootIndex];
+
+                    var rows = new List<List<EmployeeAccessSystem.Models.CategorySetup>>();
+
+                    BuildLeafRows(root, new List<EmployeeAccessSystem.Models.CategorySetup>(), rows);
+
+                    if (rows.Count == 0)
+                    {
+                        rows.Add(new List<EmployeeAccessSystem.Models.CategorySetup> { root });
+                    }
+
+                    int rowHeight = rows.Count * 36;
+
+                    <tr>
+                        <td class="text-center align-middle">
+                            @sn
+                        </td>
+
+                        <td class="p-0 align-top">
+                            <div class="d-flex align-items-center px-2"
+                                 style="height:@(rowHeight)px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                 title="@root.NodeValue">
+                                @root.NodeValue
+                            </div>
+                        </td>
+
+                        @for (int columnIndex = 1; columnIndex < maxDepth; columnIndex++)
+                        {
+                            <td class="p-0 align-top">
+                                <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
+                                    <tbody>
+                                        @for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                                        {
+                                            string columnValue = GetColumnValue(rows[rowIndex], columnIndex);
+
+                                            <tr>
+                                                <td class="p-0 align-middle @(rowIndex != rows.Count - 1 ? "border-bottom" : "")">
+                                                    <div class="d-flex align-items-center px-2"
+                                                         style="height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                                         title="@columnValue">
+                                                        @columnValue
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </td>
+                        }
+
+                        
+
+                        <td class="text-center align-middle">
+                            <button type="button"
+                                    class="btn btn-light border btn-sm p-0 btnEditRoot"
+                                    data-root-index="@rootIndex"
+                                    title="Edit"
+                                    style="width:24px;height:24px;line-height:22px;">
+                                <i class="fas fa-pen" style="font-size:10px;"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    sn++;
+                }
+            </tbody>
+        </table>
     </div>
 }

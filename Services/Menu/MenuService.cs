@@ -32,7 +32,23 @@ namespace EmployeeAccessSystem.Services
                 {
                     foreach (MenuModel menu in result)
                     {
+                        menu.Children = new List<MenuModel>();
                         menuList.Add(menu);
+                    }
+                }
+
+                foreach (MenuModel menu in menuList)
+                {
+                    if (menu.ParentMenuId != null)
+                    {
+                        foreach (MenuModel possibleParent in menuList)
+                        {
+                            if (menu.ParentMenuId == possibleParent.MenuId)
+                            {
+                                possibleParent.Children.Add(menu);
+                                break;
+                            }
+                        }
                     }
                 }
 
@@ -41,19 +57,6 @@ namespace EmployeeAccessSystem.Services
                     if (menu.ParentMenuId == null)
                     {
                         parentMenus.Add(menu);
-                    }
-                }
-
-                foreach (MenuModel parent in parentMenus)
-                {
-                    parent.Children = new List<MenuModel>();
-
-                    foreach (MenuModel child in menuList)
-                    {
-                        if (child.ParentMenuId == parent.MenuId)
-                        {
-                            parent.Children.Add(child);
-                        }
                     }
                 }
 

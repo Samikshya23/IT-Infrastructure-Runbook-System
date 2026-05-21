@@ -7,14 +7,10 @@ namespace EmployeeAccessSystem.Repositories
 {
     public interface IReportRepository
     {
-        Task<IEnumerable<ReportProduct>> GetProductsAsync();
+        Task<IEnumerable<ReportCategory>> GetCategoryListAsync();
 
-        Task<string> GetHeadingsAsync(int productId);
+        Task<string> GetHeadingsAsync(int categoryId);
 
-        Task<IEnumerable<Report>> GetDataAsync(
-            int productId,
-            DateTime fromDate,
-            DateTime toDate
-        );
+        Task<IEnumerable<Report>> GetDataAsync(int categoryId, DateTime fromDate, DateTime toDate);
     }
 }

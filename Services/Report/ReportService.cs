@@ -16,32 +16,32 @@ namespace EmployeeAccessSystem.Services
             _reportRepository = reportRepository;
         }
 
-        // Load products
-        public async Task<IEnumerable<ReportProduct>> GetProductsAsync()
+        // Load category list for report dropdown
+        public async Task<IEnumerable<ReportCategory>> GetCategoryListAsync()
         {
-            return await _reportRepository.GetProductsAsync();
+            return await _reportRepository.GetCategoryListAsync();
         }
 
-        // Load headings
-        public async Task<string> GetHeadingsAsync(int productId)
+        // Load headings from Form Configuration
+        public async Task<string> GetHeadingsAsync(int categoryId)
         {
-            // Validate product
-            if (productId <= 0)
+            // Validate category
+            if (categoryId <= 0)
             {
-                throw new Exception("Please select a valid product.");
+                throw new Exception("Please select a valid category.");
             }
 
             // Return headings from repository
-            return await _reportRepository.GetHeadingsAsync(productId);
+            return await _reportRepository.GetHeadingsAsync(categoryId);
         }
 
-        // Load report data
-        public async Task<IEnumerable<Report>> GetDataAsync(int productId, DateTime fromDate, DateTime toDate)
+        // Load report data from Category Checklist
+        public async Task<IEnumerable<Report>> GetDataAsync(int categoryId, DateTime fromDate, DateTime toDate)
         {
-            // Validate product
-            if (productId <= 0)
+            // Validate category
+            if (categoryId <= 0)
             {
-                throw new Exception("Please select a valid product.");
+                throw new Exception("Please select a valid category.");
             }
 
             // Validate date range
@@ -59,7 +59,7 @@ namespace EmployeeAccessSystem.Services
             }
 
             // Return report data from repository
-            return await _reportRepository.GetDataAsync(productId, fromDate, toDate);
+            return await _reportRepository.GetDataAsync(categoryId, fromDate, toDate);
         }
     }
 }

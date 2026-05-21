@@ -16,110 +16,114 @@
     }
 }
 
+@functions {
+    private bool IsMenuActive(MenuModel menu, string currentController)
+    {
+        if (!string.IsNullOrWhiteSpace(menu.ControllerName) &&
+            menu.ControllerName == currentController)
+        {
+            return true;
+        }
+
+        if (menu.Children != null && menu.Children.Count > 0)
+        {
+            foreach (MenuModel child in menu.Children)
+            {
+                if (IsMenuActive(child, currentController))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private string GetMenuUrl(MenuModel menu)
+    {
+        if (!string.IsNullOrWhiteSpace(menu.ControllerName) &&
+            !string.IsNullOrWhiteSpace(menu.ActionName))
+        {
+            return Url.Action(menu.ActionName, menu.ControllerName);
+        }
+
+        return "#";
+    }
+}
+
 @if (Model != null && Model.Count > 0)
 {
     foreach (MenuModel menu in Model)
     {
         bool hasChildren = menu.Children != null && menu.Children.Count > 0;
-        bool isParentActive = false;
-
-        if (!string.IsNullOrWhiteSpace(menu.ControllerName) && menu.ControllerName == currentController)
-        {
-            isParentActive = true;
-        }
+        bool isActive = IsMenuActive(menu, currentController);
+        string menuUrl = GetMenuUrl(menu);
 
         if (hasChildren)
         {
-            foreach (MenuModel child in menu.Children)
-            {
-                if (!string.IsNullOrWhiteSpace(child.ControllerName) && child.ControllerName == currentController)
-                {
-                    isParentActive = true;
-                    break;
-                }
-            }
-        }
-
-        if (hasChildren)
-        {
-            <li class="nav-item has-treeview @(isParentActive ? "menu-open" : "")">
-
-                <a href="#" class="nav-link @(isParentActive ? "active" : "")">
-
+            <li class="nav-item has-treeview @(isActive ? "menu-open" : "")">
+                <a href="#" class="nav-link @(isActive ? "active" : "")">
                     <i class="nav-icon @(string.IsNullOrWhiteSpace(menu.IconClass) ? "fas fa-folder" : menu.IconClass)"></i>
-
                     <p>
                         @menu.MenuName
                         <i class="right fas fa-angle-left"></i>
                     </p>
-
                 </a>
 
                 <ul class="nav nav-treeview">
-
                     @foreach (MenuModel child in menu.Children)
                     {
-                        bool isChildActive = false;
+                        bool childHasChildren = child.Children != null && child.Children.Count > 0;
+                        bool childActive = IsMenuActive(child, currentController);
+                        string childUrl = GetMenuUrl(child);
 
-                        if (!string.IsNullOrWhiteSpace(child.ControllerName) &&
-                        child.ControllerName == currentController)
+                        if (childHasChildren)
                         {
-                            isChildActive = true;
+                            <li class="nav-item has-treeview @(childActive ? "menu-open" : "")">
+                                <a href="#" class="nav-link @(childActive ? "active" : "")">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        @child.MenuName
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
+                                </a>
+
+                                <ul class="nav nav-treeview">
+                                    @foreach (MenuModel subChild in child.Children)
+                                    {
+                                        bool subChildActive = IsMenuActive(subChild, currentController);
+                                        string subChildUrl = GetMenuUrl(subChild);
+
+                                        <li class="nav-item">
+                                            <a href="@subChildUrl" class="nav-link @(subChildActive ? "active" : "")">
+                                                <i class="far fa-circle nav-icon"></i>
+                                                <p>@subChild.MenuName</p>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </li>
                         }
-
-                        string childUrl = "#";
-
-                        if (!string.IsNullOrWhiteSpace(child.ControllerName) &&
-                        !string.IsNullOrWhiteSpace(child.ActionName))
+                        else
                         {
-                            childUrl = Url.Action(child.ActionName, child.ControllerName);
+                            <li class="nav-item">
+                                <a href="@childUrl" class="nav-link @(childActive ? "active" : "")">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>@child.MenuName</p>
+                                </a>
+                            </li>
                         }
-
-                        <li class="nav-item">
-
-                            <a href="@childUrl" class="nav-link @(isChildActive ? "active" : "")">
-
-                                <i class="far fa-circle nav-icon"></i>
-
-                                <p>@child.MenuName</p>
-
-                            </a>
-
-                        </li>
                     }
-
                 </ul>
-
             </li>
         }
         else
         {
-            bool isMenuActive = false;
-
-            if (!string.IsNullOrWhiteSpace(menu.ControllerName) &&
-                menu.ControllerName == currentController)
-            {
-                isMenuActive = true;
-            }
-
-            string menuUrl = "#";
-
-            if (!string.IsNullOrWhiteSpace(menu.ControllerName) &&
-                !string.IsNullOrWhiteSpace(menu.ActionName))
-            {
-                menuUrl = Url.Action(menu.ActionName, menu.ControllerName);
-            }
-
             <li class="nav-item">
-
-                <a href="@menuUrl" class="nav-link @(isMenuActive ? "active" : "")">
-
+                <a href="@menuUrl" class="nav-link @(isActive ? "active" : "")">
                     <i class="nav-icon @(string.IsNullOrWhiteSpace(menu.IconClass) ? "fas fa-circle" : menu.IconClass)"></i>
-
                     <p>@menu.MenuName</p>
-
                 </a>
-
             </li>
         }
     }

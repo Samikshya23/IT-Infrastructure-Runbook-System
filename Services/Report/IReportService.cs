@@ -7,12 +7,12 @@ namespace EmployeeAccessSystem.Services
 {
     public interface IReportService
     {
-        Task<IEnumerable<ReportProduct>> GetProductsAsync();
+        Task<IEnumerable<ReportCategory>> GetCategoryListAsync();
 
-        Task<string> GetHeadingsAsync(int productId);
+        Task<string> GetHeadingsAsync(int categoryId);
 
         Task<IEnumerable<Report>> GetDataAsync(
-            int productId,
+            int categoryId,
             DateTime fromDate,
             DateTime toDate
         );

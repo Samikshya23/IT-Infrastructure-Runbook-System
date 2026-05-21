@@ -1,7 +1,7 @@
-﻿using ClosedXML.Excel;
-using EmployeeAccessSystem.Models;
-using System;
+﻿using System;
 using System.IO;
+using ClosedXML.Excel;
+using EmployeeAccessSystem.Models;
 
 namespace EmployeeAccessSystem.Excel
 {
@@ -23,6 +23,12 @@ namespace EmployeeAccessSystem.Excel
                 int totalColumns = _model.Headings.Count + _model.Dates.Count;
                 int currentRow = 1;
 
+                if (totalColumns <= 0)
+                {
+                    totalColumns = 1;
+                }
+
+                // Title
                 ws.Range(currentRow, 1, currentRow, totalColumns).Merge();
                 ws.Cell(currentRow, 1).Value = _model.Title;
                 ws.Cell(currentRow, 1).Style.Font.Bold = true;
@@ -31,12 +37,14 @@ namespace EmployeeAccessSystem.Excel
 
                 currentRow++;
 
+                // Category name
                 ws.Range(currentRow, 1, currentRow, totalColumns).Merge();
-                ws.Cell(currentRow, 1).Value = "Product: " + _model.ProductName;
+                ws.Cell(currentRow, 1).Value = "Category: " + _model.CategoryName;
                 ws.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                 currentRow++;
 
+                // Date range
                 ws.Range(currentRow, 1, currentRow, totalColumns).Merge();
                 ws.Cell(currentRow, 1).Value =
                     "From: " + _model.FromDate.ToString("dd/MM/yyyy") +
@@ -48,6 +56,7 @@ namespace EmployeeAccessSystem.Excel
                 int headerRow = currentRow;
                 int col = 1;
 
+                // Left-side dynamic headings
                 foreach (string heading in _model.Headings)
                 {
                     ws.Cell(headerRow, col).Value = heading;
@@ -57,6 +66,7 @@ namespace EmployeeAccessSystem.Excel
                     col++;
                 }
 
+                // Date headings
                 foreach (DateTime date in _model.Dates)
                 {
                     ws.Cell(headerRow, col).Value = date.ToString("dd MMM");
@@ -68,6 +78,7 @@ namespace EmployeeAccessSystem.Excel
 
                 currentRow++;
 
+                // Body rows
                 for (int r = 0; r < _model.Rows.Count; r++)
                 {
                     col = 1;
@@ -116,20 +127,16 @@ namespace EmployeeAccessSystem.Excel
                 {
                     usedRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                     usedRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-
-                    // Center align report content vertically
                     usedRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
                 }
 
                 ws.Columns().AdjustToContents();
 
-                // Make Excel report wider and more balanced
                 for (int i = 1; i <= totalColumns; i++)
                 {
                     ws.Column(i).Width = 18;
                 }
 
-                // Freeze title/header area for easier reading
                 ws.SheetView.FreezeRows(headerRow);
 
                 using (MemoryStream stream = new MemoryStream())

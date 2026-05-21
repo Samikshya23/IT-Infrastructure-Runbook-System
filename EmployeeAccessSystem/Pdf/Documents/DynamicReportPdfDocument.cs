@@ -1,9 +1,8 @@
-﻿using EmployeeAccessSystem.Models;
-using QuestPDF.Elements.Text;
+﻿using System;
+using EmployeeAccessSystem.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System;
 
 namespace EmployeeAccessSystem.Pdf.Documents
 {
@@ -26,16 +25,17 @@ namespace EmployeeAccessSystem.Pdf.Documents
             container.Page(delegate (PageDescriptor page)
             {
                 page.Size(PageSizes.A3.Landscape());
-
-                // Reduced margin so table gets more page width
                 page.Margin(6);
-
-                page.DefaultTextStyle(TextStyle.Default.FontSize(8));
+                page.DefaultTextStyle(delegate (TextStyle style)
+                {
+                    return style.FontSize(8);
+                });
 
                 page.Content().Column(delegate (ColumnDescriptor column)
                 {
                     column.Item().AlignCenter().Text(_model.Title).Bold().FontSize(14);
-                    column.Item().AlignCenter().Text("Product: " + _model.ProductName);
+
+                    column.Item().AlignCenter().Text("Category: " + _model.CategoryName);
 
                     column.Item().AlignCenter().Text(
                         "From: " + _model.FromDate.ToString("dd/MM/yyyy") +
@@ -46,7 +46,6 @@ namespace EmployeeAccessSystem.Pdf.Documents
                     {
                         table.ColumnsDefinition(delegate (TableColumnsDefinitionDescriptor columns)
                         {
-                            // Relative columns make table stretch across full PDF page
                             for (int i = 0; i < _model.Headings.Count; i++)
                             {
                                 columns.RelativeColumn(3);
@@ -158,7 +157,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
             return container
                 .Background(Colors.Grey.Lighten3)
                 .Border(1)
-                .Padding(2) // Compact cell padding
+                .Padding(2)
                 .AlignCenter()
                 .AlignMiddle();
         }
@@ -167,7 +166,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
         {
             return container
                 .Border(1)
-                .Padding(2) // Compact cell padding
+                .Padding(2)
                 .AlignMiddle();
         }
     }

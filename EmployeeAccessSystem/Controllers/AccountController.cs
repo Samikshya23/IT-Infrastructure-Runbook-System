@@ -110,8 +110,8 @@ namespace EmployeeAccessSystem.Controllers
                 return RedirectToAction("Index", "AccessControl");
             }
 
-            // Normal user goes to first allowed system page
-            return RedirectToAction("Index", "ProductEntry");
+            // Normal user goes to Category Checklist page
+            return RedirectToAction("Index", "CategoryChecklist");
         }
 
         // Logout submit

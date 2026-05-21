@@ -8,47 +8,53 @@
 
     @Html.AntiForgeryToken()
 
-    <div class="modal-header bg-primary">
-        <h5 class="modal-title text-white">
+    <div class="modal-header bg-primary py-2">
+        <h6 class="modal-title text-white mb-0">
             <i class="fas fa-user-plus mr-1"></i>
             Add User
-        </h5>
+        </h6>
 
         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
     </div>
 
-    <div class="modal-body">
+    <div class="modal-body p-2">
 
-        <div class="form-group">
-            <label asp-for="FullName">Full Name</label>
-            <input asp-for="FullName" class="form-control" placeholder="Enter full name" />
-            <span asp-validation-for="FullName" class="text-danger"></span>
+        <div class="form-group mb-2">
+            <label asp-for="FullName" class="mb-1">Full Name</label>
+            <input asp-for="FullName"
+                   class="form-control form-control-sm"
+                   placeholder="Enter full name" />
+            <span asp-validation-for="FullName" class="text-danger small"></span>
         </div>
 
-        <div class="form-group">
-            <label asp-for="Email">Email</label>
-            <input asp-for="Email" class="form-control" placeholder="Enter email address" />
-            <span asp-validation-for="Email" class="text-danger"></span>
+        <div class="form-group mb-2">
+            <label asp-for="Email" class="mb-1">Email</label>
+            <input asp-for="Email"
+                   class="form-control form-control-sm"
+                   placeholder="Enter email address" />
+            <span asp-validation-for="Email" class="text-danger small"></span>
         </div>
 
-        <div class="form-group">
-            <label asp-for="RoleId">Role</label>
+        <div class="form-group mb-2">
+            <label asp-for="RoleId" class="mb-1">Role</label>
 
-            <select asp-for="RoleId" class="form-control" asp-items="ViewBag.Roles">
+            <select asp-for="RoleId"
+                    class="form-control form-control-sm"
+                    asp-items="ViewBag.Roles">
             </select>
 
-            <span asp-validation-for="RoleId" class="text-danger"></span>
+            <span asp-validation-for="RoleId" class="text-danger small"></span>
         </div>
 
-        <div class="form-group">
-            <label asp-for="Password">Password</label>
+        <div class="form-group mb-2">
+            <label asp-for="Password" class="mb-1">Password</label>
 
-            <div class="input-group">
+            <div class="input-group input-group-sm">
                 <input asp-for="Password"
                        type="password"
-                       class="form-control"
+                       class="form-control form-control-sm"
                        id="createPassword"
                        placeholder="Enter password" />
 
@@ -61,16 +67,16 @@
                 </div>
             </div>
 
-            <span asp-validation-for="Password" class="text-danger"></span>
+            <span asp-validation-for="Password" class="text-danger small"></span>
         </div>
 
         <div class="form-group mb-0">
-            <label asp-for="ConfirmPassword">Confirm Password</label>
+            <label asp-for="ConfirmPassword" class="mb-1">Confirm Password</label>
 
-            <div class="input-group">
+            <div class="input-group input-group-sm">
                 <input asp-for="ConfirmPassword"
                        type="password"
-                       class="form-control"
+                       class="form-control form-control-sm"
                        id="createConfirmPassword"
                        placeholder="Confirm password" />
 
@@ -83,12 +89,12 @@
                 </div>
             </div>
 
-            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
         </div>
 
     </div>
 
-    <div class="modal-footer justify-content-between">
+    <div class="modal-footer justify-content-between py-2">
         <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
             Close
         </button>
@@ -110,16 +116,13 @@
 
         if (input.attr("type") === "password") {
             input.attr("type", "text");
-
             icon.removeClass("fa-eye");
             icon.addClass("fa-eye-slash");
         }
         else {
             input.attr("type", "password");
-
             icon.removeClass("fa-eye-slash");
             icon.addClass("fa-eye");
         }
-
     });
 </script>

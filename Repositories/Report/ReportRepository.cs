@@ -25,27 +25,30 @@ namespace EmployeeAccessSystem.Repositories
             return new SqlConnection(_connectionString);
         }
 
-        // Load report product list
-        public async Task<IEnumerable<ReportProduct>> GetProductsAsync()
+        // Load category list for report dropdown
+        public async Task<IEnumerable<ReportCategory>> GetCategoryListAsync()
         {
             try
             {
                 using SqlConnection conn = GetConnection();
 
                 DynamicParameters parameters = new DynamicParameters();
-                parameters.Add("@Flag", "GETPRODUCTS");
+                parameters.Add("@Flag", "GETCATEGORIES");
 
-                // Execute stored procedure and return product list
-                return await conn.QueryAsync<ReportProduct>("dbo.sp_Report_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryAsync<ReportCategory>(
+                    "dbo.sp_Report_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
             }
             catch
             {
-                throw new Exception("Failed to load report products.");
+                throw new Exception("Failed to load report category list.");
             }
         }
 
-        // Load headings JSON
-        public async Task<string> GetHeadingsAsync(int productId)
+        // Load headings JSON from FormConfiguration
+        public async Task<string> GetHeadingsAsync(int categoryId)
         {
             try
             {
@@ -53,10 +56,13 @@ namespace EmployeeAccessSystem.Repositories
 
                 DynamicParameters parameters = new DynamicParameters();
                 parameters.Add("@Flag", "GETHEADINGS");
-                parameters.Add("@ProductId", productId);
+                parameters.Add("@CategoryId", categoryId);
 
-                // Execute stored procedure and return headings
-                return await conn.QueryFirstOrDefaultAsync<string>("dbo.sp_Report_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryFirstOrDefaultAsync<string>(
+                    "dbo.sp_Report_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
             }
             catch
             {
@@ -64,8 +70,8 @@ namespace EmployeeAccessSystem.Repositories
             }
         }
 
-        // Load report data
-        public async Task<IEnumerable<Report>> GetDataAsync(int productId, DateTime fromDate, DateTime toDate)
+        // Load report data from CategoryChecklist
+        public async Task<IEnumerable<Report>> GetDataAsync(int categoryId, DateTime fromDate, DateTime toDate)
         {
             try
             {
@@ -73,12 +79,15 @@ namespace EmployeeAccessSystem.Repositories
 
                 DynamicParameters parameters = new DynamicParameters();
                 parameters.Add("@Flag", "GETDATA");
-                parameters.Add("@ProductId", productId);
+                parameters.Add("@CategoryId", categoryId);
                 parameters.Add("@FromDate", fromDate.Date);
                 parameters.Add("@ToDate", toDate.Date);
 
-                // Execute stored procedure and return report data
-                return await conn.QueryAsync<Report>("dbo.sp_Report_Manage", parameters, commandType: CommandType.StoredProcedure);
+                return await conn.QueryAsync<Report>(
+                    "dbo.sp_Report_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
             }
             catch
             {

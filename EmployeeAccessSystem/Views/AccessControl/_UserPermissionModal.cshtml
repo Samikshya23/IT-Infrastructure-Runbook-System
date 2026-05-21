@@ -1,203 +1,354 @@
-﻿@model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
+﻿@using System
+@using System.Collections.Generic
+@using System.Linq
+@model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
 
 @{
     int accountId = ViewBag.AccountId;
-    string fullName = ViewBag.FullName;
-    string email = ViewBag.Email;
-    string roleName = ViewBag.RoleName;
+
+    List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> permissionItems =
+        new List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>();
+
+    if (Model != null)
+    {
+        foreach (var item in Model)
+        {
+            bool isDashboard =
+                string.Equals(item.MenuName, "Dashboard", StringComparison.OrdinalIgnoreCase);
+
+            bool isPrivacy =
+                string.Equals(item.MenuName, "Privacy Dashboard", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(item.ActionName, "Privacy", StringComparison.OrdinalIgnoreCase);
+
+            if (!isDashboard && !isPrivacy)
+            {
+                permissionItems.Add(item);
+            }
+        }
+    }
+
+    List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> rootItems =
+        permissionItems
+            .Where(x => x.ParentMenuId == null)
+            .OrderBy(x => x.MenuId)
+            .ToList();
+
+    List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> GetChildren(int menuId)
+    {
+        return permissionItems
+            .Where(x => x.ParentMenuId == menuId)
+            .OrderBy(x => x.MenuId)
+            .ToList();
+    }
 }
 
-<div class="modal-header bg-white">
+<div class="modal-header bg-white py-2">
 
     <h5 class="modal-title font-weight-bold">
         <i class="fas fa-key mr-1"></i>
         User Permission
     </h5>
 
+    <button type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+
 </div>
 
-<form asp-action="SaveUserAccess" asp-controller="AccessControl" method="post" id="userPermissionForm">
+<form asp-action="SaveUserAccess"
+      asp-controller="AccessControl"
+      method="post"
+      id="userPermissionForm">
 
     @Html.AntiForgeryToken()
 
-    <input type="hidden" name="accountId" value="@accountId" />
+    <input type="hidden"
+           name="accountId"
+           value="@accountId" />
 
-    <div class="modal-body p-2 overflow-auto" style="max-height: 55vh;">
+    <div class="modal-body p-2 overflow-auto"
+         style="max-height:70vh;">
 
-        @* User Detail *@
-        <div class="card card-outline card-primary shadow-none mb-2">
+        <div class="mb-2 text-right">
 
-            <div class="card-header bg-white py-2">
+            <div class="custom-control custom-checkbox d-inline-block">
 
-                <h3 class="card-title mb-0">
-                    <i class="fas fa-user mr-1"></i>
-                    User Detail
-                </h3>
+                <input type="checkbox"
+                       class="custom-control-input"
+                       id="selectAllPermission" />
 
-            </div>
-
-            <div class="card-body py-2">
-
-                <div class="row">
-
-                    <div class="col-md-4 mb-1">
-                        Name: @fullName
-                    </div>
-
-                    <div class="col-md-4 mb-1">
-                        Email: @email
-                    </div>
-
-                    <div class="col-md-4 mb-1">
-                        Role: @roleName
-                    </div>
-
-                </div>
+                <label class="custom-control-label font-weight-normal"
+                       for="selectAllPermission">
+                    Select All
+                </label>
 
             </div>
 
         </div>
 
-        @* Permissions *@
-        <div class="card card-outline card-primary shadow-none mb-0">
+        @if (permissionItems.Count > 0)
+        {
+            foreach (var root in rootItems)
+            {
+                List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> rootChildren =
+                GetChildren(root.MenuId);
 
-            <div class="card-header bg-white py-2">
+                string rootCheckboxId = "permission_" + root.MenuId;
+                string rootCollapseId = "collapse_" + root.MenuId;
 
-                <div class="row align-items-center">
+                <div class="border rounded mb-2 permission-node-wrapper">
 
-                    <div class="col-md-6">
+                    <div class="px-2 py-2 bg-light font-weight-bold text-dark d-flex align-items-center">
 
-                        <h3 class="card-title mb-0">
-                            <i class="fas fa-lock mr-1"></i>
-                            Permissions
-                        </h3>
+                        @if (rootChildren.Count > 0)
+                        {
+                            <span data-toggle="collapse"
+                                  data-target="#@rootCollapseId"
+                                  style="cursor:pointer;">
+                                <i class="fas fa-angle-down mr-1"></i>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="mr-3"></span>
+                        }
 
-                    </div>
+                        <div class="custom-control custom-checkbox">
 
-                    <div class="col-md-6 text-right">
-
-                        <div class="custom-control custom-checkbox d-inline-block">
                             <input type="checkbox"
-                                   class="custom-control-input"
-                                   id="selectAllPermission" />
+                                   class="custom-control-input permission-checkbox"
+                                   id="@rootCheckboxId"
+                                   name="checkedMenuIds"
+                                   value="@root.MenuId"
+                                   data-menu-id="@root.MenuId"
+                                   data-parent-menu-id=""
+                                   @(root.IsChecked ? "checked" : "") />
 
-                            <label class="custom-control-label" for="selectAllPermission">
-                                Select All
+                            <label class="custom-control-label font-weight-bold"
+                                   for="@rootCheckboxId">
+                                @root.MenuName
                             </label>
+
                         </div>
 
                     </div>
 
-                </div>
+                    <div id="@rootCollapseId"
+                         class="collapse show">
 
-            </div>
+                        @foreach (var level1 in rootChildren)
+                        {
+                            List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> level1Children =
+                            GetChildren(level1.MenuId);
 
-            <div class="card-body py-2">
+                            string level1CheckboxId = "permission_" + level1.MenuId;
+                            string level1CollapseId = "collapse_" + level1.MenuId;
 
-                @if (Model != null && Model.Count > 0)
-                {
-                    foreach (var mainGroup in Model.GroupBy(x => new { x.MainMenuId, x.MainMenuName }).OrderBy(x => x.Key.MainMenuId))
-                    {
-                        string mainCollapseId = "mainCollapse_" + mainGroup.Key.MainMenuId;
+                            <div class="ml-4 mt-2 mb-1">
 
-                        <div class="border-bottom pb-2 mb-2">
+                                <div class="d-flex align-items-center">
 
-                            <div class="text-primary mb-2"
-                                 data-toggle="collapse"
-                                 data-target="#@mainCollapseId"
-                                 aria-expanded="true">
+                                    @if (level1Children.Count > 0)
+                                    {
+                                        <span data-toggle="collapse"
+                                              data-target="#@level1CollapseId"
+                                              style="cursor:pointer;">
+                                            <i class="fas fa-angle-down mr-1"></i>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="mr-3"></span>
+                                    }
 
-                                <i class="fas fa-angle-down mr-1"></i>
-                                @mainGroup.Key.MainMenuName
+                                    <div class="custom-control custom-checkbox">
 
-                            </div>
+                                        <input type="checkbox"
+                                               class="custom-control-input permission-checkbox"
+                                               id="@level1CheckboxId"
+                                               name="checkedMenuIds"
+                                               value="@level1.MenuId"
+                                               data-menu-id="@level1.MenuId"
+                                               data-parent-menu-id="@level1.ParentMenuId"
+                                               @(level1.IsChecked ? "checked" : "") />
 
-                            <div id="@mainCollapseId" class="collapse show">
+                                        <label class="custom-control-label font-weight-bold"
+                                               for="@level1CheckboxId">
+                                            @level1.MenuName
+                                        </label>
 
-                                @foreach (var pageGroup in mainGroup.GroupBy(x => new { x.PageMenuId, x.PageMenuName }).OrderBy(x => x.Key.PageMenuId))
-                                {
-                                    string pageCollapseId = "pageCollapse_" + mainGroup.Key.MainMenuId + "_" + pageGroup.Key.PageMenuId;
+                                    </div>
 
-                                    <div class="ml-3 mb-2">
+                                </div>
 
-                                        <div class="text-dark mb-1"
-                                             data-toggle="collapse"
-                                             data-target="#@pageCollapseId"
-                                             aria-expanded="true">
+                                <div id="@level1CollapseId"
+                                     class="collapse show">
 
-                                            <i class="fas fa-angle-right mr-1"></i>
-                                            @pageGroup.Key.PageMenuName
+                                    @foreach (var level2 in level1Children)
+                                    {
+                                        List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> level2Children =
+                                        GetChildren(level2.MenuId);
 
-                                        </div>
+                                        string level2CheckboxId = "permission_" + level2.MenuId;
+                                        string level2CollapseId = "collapse_" + level2.MenuId;
 
-                                        <div id="@pageCollapseId" class="collapse show">
+                                        <div class="ml-4 mt-2 mb-1">
 
-                                            @foreach (var item in pageGroup.OrderByDescending(x => x.IsVisibleInSidebar).ThenBy(x => x.MenuId))
-                                            {
-                                                string checkboxId = "permission_" + item.MenuId;
+                                            <div class="d-flex align-items-center">
 
-                                                string checkboxClass = "custom-control-input permission-checkbox";
-
-                                                if (item.IsVisibleInSidebar)
+                                                @if (level2Children.Count > 0)
                                                 {
-                                                    checkboxClass = checkboxClass + " permission-page-checkbox";
+                                                    <span data-toggle="collapse"
+                                                          data-target="#@level2CollapseId"
+                                                          style="cursor:pointer;">
+                                                        <i class="fas fa-angle-down mr-1"></i>
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    checkboxClass = checkboxClass + " permission-action-checkbox";
+                                                    <span class="mr-3"></span>
                                                 }
 
-                                                <div class="ml-4 mb-1">
+                                                <div class="custom-control custom-checkbox">
 
-                                                    <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox"
+                                                           class="custom-control-input permission-checkbox"
+                                                           id="@level2CheckboxId"
+                                                           name="checkedMenuIds"
+                                                           value="@level2.MenuId"
+                                                           data-menu-id="@level2.MenuId"
+                                                           data-parent-menu-id="@level2.ParentMenuId"
+                                                           @(level2.IsChecked ? "checked" : "") />
 
-                                                        <input type="checkbox"
-                                                               class="@checkboxClass"
-                                                               id="@checkboxId"
-                                                               name="checkedMenuIds"
-                                                               value="@item.MenuId"
-                                                               data-page-menu-id="@pageGroup.Key.PageMenuId"
-                                                               @(item.IsChecked ? "checked" : "") />
-
-                                                        <label class="custom-control-label font-weight-normal" for="@checkboxId">
-                                                            @item.MenuName
-                                                        </label>
-
-                                                    </div>
+                                                    <label class="custom-control-label font-weight-normal"
+                                                           for="@level2CheckboxId">
+                                                        @level2.MenuName
+                                                    </label>
 
                                                 </div>
-                                            }
+
+                                            </div>
+
+                                            <div id="@level2CollapseId"
+                                                 class="collapse show">
+
+                                                @foreach (var level3 in level2Children)
+                                                {
+                                                    List<EmployeeAccessSystem.Models.AccessControlRoleActionModel> level3Children =
+                                                    GetChildren(level3.MenuId);
+
+                                                    string level3CheckboxId = "permission_" + level3.MenuId;
+                                                    string level3CollapseId = "collapse_" + level3.MenuId;
+
+                                                    <div class="ml-4 mt-2 mb-1">
+
+                                                        <div class="d-flex align-items-center">
+
+                                                            @if (level3Children.Count > 0)
+                                                            {
+                                                                <span data-toggle="collapse"
+                                                                      data-target="#@level3CollapseId"
+                                                                      style="cursor:pointer;">
+                                                                    <i class="fas fa-angle-down mr-1"></i>
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="mr-3"></span>
+                                                            }
+
+                                                            <div class="custom-control custom-checkbox">
+
+                                                                <input type="checkbox"
+                                                                       class="custom-control-input permission-checkbox"
+                                                                       id="@level3CheckboxId"
+                                                                       name="checkedMenuIds"
+                                                                       value="@level3.MenuId"
+                                                                       data-menu-id="@level3.MenuId"
+                                                                       data-parent-menu-id="@level3.ParentMenuId"
+                                                                       @(level3.IsChecked ? "checked" : "") />
+
+                                                                <label class="custom-control-label font-weight-normal"
+                                                                       for="@level3CheckboxId">
+                                                                    @level3.MenuName
+                                                                </label>
+
+                                                            </div>
+
+                                                        </div>
+
+                                                        <div id="@level3CollapseId"
+                                                             class="collapse show">
+
+                                                            @foreach (var level4 in level3Children)
+                                                            {
+                                                                string level4CheckboxId = "permission_" + level4.MenuId;
+
+                                                                <div class="ml-4 mt-2 mb-1">
+
+                                                                    <div class="custom-control custom-checkbox">
+
+                                                                        <input type="checkbox"
+                                                                               class="custom-control-input permission-checkbox"
+                                                                               id="@level4CheckboxId"
+                                                                               name="checkedMenuIds"
+                                                                               value="@level4.MenuId"
+                                                                               data-menu-id="@level4.MenuId"
+                                                                               data-parent-menu-id="@level4.ParentMenuId"
+                                                                               @(level4.IsChecked ? "checked" : "") />
+
+                                                                        <label class="custom-control-label font-weight-normal"
+                                                                               for="@level4CheckboxId">
+                                                                            @level4.MenuName
+                                                                        </label>
+
+                                                                    </div>
+
+                                                                </div>
+                                                            }
+
+                                                        </div>
+
+                                                    </div>
+                                                }
+
+                                            </div>
 
                                         </div>
+                                    }
 
-                                    </div>
-                                }
+                                </div>
 
                             </div>
+                        }
 
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="text-center text-muted py-3">
-                        No permissions found.
                     </div>
-                }
 
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center text-muted py-3">
+                No permission items found.
             </div>
-
-        </div>
+        }
 
     </div>
 
-    <div class="modal-footer bg-white">
+    <div class="modal-footer py-2">
 
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-dismiss="modal">
             Back
         </button>
 
-        <button type="submit" class="btn btn-primary btn-sm">
+        <button type="submit"
+                class="btn btn-primary btn-sm">
             <i class="fas fa-save mr-1"></i>
             Save
         </button>

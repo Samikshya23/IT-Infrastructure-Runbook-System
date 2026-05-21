@@ -8,7 +8,6 @@
 
     <div class="container-fluid px-0">
 
-        @* Header *@
         <div class="row mb-2 mx-0 align-items-center">
 
             <div class="col-sm-6 px-0">
@@ -17,20 +16,20 @@
 
             <div class="col-sm-6 text-right px-0">
 
-                <a href="/AccessControl/Users" class="btn btn-primary btn-sm">
+                <button type="button"
+                        id="btnCreateUser"
+                        class="btn btn-primary btn-sm">
                     <i class="fas fa-user-plus mr-1"></i>
                     Add User
-                </a>
+                </button>
 
             </div>
 
         </div>
 
-        @* Dashboard Cards *@
         <div class="row">
 
-            @* Manage Users *@
-            <div class="col-lg-4 col-md-4 col-sm-6 col-12">
+            <div class="col-lg-6 col-md-6 col-sm-6 col-12">
 
                 <div class="small-box bg-info">
 
@@ -52,8 +51,7 @@
 
             </div>
 
-            @* Manage Roles *@
-            <div class="col-lg-4 col-md-4 col-sm-6 col-12">
+            <div class="col-lg-6 col-md-6 col-sm-6 col-12">
 
                 <div class="small-box bg-success">
 
@@ -75,35 +73,18 @@
 
             </div>
 
-            @* Manage Menus / Permission Master *@
-            <div class="col-lg-4 col-md-4 col-sm-6 col-12">
-
-                <div class="small-box bg-primary">
-
-                    <div class="inner">
-                        <h3>@Model.TotalMenus</h3>
-                        <p>Menus / Permissions</p>
-                    </div>
-
-                    <div class="icon">
-                        <i class="fas fa-list"></i>
-                    </div>
-
-                    <a href="/AccessControl/Menus" class="small-box-footer">
-                        Manage Menus
-                        <i class="fas fa-arrow-circle-right"></i>
-                    </a>
-
-                </div>
-
-            </div>
-
         </div>
 
     </div>
 
 </section>
 
+<div class="modal fade" id="createUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id="createUserModalContent"></div>
+    </div>
+</div>
+
 @section Scripts {
-    <script src="~/js/AccessControl/index.js" asp-append-version="true"></script>
+    <script src="~/js/accesscontrol/users.js" asp-append-version="true"></script>
 }

@@ -1,111 +1,138 @@
 ﻿$(document).ready(function () {
 
-    // Initial permission state
     initializePermissionState();
 
-    // Select all permission
     $(document).on("change", "#selectAllPermission", function () {
+        var isChecked = $(this).is(":checked");
 
+        $(".permission-checkbox")
+            .prop("checked", isChecked)
+            .prop("disabled", false);
+
+        if (!isChecked) {
+            $(".permission-checkbox").prop("disabled", false);
+        }
+
+        updateSelectAllPermission();
+    });
+
+    $(document).on("change", ".permission-checkbox", function () {
+        var menuId = $(this).data("menu-id");
         var isChecked = $(this).is(":checked");
 
         if (isChecked) {
-            $(".permission-page-checkbox").prop("checked", true);
-            $(".permission-action-checkbox").prop("disabled", false).prop("checked", true);
+            checkParentMenus($(this));
+            enableChildMenus(menuId);
         }
         else {
-            $(".permission-checkbox").prop("checked", false);
-            $(".permission-action-checkbox").prop("disabled", true);
+            uncheckAndDisableChildMenus(menuId);
         }
 
         updateSelectAllPermission();
-
     });
 
-    // Parent page permission change
-    $(document).on("change", ".permission-page-checkbox", function () {
-
-        var pageMenuId = $(this).data("page-menu-id");
-        var isChecked = $(this).is(":checked");
-
-        var actionCheckboxes = $(".permission-action-checkbox[data-page-menu-id='" + pageMenuId + "']");
-
-        if (isChecked) {
-            actionCheckboxes.prop("disabled", false);
-        }
-        else {
-            actionCheckboxes.prop("checked", false);
-            actionCheckboxes.prop("disabled", true);
-        }
-
-        updateSelectAllPermission();
-
-    });
-
-    // Child action permission change
-    $(document).on("change", ".permission-action-checkbox", function () {
-
-        updateSelectAllPermission();
-
-    });
-
-    // Change arrow icon when tree section opens
     $(document).on("shown.bs.collapse", ".collapse", function () {
-
         var targetId = $(this).attr("id");
 
         $("[data-target='#" + targetId + "']")
-            .find("i")
+            .children("i")
             .removeClass("fa-angle-right")
             .addClass("fa-angle-down");
-
     });
 
-    // Change arrow icon when tree section closes
     $(document).on("hidden.bs.collapse", ".collapse", function () {
-
         var targetId = $(this).attr("id");
 
         $("[data-target='#" + targetId + "']")
-            .find("i")
+            .children("i")
             .removeClass("fa-angle-down")
             .addClass("fa-angle-right");
-
     });
 
 });
 
-
-// Set child action enabled/disabled according to parent page permission
 function initializePermissionState() {
 
-    $(".permission-page-checkbox").each(function () {
+    $(".permission-checkbox:checked").each(function () {
+        checkParentMenus($(this));
+    });
 
-        var pageMenuId = $(this).data("page-menu-id");
-        var isChecked = $(this).is(":checked");
+    $(".permission-checkbox").each(function () {
+        var parentMenuId = $(this).data("parent-menu-id");
 
-        var actionCheckboxes = $(".permission-action-checkbox[data-page-menu-id='" + pageMenuId + "']");
+        if (parentMenuId !== "" &&
+            parentMenuId !== null &&
+            parentMenuId !== undefined) {
 
-        if (isChecked) {
-            actionCheckboxes.prop("disabled", false);
+            var parentCheckbox =
+                $(".permission-checkbox[data-menu-id='" + parentMenuId + "']");
+
+            if (parentCheckbox.length > 0 &&
+                !parentCheckbox.is(":checked")) {
+
+                $(this).prop("checked", false);
+                $(this).prop("disabled", true);
+            }
         }
-        else {
-            actionCheckboxes.prop("checked", false);
-            actionCheckboxes.prop("disabled", true);
-        }
+    });
 
+    $(".permission-checkbox:checked").each(function () {
+        var menuId = $(this).data("menu-id");
+        enableChildMenus(menuId);
     });
 
     updateSelectAllPermission();
-
 }
 
+function checkParentMenus(childCheckbox) {
 
-// Update select all checkbox state
+    var parentMenuId = childCheckbox.data("parent-menu-id");
+
+    if (parentMenuId === "" ||
+        parentMenuId === null ||
+        parentMenuId === undefined) {
+        return;
+    }
+
+    var parentCheckbox =
+        $(".permission-checkbox[data-menu-id='" + parentMenuId + "']");
+
+    if (parentCheckbox.length > 0) {
+        parentCheckbox.prop("disabled", false);
+        parentCheckbox.prop("checked", true);
+
+        checkParentMenus(parentCheckbox);
+    }
+}
+
+function enableChildMenus(parentMenuId) {
+
+    $(".permission-checkbox[data-parent-menu-id='" + parentMenuId + "']")
+        .each(function () {
+            $(this).prop("disabled", false);
+
+            if ($(this).is(":checked")) {
+                enableChildMenus($(this).data("menu-id"));
+            }
+        });
+}
+
+function uncheckAndDisableChildMenus(parentMenuId) {
+
+    $(".permission-checkbox[data-parent-menu-id='" + parentMenuId + "']")
+        .each(function () {
+            var childMenuId = $(this).data("menu-id");
+
+            $(this).prop("checked", false);
+            $(this).prop("disabled", true);
+
+            uncheckAndDisableChildMenus(childMenuId);
+        });
+}
+
 function updateSelectAllPermission() {
-
     var total = $(".permission-checkbox").length;
     var checked = $(".permission-checkbox:checked").length;
 
     $("#selectAllPermission").prop("checked", total > 0 && total === checked);
-
 }
