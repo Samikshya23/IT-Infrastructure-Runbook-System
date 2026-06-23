@@ -145,6 +145,59 @@
 
         return row[index].NodeValue;
     }
+
+    private bool IsSamePath(
+        List<EmployeeAccessSystem.Models.CategorySetup> firstRow,
+        List<EmployeeAccessSystem.Models.CategorySetup> secondRow,
+        int columnIndex)
+    {
+        if (firstRow == null || secondRow == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i <= columnIndex; i++)
+        {
+            string firstValue = GetColumnValue(firstRow, i);
+            string secondValue = GetColumnValue(secondRow, i);
+
+            if (firstValue != secondValue)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private int GetRowSpan(List<List<EmployeeAccessSystem.Models.CategorySetup>> rows, int rowIndex, int columnIndex)
+    {
+        int rowSpan = 1;
+
+        for (int i = rowIndex + 1; i < rows.Count; i++)
+        {
+            if (IsSamePath(rows[rowIndex], rows[i], columnIndex))
+            {
+                rowSpan++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return rowSpan;
+    }
+
+    private bool ShouldDisplayCell(List<List<EmployeeAccessSystem.Models.CategorySetup>> rows, int rowIndex, int columnIndex)
+    {
+        if (rowIndex == 0)
+        {
+            return true;
+        }
+
+        return !IsSamePath(rows[rowIndex - 1], rows[rowIndex], columnIndex);
+    }
 }
 
 @if (Model == null || Model.Count == 0)
@@ -157,7 +210,6 @@ else
 {
     int sn = 1;
     int maxDepth = GetMaxDepth(Model);
-    int totalColumnCount = maxDepth + 2;
 
     <div class="card-body p-0">
         <table id="setupDynamicTable"
@@ -175,7 +227,6 @@ else
                         </th>
                     }
 
-                    
                     <th class="text-center align-middle" style="width:100px;">Action</th>
                 </tr>
             </thead>
@@ -194,57 +245,54 @@ else
                         rows.Add(new List<EmployeeAccessSystem.Models.CategorySetup> { root });
                     }
 
-                    int rowHeight = rows.Count * 36;
+                    for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                    {
+                        <tr>
+                            @if (rowIndex == 0)
+                            {
+                                <td class="text-center align-middle px-2 py-1"
+                                    rowspan="@rows.Count"
+                                    style="height:38px;">
+                                    @sn
+                                </td>
+                            }
 
-                    <tr>
-                        <td class="text-center align-middle">
-                            @sn
-                        </td>
+                            @for (int columnIndex = 0; columnIndex < maxDepth; columnIndex++)
+                            {
+                                if (ShouldDisplayCell(rows, rowIndex, columnIndex))
+                                {
+                                    int rowSpan = GetRowSpan(rows, rowIndex, columnIndex);
+                                    string columnValue = GetColumnValue(rows[rowIndex], columnIndex);
 
-                        <td class="p-0 align-top">
-                            <div class="d-flex align-items-center px-2"
-                                 style="height:@(rowHeight)px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                 title="@root.NodeValue">
-                                @root.NodeValue
-                            </div>
-                        </td>
+                                    <td class="align-middle px-2 py-1"
+                                        rowspan="@rowSpan"
+                                        title="@columnValue"
+                                        style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:38px;">
+                                        @columnValue
+                                    </td>
+                                }
+                            }
 
-                        @for (int columnIndex = 1; columnIndex < maxDepth; columnIndex++)
-                        {
-                            <td class="p-0 align-top">
-                                <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
-                                    <tbody>
-                                        @for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
-                                        {
-                                            string columnValue = GetColumnValue(rows[rowIndex], columnIndex);
+                            @if (rowIndex == 0)
+                            {
+                                <td class="text-center align-middle px-2 py-1"
+                                    rowspan="@rows.Count"
+                                    style="height:38px;">
 
-                                            <tr>
-                                                <td class="p-0 align-middle @(rowIndex != rows.Count - 1 ? "border-bottom" : "")">
-                                                    <div class="d-flex align-items-center px-2"
-                                                         style="height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                                         title="@columnValue">
-                                                        @columnValue
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </td>
-                        }
+                                    <button type="button"
+                                            class="btn btn-light border btn-sm p-0 btnEditRoot"
+                                            data-root-index="@rootIndex"
+                                            title="Edit"
+                                            style="width:24px;height:24px;line-height:22px;">
 
-                        
+                                        <i class="fas fa-pen" style="font-size:10px;"></i>
 
-                        <td class="text-center align-middle">
-                            <button type="button"
-                                    class="btn btn-light border btn-sm p-0 btnEditRoot"
-                                    data-root-index="@rootIndex"
-                                    title="Edit"
-                                    style="width:24px;height:24px;line-height:22px;">
-                                <i class="fas fa-pen" style="font-size:10px;"></i>
-                            </button>
-                        </td>
-                    </tr>
+                                    </button>
+
+                                </td>
+                            }
+                        </tr>
+                    }
 
                     sn++;
                 }

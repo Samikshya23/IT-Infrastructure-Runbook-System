@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -87,7 +87,7 @@ namespace EmployeeAccessSystem.Controllers
             ClaimsPrincipal claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
             AuthenticationProperties authProperties = new AuthenticationProperties();
-            authProperties.IsPersistent = true;
+            authProperties.IsPersistent = false;
             authProperties.ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8);
 
             await HttpContext.SignInAsync(
@@ -104,14 +104,8 @@ namespace EmployeeAccessSystem.Controllers
                 account.HasFullAccess
             );
 
-            // Full access admin goes to Access Control dashboard
-            if (account.HasFullAccess == true)
-            {
-                return RedirectToAction("Index", "AccessControl");
-            }
-
-            // Normal user goes to Category Checklist page
-            return RedirectToAction("Index", "CategoryChecklist");
+            // Both Admin and Normal users go to Home/Index (Dashboard)
+            return RedirectToAction("Index", "Home");
         }
 
         // Logout submit

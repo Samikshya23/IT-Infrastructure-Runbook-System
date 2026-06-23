@@ -27,8 +27,6 @@ function showCategoryChecklistToasts() {
         toastr.error(errorMessage, 'Message');
     }
 }
-
-// Initialize pagination and search
 function initializeCategoryChecklistPagination() {
 
     if ($('#categoryChecklistTableBody tr.group-row').length === 0) {
@@ -56,6 +54,19 @@ function initializeCategoryChecklistPagination() {
         return filteredRows;
     }
 
+    function hideAllRows() {
+        $('#categoryChecklistTableBody tr.group-row').hide();
+        $('#categoryChecklistTableBody tr.group-detail-row').hide();
+    }
+
+    function showGroup(mainRow) {
+        var groupKey = $(mainRow).attr('data-group-key');
+
+        $(mainRow).show();
+
+        $('#categoryChecklistTableBody tr.group-detail-row[data-group-key="' + groupKey + '"]').show();
+    }
+
     function updateSerialNumbers(filteredRows) {
 
         for (var i = 0; i < filteredRows.length; i++) {
@@ -69,7 +80,7 @@ function initializeCategoryChecklistPagination() {
         var totalRows = filteredRows.length;
         var totalPages = Math.ceil(totalRows / rowsPerPage);
 
-        $('#categoryChecklistTableBody tr.group-row').hide();
+        hideAllRows();
 
         if (totalRows === 0) {
             $('#paginationInfo').text('No matching entries found.');
@@ -87,7 +98,7 @@ function initializeCategoryChecklistPagination() {
         var endIndex = startIndex + rowsPerPage;
 
         for (var i = startIndex; i < endIndex && i < totalRows; i++) {
-            $(filteredRows[i]).show();
+            showGroup(filteredRows[i]);
         }
 
         var fromRecord = startIndex + 1;
@@ -129,31 +140,20 @@ function initializeCategoryChecklistPagination() {
     }
 
     $('#customSearch').on('keyup', function () {
-
         currentPage = 1;
-
         renderPagination();
-
     });
 
     $('#entriesPerPage').on('change', function () {
-
         rowsPerPage = parseInt($(this).val());
-
         currentPage = 1;
-
         renderPagination();
-
     });
 
     $(document).on('click', '.pagination-link', function (event) {
-
         event.preventDefault();
-
         currentPage = parseInt($(this).data('page'));
-
         renderPagination();
-
     });
 
     renderPagination();

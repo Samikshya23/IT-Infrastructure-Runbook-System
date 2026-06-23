@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using EmployeeAccessSystem.Models;
 using Microsoft.AspNetCore.Mvc;
 namespace EmployeeAccessSystem.Controllers
@@ -13,7 +13,19 @@ namespace EmployeeAccessSystem.Controllers
         public IActionResult Index()
         {
             _logger.LogInformation("Home page opened at " + DateTime.Now);
-            return View();
+
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var hasFullAccessClaim = User.FindFirst("HasFullAccess")?.Value;
+                if (bool.TryParse(hasFullAccessClaim, out bool hasFullAccess) && hasFullAccess)
+                {
+                    return RedirectToAction("Index", "AccessControl");
+                }
+
+                return View("Dashboard");
+            }
+
+            return RedirectToAction("Login", "Account");
         }
         public IActionResult Privacy()
         {

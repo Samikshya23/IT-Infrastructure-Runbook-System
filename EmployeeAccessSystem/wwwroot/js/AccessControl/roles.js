@@ -1,6 +1,5 @@
 ﻿$(document).ready(function () {
 
-    // Role table
     var table = $("#roleTable").DataTable({
         pageLength: 10,
         lengthChange: false,
@@ -20,17 +19,14 @@
         ]
     });
 
-    // Search
     $("#roleCustomSearch").on("keyup", function () {
         table.search(this.value).draw();
     });
 
-    // Page length
     $("#roleCustomLength").on("change", function () {
         table.page.len($(this).val()).draw();
     });
 
-    // Add role modal
     $(document).on("click", "#btnAddRole", function () {
 
         $.ajax({
@@ -44,7 +40,11 @@
                 }
 
                 $("#roleModalContent").html(response);
-                $("#roleModal").modal("show");
+
+                $("#roleModal").modal({
+                    backdrop: "static",
+                    keyboard: false
+                });
             },
             error: function (xhr) {
 
@@ -64,7 +64,6 @@
 
     });
 
-    // Edit role modal
     $(document).on("click", ".btnEditRole", function () {
 
         var roleId = $(this).data("role-id");
@@ -81,7 +80,11 @@
                 }
 
                 $("#roleModalContent").html(response);
-                $("#roleModal").modal("show");
+
+                $("#roleModal").modal({
+                    backdrop: "static",
+                    keyboard: false
+                });
             },
             error: function (xhr) {
 
@@ -101,7 +104,6 @@
 
     });
 
-    // Delete role modal
     $(document).on("click", ".btnDeleteRole", function () {
 
         var roleId = $(this).data("role-id");
@@ -110,7 +112,10 @@
         $("#deleteRoleId").val(roleId);
         $("#deleteRoleName").text(roleName);
 
-        $("#deleteRoleModal").modal("show");
+        $("#deleteRoleModal").modal({
+            backdrop: "static",
+            keyboard: false
+        });
 
     });
 

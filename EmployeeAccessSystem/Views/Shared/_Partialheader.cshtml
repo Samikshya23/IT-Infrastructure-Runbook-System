@@ -1,4 +1,4 @@
-﻿@* @{
+@* @{
     var isLoggedIn = User.Identity != null && User.Identity.IsAuthenticated;
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
 }
@@ -320,8 +320,9 @@
                 <li class="nav-item">
                     <a asp-controller="Home"
                        asp-action="Index"
-                       class="nav-link @(currentController == "Home" ? "active" : "")">
-                        <p class="mb-0">Home</p>
+                       class="nav-link @(currentController == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p class="mb-0">Dashboard</p>
                     </a>
                 </li>
 

@@ -1,4 +1,4 @@
-﻿using EmployeeAccessSystem.Filters;
+using EmployeeAccessSystem.Filters;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Services;
 using EmployeeAccessSystem.Repositories;
@@ -54,6 +54,7 @@ builder.Services.AddScoped<IAccessControlRepository, AccessControlRepository>();
 
 builder.Services.AddScoped<IDropdownRepository, DropdownRepository>();
 builder.Services.AddScoped<ICategoryChecklistRepository, CategoryChecklistRepository>();
+builder.Services.AddScoped<IEmailRepository, EmailRepository>();
 // Services
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 

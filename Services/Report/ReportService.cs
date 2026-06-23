@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
@@ -60,6 +60,22 @@ namespace EmployeeAccessSystem.Services
 
             // Return report data from repository
             return await _reportRepository.GetDataAsync(categoryId, fromDate, toDate);
+        }
+
+        public async Task<IEnumerable<Report>> GetAllDataAsync(DateTime fromDate, DateTime toDate, int? categoryId = null)
+        {
+            if (fromDate.Date > toDate.Date)
+            {
+                throw new Exception("From date cannot be greater than to date.");
+            }
+
+            int totalDays = (toDate.Date - fromDate.Date).Days;
+            if (totalDays > 60)
+            {
+                throw new Exception("Maximum 60 days allowed for Alert Dashboard.");
+            }
+
+            return await _reportRepository.GetAllDataAsync(fromDate, toDate, categoryId);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@using System
+@using System
 @using System.Collections.Generic
 @using System.Text.Json
 @using EmployeeAccessSystem.Models
@@ -167,39 +167,48 @@
                             </span>
                         </div>
 
-                        <div class="btn-group">
+                        <div class="d-flex align-items-center">
                             <button type="button"
-                                    class="btn btn-danger dropdown-toggle"
-                                    data-toggle="dropdown">
-                                <i class="fas fa-download mr-1"></i> Download
+                                    id="btnMailReport"
+                                    class="btn btn-outline-info btn-sm mr-2"
+                                    title="Email Report">
+                                <i class="fas fa-envelope mr-1"></i> Mail
                             </button>
 
-                            <div class="dropdown-menu dropdown-menu-right">
+                            <div class="btn-group">
+                                <button type="button"
+                                        class="btn btn-danger dropdown-toggle btn-sm"
+                                        data-toggle="dropdown">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </button>
 
-                                <a class="dropdown-item report-download-link"
-                                   href="@Url.Action("DownloadPdf", "Report", new {
-                                       categoryId = selectedCategoryId,
-                                       fromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "",
-                                       toDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : ""
-                                   })"
-                                   data-file-type="pdf">
+                                <div class="dropdown-menu dropdown-menu-right">
 
-                                    <i class="fas fa-file-pdf text-danger mr-2"></i>
-                                    PDF
-                                </a>
+                                    <a class="dropdown-item report-download-link"
+                                       href="@Url.Action("DownloadPdf", "Report", new {
+                                           categoryId = selectedCategoryId,
+                                           fromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "",
+                                           toDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : ""
+                                       })"
+                                       data-file-type="pdf">
 
-                                <a class="dropdown-item report-download-link"
-                                   href="@Url.Action("DownloadExcel", "Report", new {
-                                       categoryId = selectedCategoryId,
-                                       fromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "",
-                                       toDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : ""
-                                   })"
-                                   data-file-type="excel">
+                                        <i class="fas fa-file-pdf text-danger mr-2"></i>
+                                        PDF
+                                    </a>
 
-                                    <i class="fas fa-file-excel text-success mr-2"></i>
-                                    Excel
-                                </a>
+                                    <a class="dropdown-item report-download-link"
+                                       href="@Url.Action("DownloadExcel", "Report", new {
+                                           categoryId = selectedCategoryId,
+                                           fromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "",
+                                           toDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : ""
+                                       })"
+                                       data-file-type="excel">
 
+                                        <i class="fas fa-file-excel text-success mr-2"></i>
+                                        Excel
+                                    </a>
+
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -269,15 +278,42 @@
                                 </tr>
 
                                 <tr>
-                                    @for (int d = 0; d < dates.Count; d++)
-                                    {
-                                        <th class="text-center bg-light"
-                                            style="position:sticky; top:39px; z-index:5; min-width:55px; border-left:1px solid #d6d9dd; border-right:1px solid #d6d9dd; border-top:1px solid #d6d9dd; border-bottom:2px solid #adb5bd; box-shadow: inset 0 -1px 0 #adb5bd;">
-                                            <small class="font-weight-bold">
-                                                @dates[d].ToString("ddd")
-                                            </small>
-                                        </th>
-                                    }
+                                     @for (int d = 0; d < dates.Count; d++)
+                                     {
+                                         var dateKey = dates[d].ToString("yyyy-MM-dd");
+                                         var lastReport = reportData
+                                             .Where(r => r.EntryDate.Date == dates[d].Date && !string.IsNullOrWhiteSpace(r.CreatedBy))
+                                             .OrderByDescending(r => r.EntryDate)
+                                             .ThenByDescending(r => r.EntryId)
+                                             .FirstOrDefault();
+
+                                         string creatorName = "-";
+                                         if (lastReport != null)
+                                         {
+                                             string creatorEmail = lastReport.CreatedBy.Trim().ToLower();
+                                             string name = null;
+                                             if (ViewBag.UserMap != null && ((Dictionary<string, string>)ViewBag.UserMap).TryGetValue(creatorEmail, out name))
+                                             {
+                                                 creatorName = name;
+                                             }
+                                             else
+                                             {
+                                                 creatorName = lastReport.CreatedBy;
+                                             }
+                                         }
+
+                                         <th class="text-center bg-light"
+                                             style="position:sticky; top:39px; z-index:5; min-width:115px; border-left:1px solid #d6d9dd; border-right:1px solid #d6d9dd; border-top:1px solid #d6d9dd; border-bottom:2px solid #adb5bd; box-shadow: inset 0 -1px 0 #adb5bd; padding: 4px;">
+                                             <div class="d-flex flex-column align-items-center">
+                                                 <small class="font-weight-bold mb-1">
+                                                     @dates[d].ToString("ddd")
+                                                 </small>
+                                                 <span class="text-muted" style="font-size: 10px; font-weight: normal; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@creatorName">
+                                                     @creatorName
+                                                 </span>
+                                             </div>
+                                         </th>
+                                     }
                                 </tr>
                             </thead>
 
@@ -314,38 +350,72 @@
                                         {
                                             string key = dates[d].ToString("yyyy-MM-dd");
                                             string value = "";
+                                            string creator = "";
 
                                             if (rows[r].DateValues.ContainsKey(key))
                                             {
                                                 value = rows[r].DateValues[key];
+                                                creator = rows[r].DateCreators.ContainsKey(key) ? rows[r].DateCreators[key] : "";
                                             }
 
-                                            <td class="text-center align-middle"
+                                            <td class="text-center align-middle report-value-cell"
+                                                data-date-key="@key"
+                                                data-creator="@(creator.ToLower())"
                                                 style="min-width:55px; border-left:1px solid #d6d9dd; border-right:1px solid #d6d9dd; border-bottom:1px solid #d6d9dd; border-top:none;">
-                                                @if (string.IsNullOrWhiteSpace(value))
-                                                {
-                                                    <span class="text-muted">-</span>
-                                                }
-                                                else if (value == "CHECK_ICON")
-                                                {
-                                                    <i class="fas fa-check text-success"></i>
-                                                }
-                                                else if (value == "CROSS_ICON")
-                                                {
-                                                    <i class="fas fa-times text-danger"></i>
-                                                }
-                                                else if (value == "Up")
-                                                {
-                                                    <span class="text-success font-weight-bold">Up</span>
-                                                }
-                                                else if (value == "Down")
-                                                {
-                                                    <span class="text-danger font-weight-bold">Down</span>
-                                                }
-                                                else
-                                                {
-                                                    <span>@value</span>
-                                                }
+                                                
+                                                <div class="cell-content">
+                                                    @if (string.IsNullOrWhiteSpace(value))
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                    else if (value == "CHECK_ICON")
+                                                    {
+                                                        <i class="fas fa-check text-success"></i>
+                                                    }
+                                                    else if (value == "CROSS_ICON")
+                                                    {
+                                                        <i class="fas fa-times text-danger"></i>
+                                                    }
+                                                    else if (value == "Up")
+                                                    {
+                                                        <span class="text-success font-weight-bold">Up</span>
+                                                    }
+                                                    else if (value == "Down")
+                                                    {
+                                                        <span class="text-danger font-weight-bold">Down</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@value</span>
+                                                    }
+                                                </div>
+                                                
+                                                <div class="cell-original d-none">
+                                                    @if (string.IsNullOrWhiteSpace(value))
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                    else if (value == "CHECK_ICON")
+                                                    {
+                                                        <i class="fas fa-check text-success"></i>
+                                                    }
+                                                    else if (value == "CROSS_ICON")
+                                                    {
+                                                        <i class="fas fa-times text-danger"></i>
+                                                    }
+                                                    else if (value == "Up")
+                                                    {
+                                                        <span class="text-success font-weight-bold">Up</span>
+                                                    }
+                                                    else if (value == "Down")
+                                                    {
+                                                        <span class="text-danger font-weight-bold">Down</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@value</span>
+                                                    }
+                                                </div>
                                             </td>
                                         }
                                     </tr>
@@ -376,17 +446,21 @@
     </div>
 </div>
 
+@await Html.PartialAsync("~/Views/Email/_EmailReportModal.cshtml")
+
 @functions {
     public class DynamicReportRow
     {
         public List<string> LeftValues { get; set; }
 
         public Dictionary<string, string> DateValues { get; set; }
+        public Dictionary<string, string> DateCreators { get; set; }
 
         public DynamicReportRow()
         {
             LeftValues = new List<string>();
             DateValues = new Dictionary<string, string>();
+            DateCreators = new Dictionary<string, string>();
         }
     }
 
@@ -550,10 +624,12 @@
             if (!row.DateValues.ContainsKey(dateKey))
             {
                 row.DateValues.Add(dateKey, displayValue);
+                row.DateCreators.Add(dateKey, reportData[i].CreatedBy ?? "");
             }
             else
             {
                 row.DateValues[dateKey] = displayValue;
+                row.DateCreators[dateKey] = reportData[i].CreatedBy ?? "";
             }
         }
 
@@ -976,44 +1052,33 @@
                         responseType: 'blob'
                     },
 
-                    success: function (data, status, xhr) {
+                success: function (data, status, xhr) {
 
-                        var fileName = 'Report';
+    var fileName = 'Report';
 
-                        if (fileType === 'pdf') {
-                            fileName = 'Report.pdf';
-                        }
+    if (fileType === 'pdf') {
+        fileName = 'Report.pdf';
+    }
 
-                        if (fileType === 'excel') {
-                            fileName = 'Report.xlsx';
-                        }
+    if (fileType === 'excel') {
+        fileName = 'Report.xlsx';
+    }
 
-                        var disposition = xhr.getResponseHeader('Content-Disposition');
+    var blobUrl = window.URL.createObjectURL(data);
 
-                        if (disposition != null && disposition !== '') {
+    var link = document.createElement('a');
 
-                            var fileNameMatch = disposition.match(/filename="?([^"]+)"?/);
+    link.href = blobUrl;
+    link.download = fileName;
 
-                            if (fileNameMatch != null && fileNameMatch.length > 1) {
-                                fileName = fileNameMatch[1];
-                            }
-                        }
+    document.body.appendChild(link);
 
-                        var blobUrl = window.URL.createObjectURL(data);
+    link.click();
 
-                        var link = document.createElement('a');
+    document.body.removeChild(link);
 
-                        link.href = blobUrl;
-                        link.download = fileName;
-
-                        document.body.appendChild(link);
-
-                        link.click();
-
-                        document.body.removeChild(link);
-
-                        window.URL.revokeObjectURL(blobUrl);
-                    },
+    window.URL.revokeObjectURL(blobUrl);
+},
 
                     error: function (xhr) {
 
@@ -1209,6 +1274,149 @@
             if ($('#dynamicReportTable').length > 0) {
                 buildPagination();
             }
+
+
+
+            // Open email modal
+            $(document).on('click', '#btnMailReport', function () {
+                // Reset sender override form to default
+                var defaultEmail = $('#senderEmail').data('default');
+                $('#senderEmailDisplay').val(defaultEmail);
+                $('#senderEmail').val(defaultEmail);
+                $('#senderPassword').val('');
+                
+                $('#txtNewSenderEmail').val('');
+                $('#txtNewSenderPassword').val('');
+                $('#divChangeSender').addClass('d-none');
+                $('#btnResetSender').addClass('d-none');
+                $('#btnChangeSender').removeClass('d-none');
+
+                $('#emailReportModal').modal({
+                    backdrop: "static",
+                    keyboard: false
+                });
+            });
+
+            // Toggle change sender panel
+            $(document).on('click', '#btnChangeSender', function () {
+                var currentEmail = $('#senderEmail').val();
+                $('#txtNewSenderEmail').val(currentEmail);
+                $('#txtNewSenderPassword').val('');
+                $('#divChangeSender').removeClass('d-none');
+            });
+
+            // Cancel change sender
+            $(document).on('click', '#btnCancelSender', function () {
+                $('#divChangeSender').addClass('d-none');
+            });
+
+            // Apply custom sender
+            $(document).on('click', '#btnApplySender', function () {
+                var newEmail = $('#txtNewSenderEmail').val().trim();
+                var newPassword = $('#txtNewSenderPassword').val().trim();
+
+                var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                if (!emailRegex.test(newEmail)) {
+                    toastr.warning('Please enter a valid sender email address.');
+                    return;
+                }
+
+                if (newPassword === '') {
+                    toastr.warning('Please enter the password for the new sender.');
+                    return;
+                }
+
+                // Apply values
+                $('#senderEmailDisplay').val(newEmail);
+                $('#senderEmail').val(newEmail);
+                $('#senderPassword').val(newPassword);
+
+                // UI adjustments
+                $('#divChangeSender').addClass('d-none');
+                $('#btnChangeSender').addClass('d-none');
+                $('#btnResetSender').removeClass('d-none');
+                toastr.success('Custom sender credentials applied.');
+            });
+
+            // Reset sender to default
+            $(document).on('click', '#btnResetSender', function () {
+                var defaultEmail = $('#senderEmail').data('default');
+                $('#senderEmailDisplay').val(defaultEmail);
+                $('#senderEmail').val(defaultEmail);
+                $('#senderPassword').val('');
+
+                $('#btnResetSender').addClass('d-none');
+                $('#btnChangeSender').removeClass('d-none');
+                toastr.info('Sender credentials reset to default.');
+            });
+
+            // Validate comma-separated emails
+            function validateRecipientEmails(emailsString) {
+                var emails = emailsString.split(',');
+                var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                for (var i = 0; i < emails.length; i++) {
+                    var email = emails[i].trim();
+                    if (email === '') continue; // allow trailing or double commas silently
+                    if (!emailRegex.test(email)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Handle email form submit
+            $(document).on('submit', '#emailReportForm', function (e) {
+                e.preventDefault();
+
+                var recipientEmail = $('#recipientEmail').val() || '';
+                if (!validateRecipientEmails(recipientEmail)) {
+                    toastr.warning('One or more receiver email addresses are invalid.');
+                    return false;
+                }
+
+                var form = $(this);
+                var submitBtn = $('#btnSendReportEmailSubmit');
+                
+                submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');
+
+                $.ajax({
+                    url: '/Report/SendReportEmail',
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function (response) {
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send');
+                        if (response && response.success === true) {
+                            $('#emailReportModal').modal('hide');
+                            $('#recipientEmail').val('');
+                            $('#senderPassword').val('');
+                            $('#subject').val('');
+                            $('#message').val('');
+                            
+                            // Revert sender credentials to default after success
+                            var defaultEmail = $('#senderEmail').data('default');
+                            $('#senderEmailDisplay').val(defaultEmail);
+                            $('#senderEmail').val(defaultEmail);
+                            $('#senderPassword').val('');
+                            
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response ? response.message : "Failed to send email.");
+                        }
+                    },
+                    error: function (xhr) {
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send');
+                        if (xhr.status === 401) {
+                            toastr.error("Please login first.");
+                            return;
+                        }
+                        if (xhr.status === 403) {
+                            toastr.error("Access denied. You do not have permission.");
+                            return;
+                        }
+                        toastr.error("Unable to email report.");
+                    }
+                });
+            });
 
         });
     </script>

@@ -1,4 +1,4 @@
-﻿$(document).ready(function () {
+$(document).ready(function () {
 
     var table = $("#usersTable").DataTable({
         pageLength: 10,
@@ -181,6 +181,21 @@
         $("#deleteUserName").text(userName);
 
         $("#deleteUserModal").modal({
+            backdrop: "static",
+            keyboard: false
+        });
+    });
+
+    $(document).on("click", ".btnForgotPassword", function () {
+        var accountId = $(this).data("account-id");
+        var userName = $(this).data("user-name");
+
+        $("#forgotAccountId").val(accountId);
+        $("#forgotUserName").text(userName);
+        $("#forgotNewPassword").val("");
+        $("#forgotConfirmPassword").val("");
+
+        $("#forgotPasswordModal").modal({
             backdrop: "static",
             keyboard: false
         });

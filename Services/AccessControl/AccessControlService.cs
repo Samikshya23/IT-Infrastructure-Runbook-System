@@ -1,19 +1,32 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
+using EmployeeAccessSystem.Helpers;
 using EmployeeAccessSystem.Repositories;
+using EmployeeAccessSystem.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace EmployeeAccessSystem.Services
 {
     public class AccessControlService : IAccessControlService
     {
         private readonly IAccessControlRepository _repository;
+        private readonly IAccountRepositories _accountRepo;
+        private readonly IConfiguration _config;
+        private readonly IEmailService _emailService;
 
-        public AccessControlService(IAccessControlRepository repository)
+        public AccessControlService(
+            IAccessControlRepository repository,
+            IAccountRepositories accountRepo,
+            IConfiguration config,
+            IEmailService emailService)
         {
             _repository = repository;
+            _accountRepo = accountRepo;
+            _config = config;
+            _emailService = emailService;
         }
 
         // Dashboard
@@ -90,6 +103,36 @@ namespace EmployeeAccessSystem.Services
 
             if (result > 0)
             {
+                if (!string.IsNullOrWhiteSpace(model.Password))
+                {
+                    if (model.Password != model.ConfirmPassword)
+                    {
+                        return "Password and confirm password do not match.";
+                    }
+
+                    string passwordKey = _config["Security:PasswordKey"] ?? "";
+
+                    Helpers.Helper.CreatePasswordHash(
+                        model.Password,
+                        passwordKey,
+                        out byte[] passwordHash,
+                        out byte[] passwordSalt
+                    );
+
+                    var pwdResult = await _accountRepo.UpdatePasswordAsync(model.Email, passwordHash, passwordSalt);
+                    if (pwdResult.ResultId > 0)
+                    {
+                        try
+                        {
+                            await _emailService.SendForgotPasswordEmailAsync(model.Email, model.FullName, model.Password);
+                        }
+                        catch (Exception)
+                        {
+                            // Ignore email errors to avoid blocking successful user updates
+                        }
+                    }
+                }
+
                 return "User updated successfully.";
             }
 

@@ -7,7 +7,6 @@
 
     int sn = 1;
     int? selectedCategoryId = ViewBag.SelectedCategoryId as int?;
-    int visibleLimit = 4;
 
     List<string> headings = ViewBag.Headings as List<string>;
 
@@ -95,6 +94,71 @@
         }
 
         return values;
+    }
+
+    string GetHierarchyValue(List<string> values, int index)
+    {
+        if (values == null || index >= values.Count)
+        {
+            return "-";
+        }
+
+        if (string.IsNullOrWhiteSpace(values[index]))
+        {
+            return "-";
+        }
+
+        return values[index];
+    }
+
+    bool IsSamePath(List<string> firstRow, List<string> secondRow, int columnIndex)
+    {
+        if (firstRow == null || secondRow == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i <= columnIndex; i++)
+        {
+            string firstValue = GetHierarchyValue(firstRow, i);
+            string secondValue = GetHierarchyValue(secondRow, i);
+
+            if (firstValue != secondValue)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    int GetRowSpan(List<List<string>> rows, int rowIndex, int columnIndex)
+    {
+        int rowSpan = 1;
+
+        for (int i = rowIndex + 1; i < rows.Count; i++)
+        {
+            if (IsSamePath(rows[rowIndex], rows[i], columnIndex))
+            {
+                rowSpan++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return rowSpan;
+    }
+
+    bool ShouldDisplayCell(List<List<string>> rows, int rowIndex, int columnIndex)
+    {
+        if (rowIndex == 0)
+        {
+            return true;
+        }
+
+        return !IsSamePath(rows[rowIndex - 1], rows[rowIndex], columnIndex);
     }
 
     List<EmployeeAccessSystem.Models.CategoryChecklistModel> todayData =
@@ -247,22 +311,17 @@
                                 foreach (var group in groupedData)
                                 {
                                     List<EmployeeAccessSystem.Models.CategoryChecklistModel> items = group.Items;
+                                    List<List<string>> hierarchyRows = new List<List<string>>();
 
-                                    int displayCount = items.Count;
-
-                                    if (items.Count > visibleLimit)
-                                    {
-                                        displayCount = visibleLimit;
-                                    }
-
-                                    string groupClass = "entry_group_" + sn;
+                                    string groupKey = "entry_group_" + sn;
                                     string searchText = group.GroupName;
 
                                     foreach (EmployeeAccessSystem.Models.CategoryChecklistModel item in items)
                                     {
-                                        List<string> hierarchyValues = GetHierarchyValues(item);
+                                        List<string> values = GetHierarchyValues(item);
+                                        hierarchyRows.Add(values);
 
-                                        foreach (string value in hierarchyValues)
+                                        foreach (string value in values)
                                         {
                                             searchText += " " + value;
                                         }
@@ -272,147 +331,98 @@
                                         searchText += " " + GetResultText(item);
                                     }
 
-                                    <tr class="group-row" data-search="@searchText" data-full-count="@items.Count" data-visible-count="@visibleLimit">
+                                    for (int rowIndex = 0; rowIndex < items.Count; rowIndex++)
+                                    {
+                                        <tr class="@(rowIndex == 0 ? "group-row" : "group-detail-row")"
+                                            data-group-key="@groupKey"
+                                            data-search="@searchText">
 
-                                        <td class="text-center align-middle p-0 group-sn">
-                                            <div class="d-flex align-items-center justify-content-center px-2 group-sn-wrap" style="height:@(displayCount * 36)px;">
-                                                @sn
-                                            </div>
-                                        </td>
+                                            @if (rowIndex == 0)
+                                            {
+                                                <td class="text-center align-middle group-sn"
+                                                    rowspan="@items.Count">
+                                                    <span class="group-sn-wrap">@sn</span>
+                                                </td>
+                                            }
 
-                                        @for (int headingIndex = 0; headingIndex < headings.Count; headingIndex++)
-                                        {
-                                            <td class="p-0 align-top">
-                                                @if (headingIndex == 0)
+                                            @for (int headingIndex = 0; headingIndex < headings.Count; headingIndex++)
+                                            {
+                                                if (ShouldDisplayCell(hierarchyRows, rowIndex, headingIndex))
                                                 {
-                                                    <div class="d-flex align-items-center px-2 font-weight-normal" style="height:@(displayCount * 36)px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@group.GroupName">
-                                                        @group.GroupName
-                                                    </div>
-                                                }
-                                                else
-                                                {
-                                                    <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
-                                                        <tbody>
-                                                            @for (int i = 0; i < items.Count; i++)
-                                                            {
-                                                                List<string> values = GetHierarchyValues(items[i]);
-                                                                string columnValue = "-";
+                                                    int rowSpan = GetRowSpan(hierarchyRows, rowIndex, headingIndex);
+                                                    string columnValue = GetHierarchyValue(hierarchyRows[rowIndex], headingIndex);
 
-                                                                if (headingIndex < values.Count)
-                                                                {
-                                                                    columnValue = values[headingIndex];
-                                                                }
-
-                                                                <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
-                                                                    <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                        <div class="d-flex align-items-center px-2" style="height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@columnValue">
-                                                                            @columnValue
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                }
-                                            </td>
-                                        }
-
-                                        <td class="p-0 align-top">
-                                            <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
-                                                <tbody>
-                                                    @for (int i = 0; i < items.Count; i++)
-                                                    {
-                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
-                                                            <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                <div class="d-flex justify-content-center align-items-center px-2" style="height:36px;">
-                                                                    @items[i].EntryDate.ToString("yyyy-MM-dd HH:mm")
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </td>
-
-                                        <td class="p-0 align-top">
-                                            <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
-                                                <tbody>
-                                                    @for (int i = 0; i < items.Count; i++)
-                                                    {
-                                                        string userText = "-";
-
-                                                        if (!string.IsNullOrWhiteSpace(items[i].CreatedBy))
-                                                        {
-                                                            userText = items[i].CreatedBy;
-                                                        }
-
-                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
-                                                            <td class="p-0 align-middle @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                <div class="px-2" style="height:36px;line-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@userText">
-                                                                    @userText
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </td>
-
-                                        <td class="p-0 align-top">
-                                            <table class="table table-sm mb-0" style="table-layout:fixed;width:100%;">
-                                                <tbody>
-                                                    @for (int i = 0; i < items.Count; i++)
-                                                    {
-                                                        string resultText = GetResultText(items[i]);
-
-                                                        <tr class="@(i >= visibleLimit ? "extra-entry-row " + groupClass : "")" style="@(i >= visibleLimit ? "display:none;" : "")">
-                                                            <td class="p-0 align-middle text-center @(i != items.Count - 1 ? "border-bottom" : "")">
-                                                                <div class="d-flex justify-content-center align-items-center px-2" style="height:36px;">
-                                                                    @if (resultText == "Tick" || resultText == "8")
-                                                                    {
-                                                                        <i class="fas fa-check text-success"></i>
-                                                                    }
-                                                                    else if (resultText == "Cross" || resultText == "9")
-                                                                    {
-                                                                        <i class="fas fa-times text-danger"></i>
-                                                                    }
-                                                                    else if (resultText == "Up" || resultText == "10")
-                                                                    {
-                                                                        <span class="text-success font-weight-bold">Up</span>
-                                                                    }
-                                                                    else if (resultText == "Down" || resultText == "11")
-                                                                    {
-                                                                        <span class="text-danger font-weight-bold">Down</span>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <span>@resultText</span>
-                                                                    }
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </td>
-
-                                        <td class="p-0 align-top">
-                                            @{
-                                                string groupIdText = "";
-
-                                                if (group.EntryGroupId != null)
-                                                {
-                                                    groupIdText = group.EntryGroupId.ToString();
+                                                    <td class="align-middle px-2 py-1"
+                                                        rowspan="@rowSpan"
+                                                        title="@columnValue"
+                                                        style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:38px;">
+                                                        @columnValue
+                                                    </td>
                                                 }
                                             }
 
-                                            <div class="d-flex justify-content-center align-items-center" style="height:@(displayCount * 36)px;">
-                                                <button type="button" class="btn btn-light border btn-sm p-0" onclick="openEditChecklistModal('@groupIdText')" title="Edit" style="width:24px;height:24px;line-height:22px;">
-                                                    <i class="fas fa-pen" style="font-size:10px;"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                            <td class="text-center align-middle px-2 py-1">
+                                                @items[rowIndex].EntryDate.ToString("yyyy-MM-dd HH:mm")
+                                            </td>
+
+                                            <td class="align-middle px-2 py-1"
+                                                style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                                title="@items[rowIndex].CreatedBy">
+                                                @items[rowIndex].CreatedBy
+                                            </td>
+
+                                            <td class="text-center align-middle px-2 py-1">
+                                                @{
+                                                    string resultText = GetResultText(items[rowIndex]);
+                                                }
+
+                                                @if (resultText == "Tick" || resultText == "8")
+                                                {
+                                                    <i class="fas fa-check text-success"></i>
+                                                }
+                                                else if (resultText == "Cross" || resultText == "9")
+                                                {
+                                                    <i class="fas fa-times text-danger"></i>
+                                                }
+                                                else if (resultText == "Up" || resultText == "10")
+                                                {
+                                                    <span class="text-success font-weight-bold">Up</span>
+                                                }
+                                                else if (resultText == "Down" || resultText == "11")
+                                                {
+                                                    <span class="text-danger font-weight-bold">Down</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@resultText</span>
+                                                }
+                                            </td>
+
+                                            @if (rowIndex == 0)
+                                            {
+                                                <td class="text-center align-middle"
+                                                    rowspan="@items.Count">
+
+                                                    @{
+                                                        string groupIdText = "";
+
+                                                        if (group.EntryGroupId != null)
+                                                        {
+                                                            groupIdText = group.EntryGroupId.ToString();
+                                                        }
+                                                    }
+
+                                                    <button type="button"
+                                                            class="btn btn-light border btn-sm p-0"
+                                                            onclick="openEditChecklistModal('@groupIdText')"
+                                                            title="Edit"
+                                                            style="width:24px;height:24px;line-height:22px;">
+                                                        <i class="fas fa-pen" style="font-size:10px;"></i>
+                                                    </button>
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
 
                                     sn++;
                                 }

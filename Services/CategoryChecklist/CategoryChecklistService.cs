@@ -16,49 +16,36 @@ namespace EmployeeAccessSystem.Services
             _repository = repository;
         }
 
-        #region Load Methods
-
-        // Load all today's active entries
         public async Task<IEnumerable<CategoryChecklistModel>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
         }
 
-        // Load entries by selected category
         public async Task<IEnumerable<CategoryChecklistModel>> GetByCategoryAsync(int categoryId)
         {
             return await _repository.GetByCategoryAsync(categoryId);
         }
 
-        // Load entry details by EntryGroupId
         public async Task<IEnumerable<CategoryChecklistModel>> GetDetailsAsync(Guid entryGroupId)
         {
             return await _repository.GetDetailsAsync(entryGroupId);
         }
 
-        // Load SetupJson from category setup
         public async Task<string> GetSetupAsync(int categoryId)
         {
             return await _repository.GetSetupAsync(categoryId);
         }
 
-        // Load ConfigurationJson from form configuration
         public async Task<string> GetConfigurationAsync(int categoryId)
         {
             return await _repository.GetConfigurationAsync(categoryId);
         }
 
-        // Load categories that already have setup configuration
         public async Task<IEnumerable<CategorySetup>> GetConfiguredCategoriesAsync()
         {
             return await _repository.GetConfiguredCategoriesAsync();
         }
 
-        #endregion
-
-        #region Save Methods
-
-        // Validate and save dynamic checklist values
         public async Task<string> SaveAsync(CategoryChecklistSaveRequest request, string createdBy)
         {
             if (request == null)
@@ -84,6 +71,16 @@ namespace EmployeeAccessSystem.Services
             {
                 return "Please enter values.";
             }
+
+            List<string> validNodeIds = request.Items
+                .Where(x => !string.IsNullOrWhiteSpace(x.SetupNodeId))
+                .Select(x => x.SetupNodeId.Trim())
+                .Distinct()
+                .ToList();
+
+            string nodeIds = string.Join(",", validNodeIds);
+
+            await _repository.ReportModel(request.CategoryId, nodeIds, createdBy);
 
             Guid entryGroupId = Guid.NewGuid();
 
@@ -136,11 +133,6 @@ namespace EmployeeAccessSystem.Services
             return "Saved successfully.";
         }
 
-        #endregion
-
-        #region Delete Methods
-
-        // Soft delete entry group
         public async Task<string> DeleteAsync(Guid entryGroupId, string deletedBy)
         {
             int result = await _repository.DeleteAsync(entryGroupId, deletedBy);
@@ -152,7 +144,5 @@ namespace EmployeeAccessSystem.Services
 
             return "Delete failed.";
         }
-
-        #endregion
     }
 }

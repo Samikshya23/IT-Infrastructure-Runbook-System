@@ -1,4 +1,7 @@
-﻿using EmployeeAccessSystem.Models;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using EmployeeAccessSystem.Models;
 
 namespace EmployeeAccessSystem.Repositories
 {
@@ -15,5 +18,7 @@ namespace EmployeeAccessSystem.Repositories
         Task<DbResult> UpdateAsync(int accountId, RegisterModel model, int modifiedBy);
 
         Task<DbResult> DeleteAsync(int accountId, int deletedBy);
+
+        Task<DbResult> UpdatePasswordAsync(string email, byte[] passwordHash, byte[] passwordSalt);
     }
 }

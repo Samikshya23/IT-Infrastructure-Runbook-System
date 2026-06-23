@@ -1,4 +1,4 @@
-﻿using EmployeeAccessSystem.Models;
+using EmployeeAccessSystem.Models;
 
 namespace EmployeeAccessSystem.Services
 {
@@ -17,5 +17,9 @@ namespace EmployeeAccessSystem.Services
         Task<string> UpdateAsync(int accountId, RegisterModel model);
 
         Task<string> DeleteAsync(int accountId);
+
+        Task<string> ForgotPasswordAsync(string email);
+
+        Task<string> ResetPasswordAsync(string email, string password);
     }
 }

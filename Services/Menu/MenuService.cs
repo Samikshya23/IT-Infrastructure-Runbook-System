@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
@@ -56,7 +56,11 @@ namespace EmployeeAccessSystem.Services
                 {
                     if (menu.ParentMenuId == null)
                     {
-                        parentMenus.Add(menu);
+                        // Exclude the main Dashboard menu to avoid duplicates (since it is already hardcoded at the top of the sidebar)
+                        if (menu.MenuId != 1 && !(menu.ControllerName == "Home" && menu.ActionName == "Index"))
+                        {
+                            parentMenus.Add(menu);
+                        }
                     }
                 }
 

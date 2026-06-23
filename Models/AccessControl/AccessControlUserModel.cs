@@ -1,4 +1,4 @@
-﻿namespace EmployeeAccessSystem.Models
+namespace EmployeeAccessSystem.Models
 {
     public class AccessControlUserModel
     {
@@ -13,5 +13,9 @@
         public string RoleName { get; set; }
 
         public bool IsActive { get; set; }
+
+        public string Password { get; set; }
+
+        public string ConfirmPassword { get; set; }
     }
 }

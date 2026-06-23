@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using ClosedXML.Excel;
 using EmployeeAccessSystem.Models;
@@ -28,23 +28,20 @@ namespace EmployeeAccessSystem.Excel
                     totalColumns = 1;
                 }
 
-                // Title
                 ws.Range(currentRow, 1, currentRow, totalColumns).Merge();
-                ws.Cell(currentRow, 1).Value = _model.Title;
+                ws.Cell(currentRow, 1).Value = _model.Title ?? "Report";
                 ws.Cell(currentRow, 1).Style.Font.Bold = true;
                 ws.Cell(currentRow, 1).Style.Font.FontSize = 14;
                 ws.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                 currentRow++;
 
-                // Category name
                 ws.Range(currentRow, 1, currentRow, totalColumns).Merge();
-                ws.Cell(currentRow, 1).Value = "Category: " + _model.CategoryName;
+                ws.Cell(currentRow, 1).Value = "Category: " + (_model.CategoryName ?? "-");
                 ws.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                 currentRow++;
 
-                // Date range
                 ws.Range(currentRow, 1, currentRow, totalColumns).Merge();
                 ws.Cell(currentRow, 1).Value =
                     "From: " + _model.FromDate.ToString("dd/MM/yyyy") +
@@ -56,29 +53,33 @@ namespace EmployeeAccessSystem.Excel
                 int headerRow = currentRow;
                 int col = 1;
 
-                // Left-side dynamic headings
                 foreach (string heading in _model.Headings)
                 {
-                    ws.Cell(headerRow, col).Value = heading;
+                    ws.Cell(headerRow, col).Value = heading ?? "-";
                     ws.Cell(headerRow, col).Style.Font.Bold = true;
                     ws.Cell(headerRow, col).Style.Fill.BackgroundColor = XLColor.LightGray;
                     ws.Cell(headerRow, col).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                     col++;
                 }
 
-                // Date headings
                 foreach (DateTime date in _model.Dates)
                 {
-                    ws.Cell(headerRow, col).Value = date.ToString("dd MMM");
+                    string dateKey = date.ToString("yyyy-MM-dd");
+                    string headerText = date.ToString("dd MMM");
+                    if (_model.DateCreators != null && _model.DateCreators.TryGetValue(dateKey, out var creator))
+                    {
+                        headerText += "\n(" + creator + ")";
+                    }
+                    ws.Cell(headerRow, col).Value = headerText;
                     ws.Cell(headerRow, col).Style.Font.Bold = true;
                     ws.Cell(headerRow, col).Style.Fill.BackgroundColor = XLColor.LightGray;
                     ws.Cell(headerRow, col).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Cell(headerRow, col).Style.Alignment.WrapText = true;
                     col++;
                 }
 
                 currentRow++;
 
-                // Body rows
                 for (int r = 0; r < _model.Rows.Count; r++)
                 {
                     col = 1;
@@ -89,7 +90,7 @@ namespace EmployeeAccessSystem.Excel
                         {
                             int rowSpan = GetRowSpan(r, h);
 
-                            ws.Cell(currentRow, col).Value = _model.Rows[r].LeftValues[h];
+                            ws.Cell(currentRow, col).Value = _model.Rows[r].LeftValues[h] ?? "-";
 
                             if (rowSpan > 1)
                             {
@@ -108,12 +109,12 @@ namespace EmployeeAccessSystem.Excel
                         string key = date.ToString("yyyy-MM-dd");
                         string value = "-";
 
-                        if (_model.Rows[r].DateValues.ContainsKey(key))
+                        if (_model.Rows[r].DateValues != null && _model.Rows[r].DateValues.ContainsKey(key))
                         {
                             value = _model.Rows[r].DateValues[key];
                         }
 
-                        ws.Cell(currentRow, col).Value = value;
+                        ws.Cell(currentRow, col).Value = value ?? "-";
                         ws.Cell(currentRow, col).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                         col++;
                     }
@@ -156,7 +157,10 @@ namespace EmployeeAccessSystem.Excel
 
             for (int i = 0; i <= columnIndex; i++)
             {
-                if (_model.Rows[rowIndex].LeftValues[i] != _model.Rows[rowIndex - 1].LeftValues[i])
+                string currentValue = _model.Rows[rowIndex].LeftValues[i] ?? "";
+                string previousValue = _model.Rows[rowIndex - 1].LeftValues[i] ?? "";
+
+                if (currentValue != previousValue)
                 {
                     return true;
                 }
@@ -175,7 +179,10 @@ namespace EmployeeAccessSystem.Excel
 
                 for (int j = 0; j <= columnIndex; j++)
                 {
-                    if (_model.Rows[i].LeftValues[j] != _model.Rows[rowIndex].LeftValues[j])
+                    string currentValue = _model.Rows[i].LeftValues[j] ?? "";
+                    string selectedValue = _model.Rows[rowIndex].LeftValues[j] ?? "";
+
+                    if (currentValue != selectedValue)
                     {
                         same = false;
                         break;

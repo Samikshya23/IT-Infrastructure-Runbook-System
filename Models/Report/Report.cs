@@ -1,10 +1,12 @@
-﻿using System;
+using System;
 
 namespace EmployeeAccessSystem.Models
 {
     public class Report
     {
         public int EntryId { get; set; }
+
+        public Guid? EntryGroupId { get; set; }
 
         public int CategoryId { get; set; }
 

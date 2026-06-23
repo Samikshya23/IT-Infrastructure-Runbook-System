@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -207,6 +207,42 @@ namespace EmployeeAccessSystem.Repositories
             catch (Exception ex)
             {
                 throw new Exception("Error while deleting user.", ex);
+            }
+        }
+
+        public async Task<DbResult> UpdatePasswordAsync(string email, byte[] passwordHash, byte[] passwordSalt)
+        {
+            try
+            {
+                using var conn = CreateConnection();
+
+                DynamicParameters parameters = new DynamicParameters();
+
+                parameters.Add("Flag", "UPDATEPASSWORD");
+                parameters.Add("Email", email);
+                parameters.Add("PasswordHash", passwordHash);
+                parameters.Add("PasswordSalt", passwordSalt);
+
+                DbResult result = await conn.QueryFirstOrDefaultAsync<DbResult>(
+                    "dbo.sp_Account_Manage",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                if (result == null)
+                {
+                    return new DbResult
+                    {
+                        ResultId = 0,
+                        Message = "Something went wrong while updating password."
+                    };
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while updating user password.", ex);
             }
         }
     }

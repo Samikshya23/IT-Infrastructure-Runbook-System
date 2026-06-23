@@ -1,5 +1,5 @@
 ﻿<div class="modal fade" id="categoryChecklistModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
         <div class="modal-content rounded-0">
 
             <form asp-action="Save" asp-controller="CategoryChecklist" method="post" id="categoryChecklistForm">
@@ -12,7 +12,6 @@
                 </div>
 
                 <div class="modal-body py-2" style="max-height:70vh; overflow-y:auto;">
-
                     <div class="card card-primary card-outline shadow-none rounded-0 mb-0">
                         <div class="card-body p-2">
 
@@ -31,7 +30,6 @@
 
                         </div>
                     </div>
-
                 </div>
 
                 <div class="modal-footer py-2">
@@ -97,7 +95,6 @@
     }
 
     function cleanCategoryChecklistModal() {
-
         $('#categoryChecklistModal').modal('hide');
         $('#closeConfirmModal').modal('hide');
 
@@ -126,7 +123,6 @@
     }
 
     function openAddChecklistModal() {
-
         $('#EntryGroupId').val('');
         $('#dynamicChecklistArea').html('');
 
@@ -138,13 +134,10 @@
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function () {
-
                 $('#categoryChecklistModal').modal('show');
-
                 loadTodayChecklistValues();
             },
             error: function (xhr) {
-
                 if (xhr.status === 401) {
                     showChecklistToast('Please login first.');
                     cleanCategoryChecklistModal();
@@ -201,7 +194,6 @@
     }
 
     function openEditChecklistModal(entryGroupId) {
-
         $('#EntryGroupId').val(entryGroupId);
         $('#dynamicChecklistArea').html('');
 
@@ -216,11 +208,9 @@
                 entryGroupId: entryGroupId
             },
             success: function () {
-
                 loadEditChecklistDetails(entryGroupId);
             },
             error: function (xhr) {
-
                 if (xhr.status === 401) {
                     showChecklistToast('Please login first.');
                     cleanCategoryChecklistModal();
@@ -240,7 +230,6 @@
     }
 
     function loadEditChecklistDetails(entryGroupId) {
-
         $.ajax({
             url: '/CategoryChecklist/GetDetails',
             type: 'GET',
@@ -336,13 +325,13 @@
                 currentSetupItems = [];
 
                 if (Array.isArray(setupObject)) {
-                    collectSetupItems(setupObject);
+                    collectSetupItems(setupObject, '', '', '');
                 }
                 else if (setupObject.structure != null) {
-                    collectSetupItems(setupObject.structure);
+                    collectSetupItems(setupObject.structure, '', '', '');
                 }
                 else if (setupObject.Structure != null) {
-                    collectSetupItems(setupObject.Structure);
+                    collectSetupItems(setupObject.Structure, '', '', '');
                 }
 
                 if (existingEntries == null) {
@@ -362,65 +351,154 @@
         });
     }
 
-    function collectSetupItems(nodes) {
+    function collectSetupItems(nodes, parentPath, inheritedValueType, inheritedValueTypeId) {
         if (nodes == null) {
             return;
         }
 
+        if (parentPath == null) {
+            parentPath = '';
+        }
+
         for (var i = 0; i < nodes.length; i++) {
-            var parent = nodes[i];
+            var node = nodes[i];
 
-            var parentName = getNodeValue(parent);
-            var parentNodeId = getNodeId(parent);
-            var parentFieldType = getNodeFieldType(parent);
-            var parentFieldTypeId = getNodeFieldTypeId(parent);
-            var children = getNodeChildren(parent);
+            var nodeName = getNodeValue(node);
+            var nodeId = getNodeId(node);
+            var children = getNodeChildren(node);
 
-            if (children == null || children.length === 0) {
-                currentSetupItems.push({
-                    setupNodeId: parentNodeId,
-                    oldSetupNodeId: parentName,
-                    parentPath: parentName,
-                    displayName: parentName,
-                    valueType: parentFieldType,
-                    valueTypeId: parentFieldTypeId
-                });
+            var nodeValueType = getNodeFieldType(node);
+            var nodeValueTypeId = getNodeFieldTypeId(node);
+
+            if (nodeValueType == null || nodeValueType === '') {
+                nodeValueType = inheritedValueType;
+            }
+
+            if (nodeValueTypeId == null || nodeValueTypeId === '') {
+                nodeValueTypeId = inheritedValueTypeId;
+            }
+
+            var currentPath = '';
+
+            if (parentPath === '') {
+                currentPath = nodeName;
             }
             else {
-                for (var j = 0; j < children.length; j++) {
-                    var child = children[j];
-                    var childName = getNodeValue(child);
-                    var childNodeId = getNodeId(child);
+                currentPath = parentPath + ' / ' + nodeName;
+            }
 
-                    currentSetupItems.push({
-                        setupNodeId: childNodeId,
-                        oldSetupNodeId: parentName + '/' + childName,
-                        parentPath: parentName,
-                        displayName: childName,
-                        valueType: parentFieldType,
-                        valueTypeId: parentFieldTypeId
-                    });
-                }
+            if (children != null && children.length > 0) {
+                collectSetupItems(children, currentPath, nodeValueType, nodeValueTypeId);
+            }
+            else {
+                currentSetupItems.push({
+                    setupNodeId: nodeId,
+                    oldSetupNodeId: currentPath,
+                    parentPath: parentPath,
+                    displayName: nodeName,
+                    valueType: nodeValueType,
+                    valueTypeId: nodeValueTypeId
+                });
             }
         }
     }
 
-    function renderChecklistForm(existingEntries) {
+      function renderChecklistForm(existingEntries) {
+
         if (currentSetupItems.length === 0) {
             $('#dynamicChecklistArea').html('');
             return;
         }
 
-        var grouped = {};
+        var rows = [];
 
         for (var i = 0; i < currentSetupItems.length; i++) {
             var item = currentSetupItems[i];
 
-            if (!grouped[item.parentPath]) {
-                grouped[item.parentPath] = [];
+            var pathParts = [];
+
+            if (item.parentPath != null && item.parentPath !== '') {
+                pathParts = item.parentPath.split('/');
             }
 
-            grouped[item.parentPath].push(item);
+            for (var p = 0; p < pathParts.length; p++) {
+                pathParts[p] = pathParts[p].trim();
+            }
+
+            pathParts.push(item.displayName);
+
+            rows.push({
+                item: item,
+                values: pathParts
+            });
+        }
+
+        rows.sort(function (a, b) {
+            var first = a.values.join(' / ');
+            var second = b.values.join(' / ');
+
+            if (first < second) {
+                return -1;
+            }
+
+            if (first > second) {
+                return 1;
+            }
+
+            return 0;
+        });
+
+        function getValue(rowIndex, columnIndex) {
+            if (rows[rowIndex] == null || rows[rowIndex].values == null) {
+                return '';
+            }
+
+            if (columnIndex >= rows[rowIndex].values.length) {
+                return '';
+            }
+
+            return rows[rowIndex].values[columnIndex];
+        }
+
+        function isSamePath(firstIndex, secondIndex, columnIndex) {
+            for (var i = 0; i <= columnIndex; i++) {
+                if (getValue(firstIndex, i) !== getValue(secondIndex, i)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function shouldDisplayCell(rowIndex, columnIndex) {
+            if (rowIndex === 0) {
+                return true;
+            }
+
+            return !isSamePath(rowIndex - 1, rowIndex, columnIndex);
+        }
+
+        function getRowSpan(rowIndex, columnIndex) {
+            var rowSpan = 1;
+
+            for (var i = rowIndex + 1; i < rows.length; i++) {
+                if (isSamePath(rowIndex, i, columnIndex)) {
+                    rowSpan++;
+                }
+                else {
+                    break;
+                }
+            }
+
+            return rowSpan;
+        }
+
+        var maxDepth = 0;
+
+        for (var d = 0; d < rows.length; d++) {
+            if (rows[d].values.length > maxDepth) {
+                maxDepth = rows[d].values.length;
+            }
         }
 
         var html = '';
@@ -429,63 +507,55 @@
         html += '<table class="table table-bordered table-sm mb-0 w-100" style="table-layout:fixed;">';
         html += '<tbody>';
 
-        var index = 0;
+        for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+            var item = rows[rowIndex].item;
 
-        for (var groupName in grouped) {
-            if (grouped.hasOwnProperty(groupName)) {
-                var items = grouped[groupName];
+            var oldValue = getExistingValue(
+                existingEntries,
+                item.setupNodeId,
+                item.displayName,
+                item.parentPath,
+                item.oldSetupNodeId,
+                item.valueTypeId
+            );
 
-                for (var x = 0; x < items.length; x++) {
-                    var item = items[x];
+            html += '<tr>';
 
-                    var oldValue = getExistingValue(
-                        existingEntries,
-                        item.setupNodeId,
-                        item.displayName,
-                        item.parentPath,
-                        item.oldSetupNodeId,
-                        item.valueTypeId
-                    );
+            for (var columnIndex = 0; columnIndex < maxDepth - 1; columnIndex++) {
+                if (shouldDisplayCell(rowIndex, columnIndex)) {
+                    var rowSpan = getRowSpan(rowIndex, columnIndex);
+                    var columnValue = getValue(rowIndex, columnIndex);
 
-                    html += '<tr>';
-
-                    if (x === 0) {
-                        html += '<td rowspan="' + items.length + '" class="align-middle font-weight-bold text-left p-0" style="width:30%;">';
-                        html += '<div class="px-2 d-flex align-items-center justify-content-start" style="height:36px;">';
-                        html += escapeHtml(groupName);
-                        html += '</div>';
-                        html += '</td>';
-                    }
-
-                    html += '<td class="align-middle text-left p-0" style="width:40%;">';
-                    html += '<div class="px-2 d-flex align-items-center justify-content-start" style="height:36px;">';
-                    html += escapeHtml(item.displayName);
-                    html += '</div>';
-
-                    html += '<input type="hidden" name="Items[' + index + '].SetupNodeId" value="' + escapeAttribute(item.setupNodeId) + '" />';
-                    html += '<input type="hidden" name="Items[' + index + '].ParentPath" value="' + escapeAttribute(item.parentPath) + '" />';
-                    html += '<input type="hidden" name="Items[' + index + '].DisplayName" value="' + escapeAttribute(item.displayName) + '" />';
-                    html += '<input type="hidden" name="Items[' + index + '].ValueType" value="' + escapeAttribute(item.valueType) + '" />';
-                    html += '<input type="hidden" name="Items[' + index + '].ValueTypeId" value="' + escapeAttribute(item.valueTypeId) + '" />';
-
-                    html += '</td>';
-
-                    html += '<td class="align-middle text-left p-0" style="width:30%;">';
-                    html += '<div class="px-2 d-flex align-items-center justify-content-start" style="height:36px;">';
-
-                    html += createValueInput(
-                        index,
-                        oldValue,
-                        item.valueTypeId
-                    );
-
+                    html += '<td rowspan="' + rowSpan + '" class="align-middle text-left p-0">';
+                    html += '<div class="px-2 d-flex align-items-center justify-content-start" style="min-height:' + (rowSpan * 42) + 'px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeAttribute(columnValue) + '">';
+                    html += escapeHtml(columnValue);
                     html += '</div>';
                     html += '</td>';
-                    html += '</tr>';
-
-                    index++;
                 }
             }
+
+            var finalValue = getValue(rowIndex, maxDepth - 1);
+
+            html += '<td class="align-middle text-left p-0">';
+            html += '<div class="px-2 d-flex align-items-center justify-content-start" style="min-height:42px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeAttribute(finalValue) + '">';
+            html += escapeHtml(finalValue);
+            html += '</div>';
+
+            html += '<input type="hidden" name="Items[' + rowIndex + '].SetupNodeId" value="' + escapeAttribute(item.setupNodeId) + '" />';
+            html += '<input type="hidden" name="Items[' + rowIndex + '].ParentPath" value="' + escapeAttribute(item.parentPath) + '" />';
+            html += '<input type="hidden" name="Items[' + rowIndex + '].DisplayName" value="' + escapeAttribute(item.displayName) + '" />';
+            html += '<input type="hidden" name="Items[' + rowIndex + '].ValueType" value="' + escapeAttribute(item.valueType) + '" />';
+            html += '<input type="hidden" name="Items[' + rowIndex + '].ValueTypeId" value="' + escapeAttribute(item.valueTypeId) + '" />';
+
+            html += '</td>';
+
+            html += '<td class="align-middle text-left p-0" style="width:140px;">';
+            html += '<div class="px-2 d-flex align-items-center justify-content-start" style="min-height:42px;">';
+            html += createValueInput(rowIndex, oldValue, item.valueTypeId);
+            html += '</div>';
+            html += '</td>';
+
+            html += '</tr>';
         }
 
         html += '</tbody>';
@@ -573,12 +643,8 @@
             selectedText +
             '</button>' +
             '<div class="dropdown-menu p-0 text-center" style="min-width:100px;">' +
-            '<button type="button" class="dropdown-item" onclick="selectTickCross(' + index + ', \'8\')">' +
-            '<i class="fas fa-check text-success"></i>' +
-            '</button>' +
-            '<button type="button" class="dropdown-item" onclick="selectTickCross(' + index + ', \'9\')">' +
-            '<i class="fas fa-times text-danger"></i>' +
-            '</button>' +
+            '<button type="button" class="dropdown-item" onclick="selectTickCross(' + index + ', \'8\')"><i class="fas fa-check text-success"></i></button>' +
+            '<button type="button" class="dropdown-item" onclick="selectTickCross(' + index + ', \'9\')"><i class="fas fa-times text-danger"></i></button>' +
             '</div>' +
             '</div>';
     }
@@ -622,12 +688,8 @@
             selectedText +
             '</button>' +
             '<div class="dropdown-menu p-0 text-center" style="min-width:100px;">' +
-            '<button type="button" class="dropdown-item" onclick="selectUpDown(' + index + ', \'10\')">' +
-            '<span class="text-success font-weight-bold">Up</span>' +
-            '</button>' +
-            '<button type="button" class="dropdown-item" onclick="selectUpDown(' + index + ', \'11\')">' +
-            '<span class="text-danger font-weight-bold">Down</span>' +
-            '</button>' +
+            '<button type="button" class="dropdown-item" onclick="selectUpDown(' + index + ', \'10\')"><span class="text-success font-weight-bold">Up</span></button>' +
+            '<button type="button" class="dropdown-item" onclick="selectUpDown(' + index + ', \'11\')"><span class="text-danger font-weight-bold">Down</span></button>' +
             '</div>' +
             '</div>';
     }

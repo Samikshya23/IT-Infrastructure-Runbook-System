@@ -1,4 +1,6 @@
-﻿namespace EmployeeAccessSystem.Models
+using System;
+
+namespace EmployeeAccessSystem.Models
 {
     public class Account
     {

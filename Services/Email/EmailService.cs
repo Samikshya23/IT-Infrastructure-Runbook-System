@@ -1,5 +1,5 @@
-﻿using EmployeeAccessSystem.Models;
-using Microsoft.Extensions.Configuration;
+using EmployeeAccessSystem.Models;
+using EmployeeAccessSystem.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net;
@@ -10,34 +10,27 @@ namespace EmployeeAccessSystem.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly EmailSettings _emailSettings;
+        private readonly IEmailRepository _emailRepository;
         private readonly ILogger<EmailService> _logger;
 
         public EmailService(
-            IConfiguration configuration,
+            IEmailRepository emailRepository,
             ILogger<EmailService> logger)
         {
-            _emailSettings = new EmailSettings();
-
-            _emailSettings.SmtpHost = configuration["EmailSettings:SmtpHost"] ?? "";
-            _emailSettings.SmtpPort = Convert.ToInt32(configuration["EmailSettings:SmtpPort"] ?? "587");
-            _emailSettings.EnableSsl = Convert.ToBoolean(configuration["EmailSettings:EnableSsl"] ?? "true");
-            _emailSettings.SenderName = configuration["EmailSettings:SenderName"] ?? "";
-            _emailSettings.SenderEmail = configuration["EmailSettings:SenderEmail"] ?? "";
-            _emailSettings.SenderPassword = configuration["EmailSettings:SenderPassword"] ?? "";
-
-            _emailSettings.SmtpHost = _emailSettings.SmtpHost.Trim();
-            _emailSettings.SenderName = _emailSettings.SenderName.Trim();
-            _emailSettings.SenderEmail = _emailSettings.SenderEmail.Trim();
-            _emailSettings.SenderPassword = _emailSettings.SenderPassword.Trim();
-
+            _emailRepository = emailRepository;
             _logger = logger;
+        }
+
+        private async Task<EmailSettings> GetSettingsAsync()
+        {
+            return await _emailRepository.GetEmailSettingsAsync();
         }
 
         public async Task SendUserPasswordEmailAsync(string toEmail, string fullName, string password)
         {
             try
             {
+                var settings = await GetSettingsAsync();
                 toEmail = (toEmail ?? "").Trim();
                 fullName = (fullName ?? "").Trim();
                 password = password ?? "";
@@ -47,62 +40,43 @@ namespace EmployeeAccessSystem.Services
                     throw new Exception("Receiver email address is empty.");
                 }
 
-                if (string.IsNullOrWhiteSpace(_emailSettings.SenderEmail))
+                if (string.IsNullOrWhiteSpace(settings.SenderEmail))
                 {
-                    throw new Exception("Sender email is missing in appsettings.json.");
+                    throw new Exception("Sender email is missing in configuration.");
                 }
 
-                if (string.IsNullOrWhiteSpace(_emailSettings.SenderPassword))
+                if (string.IsNullOrWhiteSpace(settings.SenderPassword))
                 {
-                    throw new Exception("Sender app password is missing in appsettings.json.");
+                    throw new Exception("Sender app password is missing in configuration.");
                 }
 
                 string subject = "Your IT Infrastructure Runbook System Account";
 
-                string body = @"
-<html>
-<body style='font-family: Arial, sans-serif; font-size: 14px; color: #333;'>
-
-<p>Dear " + fullName + @",</p>
-
-<p>Your account has been created for <b>IT Infrastructure Runbook System</b>.</p>
-
-<p>Please use the following credentials to login:</p>
-
-<table style='border-collapse: collapse; margin-top: 10px;'>
-    <tr>
-        <td style='padding: 6px 10px; border: 1px solid #ddd;'><b>Email</b></td>
-        <td style='padding: 6px 10px; border: 1px solid #ddd;'>" + toEmail + @"</td>
-    </tr>
-    <tr>
-        <td style='padding: 6px 10px; border: 1px solid #ddd;'><b>Password</b></td>
-        <td style='padding: 6px 10px; border: 1px solid #ddd;'>" + password + @"</td>
-    </tr>
-</table>
-
-<p style='margin-top: 15px;'>Please keep your password safe.</p>
-
-<p>Regards,<br/>
-IT Infrastructure Runbook System</p>
-
-</body>
-</html>";
+                // Load template from Repository
+                string template = await _emailRepository.GetUserPasswordEmailTemplateAsync();
+                string body = template
+                    .Replace("{FullName}", fullName)
+                    .Replace("{Email}", toEmail)
+                    .Replace("{Password}", password);
 
                 using MailMessage mailMessage = new MailMessage();
 
-                mailMessage.From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName);
+                mailMessage.From = new MailAddress(settings.SenderEmail, settings.SenderName);
                 mailMessage.To.Add(toEmail);
                 mailMessage.Subject = subject;
                 mailMessage.Body = body;
                 mailMessage.IsBodyHtml = true;
 
-                using SmtpClient smtpClient = new SmtpClient(_emailSettings.SmtpHost);
+                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 
-                smtpClient.Port = _emailSettings.SmtpPort;
-                smtpClient.EnableSsl = _emailSettings.EnableSsl;
+                using SmtpClient smtpClient = new SmtpClient(settings.SmtpHost);
+
+                smtpClient.Port = settings.SmtpPort;
+                smtpClient.EnableSsl = settings.EnableSsl;
+                smtpClient.Timeout = 10000;
                 smtpClient.Credentials = new NetworkCredential(
-                    _emailSettings.SenderEmail,
-                    _emailSettings.SenderPassword
+                    settings.SenderEmail,
+                    settings.SenderPassword
                 );
 
                 await smtpClient.SendMailAsync(mailMessage);
@@ -112,8 +86,182 @@ IT Infrastructure Runbook System</p>
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while sending password email. Email: {Email}", toEmail);
-
                 throw;
+            }
+        }
+
+        public async Task SendForgotPasswordEmailAsync(string toEmail, string fullName, string newPassword)
+        {
+            try
+            {
+                var settings = await GetSettingsAsync();
+                toEmail = (toEmail ?? "").Trim();
+                fullName = (fullName ?? "").Trim();
+                newPassword = newPassword ?? "";
+
+                if (string.IsNullOrWhiteSpace(toEmail))
+                {
+                    throw new Exception("Receiver email address is empty.");
+                }
+
+                if (string.IsNullOrWhiteSpace(settings.SenderEmail))
+                {
+                    throw new Exception("Sender email is missing in configuration.");
+                }
+
+                if (string.IsNullOrWhiteSpace(settings.SenderPassword))
+                {
+                    throw new Exception("Sender app password is missing in configuration.");
+                }
+
+                string subject = "Your IT Infrastructure Runbook System Account Password Reset";
+
+                // Load template from Repository
+                string template = await _emailRepository.GetForgotPasswordEmailTemplateAsync();
+                string body = template
+                    .Replace("{FullName}", fullName)
+                    .Replace("{Email}", toEmail)
+                    .Replace("{TemporaryPassword}", newPassword);
+
+                using MailMessage mailMessage = new MailMessage();
+
+                mailMessage.From = new MailAddress(settings.SenderEmail, settings.SenderName);
+                mailMessage.To.Add(toEmail);
+                mailMessage.Subject = subject;
+                mailMessage.Body = body;
+                mailMessage.IsBodyHtml = true;
+
+                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
+                using SmtpClient smtpClient = new SmtpClient(settings.SmtpHost);
+
+                smtpClient.Port = settings.SmtpPort;
+                smtpClient.EnableSsl = settings.EnableSsl;
+                smtpClient.Timeout = 10000;
+                smtpClient.Credentials = new NetworkCredential(
+                    settings.SenderEmail,
+                    settings.SenderPassword
+                );
+
+                await smtpClient.SendMailAsync(mailMessage);
+
+                _logger.LogInformation("Forgot password email sent successfully. Email: {Email}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while sending forgot password email. Email: {Email}", toEmail);
+                throw;
+            }
+        }
+
+        public async Task SendReportAttachmentEmailAsync(
+            string toEmail, 
+            string fullName, 
+            string attachmentName, 
+            byte[] attachmentBytes, 
+            string contentType, 
+            string subject = null, 
+            string body = null,
+            string senderEmail = null,
+            string senderPassword = null)
+        {
+            try
+            {
+                var settings = await GetSettingsAsync();
+                toEmail = (toEmail ?? "").Trim();
+                fullName = (fullName ?? "").Trim();
+
+                if (string.IsNullOrWhiteSpace(toEmail))
+                {
+                    throw new Exception("Receiver email address is empty.");
+                }
+
+                // Validate all recipient emails
+                var emails = toEmail.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var email in emails)
+                {
+                    string trimmed = email.Trim();
+                    if (!IsValidEmail(trimmed))
+                    {
+                        throw new Exception($"Invalid receiver email address: '{trimmed}'");
+                    }
+                }
+
+                string activeSenderEmail = !string.IsNullOrWhiteSpace(senderEmail) ? senderEmail.Trim() : settings.SenderEmail;
+                string activeSenderPassword = !string.IsNullOrWhiteSpace(senderPassword) ? senderPassword.Trim() : settings.SenderPassword;
+
+                if (string.IsNullOrWhiteSpace(activeSenderEmail))
+                {
+                    throw new Exception("Sender email is missing.");
+                }
+
+                if (string.IsNullOrWhiteSpace(activeSenderPassword))
+                {
+                    throw new Exception("Sender password is missing.");
+                }
+
+                if (string.IsNullOrWhiteSpace(subject))
+                {
+                    subject = "IT Infrastructure Runbook Report";
+                }
+
+                if (string.IsNullOrWhiteSpace(body))
+                {
+                    // Load template from Repository
+                    body = await _emailRepository.GetReportAttachmentEmailTemplateAsync();
+                }
+                else
+                {
+                    body = body.Replace("\r\n", "<br/>").Replace("\n", "<br/>");
+                }
+
+                using MailMessage mailMessage = new MailMessage();
+
+                mailMessage.From = new MailAddress(activeSenderEmail, settings.SenderName);
+                mailMessage.To.Add(toEmail);
+                mailMessage.Subject = subject;
+                mailMessage.Body = body;
+                mailMessage.IsBodyHtml = true;
+
+                using (System.IO.MemoryStream stream = new System.IO.MemoryStream(attachmentBytes))
+                {
+                    Attachment attachment = new Attachment(stream, attachmentName, contentType);
+                    mailMessage.Attachments.Add(attachment);
+
+                    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
+                    using SmtpClient smtpClient = new SmtpClient(settings.SmtpHost);
+
+                    smtpClient.Port = settings.SmtpPort;
+                    smtpClient.EnableSsl = settings.EnableSsl;
+                    smtpClient.Timeout = 10000;
+                    smtpClient.Credentials = new NetworkCredential(
+                        activeSenderEmail,
+                        activeSenderPassword
+                    );
+
+                    await smtpClient.SendMailAsync(mailMessage);
+                }
+
+                _logger.LogInformation("Report attachment email sent successfully. Email: {Email}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while sending report attachment email. Email: {Email}", toEmail);
+                throw;
+            }
+        }
+
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
             }
         }
     }

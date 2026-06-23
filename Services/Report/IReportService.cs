@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EmployeeAccessSystem.Models;
@@ -15,6 +15,12 @@ namespace EmployeeAccessSystem.Services
             int categoryId,
             DateTime fromDate,
             DateTime toDate
+        );
+
+        Task<IEnumerable<Report>> GetAllDataAsync(
+            DateTime fromDate,
+            DateTime toDate,
+            int? categoryId = null
         );
     }
 }

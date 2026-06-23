@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
@@ -92,6 +92,53 @@ namespace EmployeeAccessSystem.Repositories
             catch
             {
                 throw new Exception("Failed to load report data.");
+            }
+        }
+
+        public async Task<IEnumerable<Report>> GetAllDataAsync(DateTime fromDate, DateTime toDate, int? categoryId = null)
+        {
+            try
+            {
+                using SqlConnection conn = GetConnection();
+                var sql = @"
+                    SELECT 
+                        CC.EntryId,
+                        CC.EntryGroupId,
+                        CC.CategoryId,
+                        C.Name AS CategoryName,
+                        CC.SetupNodeId,
+                        CC.ParentPath,
+                        CC.DisplayName,
+                        CC.ValueType,
+                        CC.ValueTypeId,
+                        CC.ResultValue,
+                        CC.EntryDate AS EntryDate,
+                        CC.CreatedBy
+                    FROM dbo.CategoryChecklist CC WITH (NOLOCK)
+                    INNER JOIN dbo.Category C WITH (NOLOCK) ON CC.CategoryId = C.CategoryId
+                    WHERE CC.IsActive = 1
+                      AND CAST(CC.EntryDate AS DATE) BETWEEN @FromDate AND @ToDate";
+
+                if (categoryId.HasValue && categoryId.Value > 0)
+                {
+                    sql += " AND CC.CategoryId = @CategoryId";
+                }
+
+                sql += " ORDER BY CC.EntryDate DESC, CC.ParentPath, CC.DisplayName;";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@FromDate", fromDate.Date);
+                parameters.Add("@ToDate", toDate.Date);
+                if (categoryId.HasValue && categoryId.Value > 0)
+                {
+                    parameters.Add("@CategoryId", categoryId.Value);
+                }
+
+                return await conn.QueryAsync<Report>(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to load all report data for alert dashboard.", ex);
             }
         }
     }

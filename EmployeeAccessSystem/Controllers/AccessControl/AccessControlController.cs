@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -60,33 +60,17 @@ namespace EmployeeAccessSystem.Controllers
         }
 
         // Save new user
+        // Save new user
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateUser(RegisterModel model)
         {
-            string plainPassword = model.Password;
-
             string message = await _accountService.RegisterAsync(model);
 
             // AccountService.RegisterAsync returns empty string when registration is successful
             if (string.IsNullOrWhiteSpace(message))
             {
-                try
-                {
-                    await _emailService.SendUserPasswordEmailAsync(
-                        model.Email,
-                        model.FullName,
-                        plainPassword
-                    );
-
-                    TempData["Success"] = "User registered successfully and password email sent.";
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "User registered but password email sending failed. Email: {Email}", model.Email);
-
-                    TempData["Success"] = "User registered successfully, but password email could not be sent.";
-                }
+                TempData["Success"] = "User registered successfully.";
 
                 return RedirectToAction(nameof(Users));
             }
@@ -95,7 +79,6 @@ namespace EmployeeAccessSystem.Controllers
 
             return RedirectToAction(nameof(Users));
         }
-
         // User permission list page
         public async Task<IActionResult> UserMenuAccess()
         {
@@ -367,6 +350,54 @@ namespace EmployeeAccessSystem.Controllers
             TempData["Error"] = "Role permission is not used. Please assign permission from Manage Users.";
 
             return RedirectToAction(nameof(Roles));
+        }
+
+        // Reset password action (admin-initiated forgot password flow)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetUserPassword(int accountId, string password, string confirmPassword)
+        {
+            if (accountId <= 0)
+            {
+                TempData["Error"] = "Please select a valid user.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+            {
+                TempData["Error"] = "Password and confirm password are required.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            if (password != confirmPassword)
+            {
+                TempData["Error"] = "Password and confirm password do not match.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            Account? account = await _accountService.GetAccountByIdAsync(accountId);
+            if (account == null)
+            {
+                TempData["Error"] = "User not found.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            string message = await _accountService.ResetPasswordAsync(account.Email, password);
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                TempData["Success"] = $"Password reset successfully. New password has been emailed to {account.Email}.";
+            }
+            else if (message.Contains("Failed to send email"))
+            {
+                TempData["Success"] = $"Password reset successfully in database, but email failed: {message}";
+            }
+            else
+            {
+                TempData["Error"] = message;
+            }
+
+            return RedirectToAction(nameof(Users));
         }
 
         // Access denied page

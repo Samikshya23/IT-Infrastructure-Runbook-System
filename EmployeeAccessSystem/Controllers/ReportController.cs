@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -16,13 +16,22 @@ namespace EmployeeAccessSystem.Controllers
     public class ReportController : Controller
     {
         private readonly IReportService _reportService;
+        private readonly IAccountService _accountService;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public ReportController(IReportService reportService)
+        public ReportController(
+            IReportService reportService,
+            IAccountService accountService,
+            IEmailService emailService,
+            IConfiguration configuration)
         {
             _reportService = reportService;
+            _accountService = accountService;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
-        // Report page
         public async Task<IActionResult> Index(int? categoryId, DateTime? fromDate, DateTime? toDate)
         {
             IEnumerable<ReportCategory> categoryList = await _reportService.GetCategoryListAsync();
@@ -32,6 +41,18 @@ namespace EmployeeAccessSystem.Controllers
             ViewBag.FromDate = fromDate;
             ViewBag.ToDate = toDate;
             ViewBag.Headings = "";
+            ViewBag.SenderEmail = _configuration["EmailSettings:SenderEmail"] ?? "";
+
+            var accounts = await _accountService.GetAllAccountsAsync();
+            var userMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var account in accounts)
+            {
+                if (!string.IsNullOrWhiteSpace(account.Email))
+                {
+                    userMap[account.Email.Trim().ToLower()] = account.FullName ?? account.Email;
+                }
+            }
+            ViewBag.UserMap = userMap;
 
             IEnumerable<Report> reportData = new List<Report>();
 
@@ -43,7 +64,6 @@ namespace EmployeeAccessSystem.Controllers
                 try
                 {
                     string configurationJson = await _reportService.GetHeadingsAsync(categoryId.Value);
-
                     ViewBag.Headings = configurationJson;
 
                     reportData = await _reportService.GetDataAsync(
@@ -61,7 +81,292 @@ namespace EmployeeAccessSystem.Controllers
             return View(reportData);
         }
 
-        // Download Excel report
+        public async Task<IActionResult> AlertDashboard(int? categoryId, DateTime? fromDate, DateTime? toDate)
+        {
+            IEnumerable<ReportCategory> categoryList = await _reportService.GetCategoryListAsync();
+
+            ViewBag.CategoryList = categoryList;
+            ViewBag.SelectedCategoryId = categoryId;
+            
+            // Default date range: last 30 days
+            DateTime defaultFromDate = DateTime.Today.AddDays(-30);
+            DateTime defaultToDate = DateTime.Today;
+
+            DateTime resolvedFromDate = fromDate ?? defaultFromDate;
+            DateTime resolvedToDate = toDate ?? defaultToDate;
+
+            ViewBag.FromDate = resolvedFromDate;
+            ViewBag.ToDate = resolvedToDate;
+
+            var accounts = await _accountService.GetAllAccountsAsync();
+            var userMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var account in accounts)
+            {
+                if (!string.IsNullOrWhiteSpace(account.Email))
+                {
+                    userMap[account.Email.Trim().ToLower()] = account.FullName ?? account.Email;
+                }
+            }
+            ViewBag.UserMap = userMap;
+
+            if (categoryId.HasValue && categoryId.Value > 0)
+            {
+                try
+                {
+                    string configurationJson = await _reportService.GetHeadingsAsync(categoryId.Value);
+                    ViewBag.Headings = configurationJson;
+                }
+                catch { }
+            }
+
+            List<AlertDisplayModel> alertsList = new List<AlertDisplayModel>();
+
+            try
+            {
+                var reportData = await _reportService.GetAllDataAsync(resolvedFromDate, resolvedToDate, categoryId);
+                
+                foreach (var report in reportData)
+                {
+                    if (IsAlertEntry(report.ValueTypeId, report.ResultValue, out string formattedValue, out string reason))
+                    {
+                        string email = (report.CreatedBy ?? "").Trim().ToLower();
+                        string creatorName = userMap.ContainsKey(email) ? userMap[email] : (report.CreatedBy ?? "-");
+
+                        alertsList.Add(new AlertDisplayModel
+                        {
+                            EntryId = report.EntryId,
+                            EntryGroupId = report.EntryGroupId,
+                            CategoryId = report.CategoryId,
+                            CategoryName = report.CategoryName ?? "General",
+                            SetupNodeId = report.SetupNodeId,
+                            ParentPath = report.ParentPath ?? "",
+                            DisplayName = report.DisplayName ?? "",
+                            ValueType = report.ValueType ?? "",
+                            ValueTypeId = report.ValueTypeId,
+                            RawValue = report.ResultValue ?? "",
+                            DisplayValue = formattedValue,
+                            EntryDate = report.EntryDate,
+                            CreatedBy = report.CreatedBy ?? "",
+                            CreatorName = creatorName,
+                            TriggerReason = reason
+                        });
+                    }
+                }
+
+                // Calculate dashboard stats
+                int totalChecks = 0;
+                int uniqueMonitoredItems = 0;
+                var categoryStats = new List<CategoryStatsModel>();
+
+                if (reportData != null)
+                {
+                    var reportList = new List<Report>(reportData);
+                    totalChecks = reportList.Count;
+                    
+                    var distinctNodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var r in reportList)
+                    {
+                        if (!string.IsNullOrEmpty(r.SetupNodeId))
+                        {
+                            distinctNodes.Add(r.SetupNodeId);
+                        }
+                    }
+                    uniqueMonitoredItems = distinctNodes.Count;
+
+                    var grouped = new Dictionary<int, (string Name, int Total, int Alerts)>();
+                    foreach (var r in reportList)
+                    {
+                        int catId = r.CategoryId;
+                        string catName = r.CategoryName ?? "General";
+                        
+                        if (!grouped.ContainsKey(catId))
+                        {
+                            grouped[catId] = (catName, 0, 0);
+                        }
+                        
+                        var entry = grouped[catId];
+                        entry.Total++;
+                        grouped[catId] = entry;
+                    }
+
+                    foreach (var a in alertsList)
+                    {
+                        int catId = a.CategoryId;
+                        if (grouped.ContainsKey(catId))
+                        {
+                            var entry = grouped[catId];
+                            entry.Alerts++;
+                            grouped[catId] = entry;
+                        }
+                    }
+
+                    foreach (var kvp in grouped)
+                    {
+                        int passed = kvp.Value.Total - kvp.Value.Alerts;
+                        categoryStats.Add(new CategoryStatsModel
+                        {
+                            CategoryId = kvp.Key,
+                            CategoryName = kvp.Value.Name,
+                            TotalChecks = kvp.Value.Total,
+                            PassedChecks = passed,
+                            AlertsCount = kvp.Value.Alerts
+                        });
+                    }
+                }
+
+                int passedChecks = totalChecks - alertsList.Count;
+                double overallPassRate = totalChecks > 0 ? (double)passedChecks / totalChecks * 100 : 100.0;
+                double overallAlertRate = totalChecks > 0 ? (double)alertsList.Count / totalChecks * 100 : 0.0;
+
+                ViewBag.TotalChecks = totalChecks;
+                ViewBag.PassedChecks = passedChecks;
+                ViewBag.OverallPassRate = overallPassRate;
+                ViewBag.OverallAlertRate = overallAlertRate;
+                ViewBag.MonitoredItemsCount = uniqueMonitoredItems;
+                ViewBag.CategoryStats = categoryStats;
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return View(alertsList);
+        }
+
+        public async Task<IActionResult> AlertDetails(string type, int? categoryId, DateTime? fromDate, DateTime? toDate)
+        {
+            IEnumerable<ReportCategory> categoryList = await _reportService.GetCategoryListAsync();
+
+            ViewBag.CategoryList = categoryList;
+            ViewBag.SelectedCategoryId = categoryId;
+            
+            DateTime defaultFromDate = DateTime.Today.AddDays(-30);
+            DateTime defaultToDate = DateTime.Today;
+
+            DateTime resolvedFromDate = fromDate ?? defaultFromDate;
+            DateTime resolvedToDate = toDate ?? defaultToDate;
+
+            ViewBag.FromDate = resolvedFromDate;
+            ViewBag.ToDate = resolvedToDate;
+            ViewBag.Type = type ?? "total";
+
+            var accounts = await _accountService.GetAllAccountsAsync();
+            var userMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var account in accounts)
+            {
+                if (!string.IsNullOrWhiteSpace(account.Email))
+                {
+                    userMap[account.Email.Trim().ToLower()] = account.FullName ?? account.Email;
+                }
+            }
+            ViewBag.UserMap = userMap;
+
+            List<AlertDisplayModel> alertsList = new List<AlertDisplayModel>();
+
+            try
+            {
+                var reportData = await _reportService.GetAllDataAsync(resolvedFromDate, resolvedToDate, categoryId);
+                
+                foreach (var report in reportData)
+                {
+                    if (IsAlertEntry(report.ValueTypeId, report.ResultValue, out string formattedValue, out string reason))
+                    {
+                        string email = (report.CreatedBy ?? "").Trim().ToLower();
+                        string creatorName = userMap.ContainsKey(email) ? userMap[email] : (report.CreatedBy ?? "-");
+
+                        alertsList.Add(new AlertDisplayModel
+                        {
+                            EntryId = report.EntryId,
+                            EntryGroupId = report.EntryGroupId,
+                            CategoryId = report.CategoryId,
+                            CategoryName = report.CategoryName ?? "General",
+                            SetupNodeId = report.SetupNodeId,
+                            ParentPath = report.ParentPath ?? "",
+                            DisplayName = report.DisplayName ?? "",
+                            ValueType = report.ValueType ?? "",
+                            ValueTypeId = report.ValueTypeId,
+                            RawValue = report.ResultValue ?? "",
+                            DisplayValue = formattedValue,
+                            EntryDate = report.EntryDate,
+                            CreatedBy = report.CreatedBy ?? "",
+                            CreatorName = creatorName,
+                            TriggerReason = reason
+                        });
+                    }
+                }
+
+                // Filter list based on type
+                if (string.Equals(type, "utilization", StringComparison.OrdinalIgnoreCase))
+                {
+                    alertsList = alertsList.Where(a => a.ValueTypeId == 3).ToList();
+                }
+                else if (string.Equals(type, "checklist", StringComparison.OrdinalIgnoreCase))
+                {
+                    alertsList = alertsList.Where(a => a.ValueTypeId == 4).ToList();
+                }
+                else if (string.Equals(type, "service", StringComparison.OrdinalIgnoreCase))
+                {
+                    alertsList = alertsList.Where(a => a.ValueTypeId == 5).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return View(alertsList);
+        }
+
+        private bool IsAlertEntry(int valueTypeId, string rawValue, out string formattedValue, out string reason)
+        {
+            formattedValue = "-";
+            reason = "";
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return false;
+            }
+
+            string val = rawValue.Trim();
+
+            if (valueTypeId == 3) // Percentage
+            {
+                string cleanVal = val.Replace("%", "").Trim();
+                if (double.TryParse(cleanVal, out double num))
+                {
+                    formattedValue = num.ToString("G29") + "%";
+                    if (num >= 90.0)
+                    {
+                        reason = $"Value '{formattedValue}' is greater than or equal to the 90% threshold";
+                        return true;
+                    }
+                }
+            }
+            else if (valueTypeId == 4) // Yes/No Checklist
+            {
+                if (val == "8" || val == "Tick" || val == "✓")
+                {
+                    formattedValue = "✓";
+                    return false;
+                }
+                formattedValue = "✗";
+                reason = "Checklist status marked as Fail (✗)";
+                return true;
+            }
+            else if (valueTypeId == 5) // Up/Down Status
+            {
+                if (val == "10" || val == "Up")
+                {
+                    formattedValue = "Up";
+                    return false;
+                }
+                formattedValue = "Down";
+                reason = "Service status is Down";
+                return true;
+            }
+
+            return false;
+        }
+
         public async Task<IActionResult> DownloadExcel(int categoryId, DateTime fromDate, DateTime toDate)
         {
             DynamicReportExportModel model = await BuildExportModel(categoryId, fromDate, toDate);
@@ -70,12 +375,7 @@ namespace EmployeeAccessSystem.Controllers
 
             byte[] fileBytes = excel.Generate();
 
-            string fileName =
-                "Category_Report_" +
-                fromDate.ToString("yyyyMMdd") +
-                "_" +
-                toDate.ToString("yyyyMMdd") +
-                ".xlsx";
+            string fileName = "Report.xlsx";
 
             return File(
                 fileBytes,
@@ -84,7 +384,6 @@ namespace EmployeeAccessSystem.Controllers
             );
         }
 
-        // Download PDF report
         public async Task<IActionResult> DownloadPdf(int categoryId, DateTime fromDate, DateTime toDate)
         {
             DynamicReportExportModel model = await BuildExportModel(categoryId, fromDate, toDate);
@@ -93,17 +392,11 @@ namespace EmployeeAccessSystem.Controllers
 
             byte[] fileBytes = document.GeneratePdf();
 
-            string fileName =
-                "Category_Report_" +
-                fromDate.ToString("yyyyMMdd") +
-                "_" +
-                toDate.ToString("yyyyMMdd") +
-                ".pdf";
+            string fileName = "Report.pdf";
 
             return File(fileBytes, "application/pdf", fileName);
         }
 
-        // Build export model for PDF and Excel
         private async Task<DynamicReportExportModel> BuildExportModel(
             int categoryId,
             DateTime fromDate,
@@ -133,6 +426,16 @@ namespace EmployeeAccessSystem.Controllers
                 reportData.Add(item);
             }
 
+            var accounts = await _accountService.GetAllAccountsAsync();
+            var userMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var account in accounts)
+            {
+                if (!string.IsNullOrWhiteSpace(account.Email))
+                {
+                    userMap[account.Email.Trim().ToLower()] = account.FullName ?? account.Email;
+                }
+            }
+
             DynamicReportExportModel model = new DynamicReportExportModel();
 
             model.Title = "Dynamic Category Report";
@@ -143,10 +446,92 @@ namespace EmployeeAccessSystem.Controllers
             model.Dates = BuildDates(fromDate, toDate);
             model.Rows = BuildRows(reportData, model.Headings.Count);
 
+            model.DateCreators = new Dictionary<string, string>();
+            foreach (var date in model.Dates)
+            {
+                string dateKey = date.ToString("yyyy-MM-dd");
+                
+                var lastReport = reportData
+                    .Where(r => r.EntryDate.Date == date.Date && !string.IsNullOrWhiteSpace(r.CreatedBy))
+                    .OrderByDescending(r => r.EntryDate)
+                    .ThenByDescending(r => r.EntryId)
+                    .FirstOrDefault();
+
+                string lastCreator = "-";
+                if (lastReport != null)
+                {
+                    string email = lastReport.CreatedBy.Trim().ToLower();
+                    lastCreator = userMap.ContainsKey(email) ? userMap[email] : lastReport.CreatedBy;
+                }
+                
+                model.DateCreators.Add(dateKey, lastCreator);
+            }
+
             return model;
         }
 
-        // Build date columns
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendReportEmail(int categoryId, DateTime fromDate, DateTime toDate, string recipientEmail, string fileType, string subject, string message, string senderEmail = null, string senderPassword = null)
+        {
+            try
+            {
+                recipientEmail = (recipientEmail ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(recipientEmail))
+                {
+                    return Json(new { success = false, message = "Recipient email is required." });
+                }
+
+                if (string.IsNullOrWhiteSpace(fileType))
+                {
+                    return Json(new { success = false, message = "Please select report format." });
+                }
+
+                DynamicReportExportModel model = await BuildExportModel(categoryId, fromDate, toDate);
+
+                byte[] fileBytes;
+                string fileName;
+                string contentType;
+
+                if (string.Equals(fileType, "pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    DynamicReportPdfDocument document = new DynamicReportPdfDocument(model);
+                    fileBytes = document.GeneratePdf();
+                    fileName = "Report.pdf";
+                    contentType = "application/pdf";
+                }
+                else if (string.Equals(fileType, "excel", StringComparison.OrdinalIgnoreCase))
+                {
+                    DynamicReportExcelDocument excel = new DynamicReportExcelDocument(model);
+                    fileBytes = excel.Generate();
+                    fileName = "Report.xlsx";
+                    contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Invalid report format selected." });
+                }
+
+                await _emailService.SendReportAttachmentEmailAsync(
+                    recipientEmail,
+                    "Recipient",
+                    fileName,
+                    fileBytes,
+                    contentType,
+                    subject,
+                    message,
+                    senderEmail,
+                    senderPassword
+                );
+
+                return Json(new { success = true, message = "Report emailed successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Failed to email report: " + ex.Message });
+            }
+        }
+
         private List<DateTime> BuildDates(DateTime fromDate, DateTime toDate)
         {
             List<DateTime> dates = new List<DateTime>();
@@ -162,7 +547,6 @@ namespace EmployeeAccessSystem.Controllers
             return dates;
         }
 
-        // Build heading list from form configuration JSON
         private List<string> BuildHeadings(string json)
         {
             List<string> headings = new List<string>();
@@ -198,7 +582,6 @@ namespace EmployeeAccessSystem.Controllers
             return headings;
         }
 
-        // Recursively read label names from JSON
         private void AddLabels(JsonElement element, List<string> headings)
         {
             if (element.ValueKind == JsonValueKind.Array)
@@ -242,7 +625,6 @@ namespace EmployeeAccessSystem.Controllers
             }
         }
 
-        // Build report rows
         private List<DynamicReportExportRow> BuildRows(List<Report> reportData, int headingCount)
         {
             List<DynamicReportExportRow> rows = new List<DynamicReportExportRow>();
@@ -292,7 +674,6 @@ namespace EmployeeAccessSystem.Controllers
             return rows;
         }
 
-        // Build left side hierarchy values
         private List<string> BuildLeftValues(Report report, int headingCount)
         {
             List<string> values = new List<string>();
@@ -337,7 +718,6 @@ namespace EmployeeAccessSystem.Controllers
             return values;
         }
 
-        // Create unique key for grouping rows
         private string BuildRowKey(List<string> values)
         {
             string key = "";
@@ -350,7 +730,6 @@ namespace EmployeeAccessSystem.Controllers
             return key;
         }
 
-        // Format result value for report
         private string FormatResultValue(string valueType, int valueTypeId, string resultValue)
         {
             if (string.IsNullOrWhiteSpace(resultValue))
@@ -392,5 +771,119 @@ namespace EmployeeAccessSystem.Controllers
 
             return value;
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCategoryDetailsForDate(int categoryId, string date)
+        {
+            try
+            {
+                if (!DateTime.TryParse(date, out DateTime parsedDate))
+                {
+                    return Json(new { success = false, message = "Invalid date parameter." });
+                }
+
+                var data = await _reportService.GetDataAsync(categoryId, parsedDate, parsedDate);
+
+                var accounts = await _accountService.GetAllAccountsAsync();
+                var userMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var account in accounts)
+                {
+                    if (!string.IsNullOrWhiteSpace(account.Email))
+                    {
+                        userMap[account.Email.Trim().ToLower()] = account.FullName ?? account.Email;
+                    }
+                }
+
+                var list = new List<object>();
+                foreach (var item in data)
+                {
+                    string email = (item.CreatedBy ?? "").Trim().ToLower();
+                    string creatorName = userMap.ContainsKey(email) ? userMap[email] : (item.CreatedBy ?? "-");
+
+                    string displayValue = FormatResultValue(item.ValueType, item.ValueTypeId, item.ResultValue);
+
+                    bool isAlert = false;
+                    string reason = "";
+                    string cleanVal = (item.ResultValue ?? "").Trim();
+                    if (item.ValueTypeId == 3) // Percentage
+                    {
+                        string cleanPercentage = cleanVal.Replace("%", "").Trim();
+                        if (double.TryParse(cleanPercentage, out double num) && num >= 90.0)
+                        {
+                            isAlert = true;
+                            reason = $"Value '{displayValue}' is greater than or equal to the 90% threshold";
+                        }
+                    }
+                    else if (item.ValueTypeId == 4) // Checklist
+                    {
+                        if (cleanVal != "8" && cleanVal != "Tick" && cleanVal != "✓")
+                        {
+                            isAlert = true;
+                            reason = "Checklist status marked as Fail (✗)";
+                        }
+                    }
+                    else if (item.ValueTypeId == 5) // Status
+                    {
+                        if (cleanVal != "10" && cleanVal != "Up")
+                        {
+                            isAlert = true;
+                            reason = "Service status is Down";
+                        }
+                    }
+
+                    list.Add(new
+                    {
+                        entryId = item.EntryId,
+                        nodeId = item.SetupNodeId,
+                        parentPath = item.ParentPath ?? "",
+                        displayName = item.DisplayName ?? "",
+                        valueType = item.ValueType ?? "",
+                        valueTypeId = item.ValueTypeId,
+                        rawValue = item.ResultValue ?? "",
+                        displayValue = displayValue,
+                        creatorName = creatorName,
+                        creatorEmail = item.CreatedBy ?? "",
+                        isAlert = isAlert,
+                        reason = reason
+                    });
+                }
+
+                return Json(new { success = true, data = list });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Failed to fetch details: " + ex.Message });
+            }
+        }
+    }
+
+    public class AlertDisplayModel
+    {
+        public int EntryId { get; set; }
+        public Guid? EntryGroupId { get; set; }
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = "";
+        public string SetupNodeId { get; set; } = "";
+        public string ParentPath { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string ValueType { get; set; } = "";
+        public int ValueTypeId { get; set; }
+        public string RawValue { get; set; } = "";
+        public string DisplayValue { get; set; } = "";
+        public DateTime EntryDate { get; set; }
+        public string CreatedBy { get; set; } = "";
+        public string CreatorName { get; set; } = "";
+        public string TriggerReason { get; set; } = "";
+    }
+
+    public class CategoryStatsModel
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = "";
+        public int TotalChecks { get; set; }
+        public int PassedChecks { get; set; }
+        public int AlertsCount { get; set; }
+        public double PassRate => TotalChecks > 0 ? (double)PassedChecks / TotalChecks * 100 : 100.0;
+        public double AlertRate => TotalChecks > 0 ? (double)AlertsCount / TotalChecks * 100 : 0.0;
     }
 }

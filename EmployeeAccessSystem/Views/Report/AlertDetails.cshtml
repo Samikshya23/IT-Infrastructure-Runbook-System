@@ -1,0 +1,285 @@
+@model IEnumerable<EmployeeAccessSystem.Controllers.AlertDisplayModel>
+
+@{
+    ViewData["Title"] = "Alert Details";
+    var categoryList = ViewBag.CategoryList as IEnumerable<EmployeeAccessSystem.Models.ReportCategory>;
+    int? selectedCategoryId = ViewBag.SelectedCategoryId as int?;
+    DateTime fromDate = (DateTime)ViewBag.FromDate;
+    DateTime toDate = (DateTime)ViewBag.ToDate;
+    string alertType = ViewBag.Type as string;
+
+    string titleText = "Total Alerts Log";
+    if (alertType == "utilization")
+    {
+        titleText = "Utilizations ≥ 90% Alerts";
+    }
+    else if (alertType == "checklist")
+    {
+        titleText = "Checklist Failure Alerts";
+    }
+    else if (alertType == "service")
+    {
+        titleText = "Services Down Alerts";
+    }
+}
+
+<div class="content-header py-2">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-sm-6">
+                <h4 class="m-0 font-weight-bold text-danger">
+                    <i class="fas fa-list mr-2"></i>@titleText
+                </h4>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a asp-controller="Report" 
+                   asp-action="AlertDashboard" 
+                   asp-route-categoryId="@selectedCategoryId" 
+                   asp-route-fromDate="@fromDate.ToString("yyyy-MM-dd")" 
+                   asp-route-toDate="@toDate.ToString("yyyy-MM-dd")" 
+                   class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Alerts Table Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-2">
+                <h3 class="card-title font-weight-bold text-secondary text-sm mb-0 align-middle" style="line-height: 28px;">
+                    Alert Entries (@fromDate.ToString("dd MMM yyyy") - @toDate.ToString("dd MMM yyyy"))
+                </h3>
+            </div>
+            
+            <div class="card-body p-2">
+                <div class="table-responsive">
+                    <table id="alertsTable" class="table table-bordered table-hover table-sm mb-0">
+                        <thead>
+                            <tr class="bg-light">
+                                <th class="text-center" style="width: 50px;">SN</th>
+                                <th style="width: 120px;">Category</th>
+                                <th>Item Name</th>
+                                <th class="text-center" style="width: 100px;">Alert Value</th>
+                                <th>Trigger Reason</th>
+                                <th style="width: 120px;">Date</th>
+                                <th style="width: 150px;">Logged By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                int sn = 1;
+                                foreach (var alert in Model)
+                                {
+                                    <tr>
+                                        <td class="text-center align-middle">@sn</td>
+                                        <td class="align-middle">
+                                            <a href="javascript:void(0);" 
+                                               class="badge badge-info btn-view-category-details text-white" 
+                                               data-category-id="@alert.CategoryId" 
+                                               data-category-name="@alert.CategoryName" 
+                                               data-date="@alert.EntryDate.ToString("yyyy-MM-dd")" 
+                                               data-date-str="@alert.EntryDate.ToString("dd MMM yyyy")"
+                                               title="Click to view all category checklist entries for this day">
+                                                @alert.CategoryName
+                                            </a>
+                                        </td>
+                                        <td class="align-middle">
+                                            <strong class="text-secondary text-sm">@alert.DisplayName</strong>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            @if (alert.ValueTypeId == 3)
+                                            {
+                                                <span class="badge badge-warning text-white" style="font-size:12px; background-color: #fd7e14 !important;">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>@alert.DisplayValue
+                                                </span>
+                                            }
+                                            else if (alert.ValueTypeId == 4)
+                                            {
+                                                <span class="badge badge-danger" style="font-size:12px;">
+                                                    <i class="fas fa-times-circle mr-1"></i>@alert.DisplayValue
+                                                </span>
+                                            }
+                                            else if (alert.ValueTypeId == 5)
+                                            {
+                                                <span class="badge badge-purple text-white" style="font-size:12px; background-color: #6f42c1 !important;">
+                                                    <i class="fas fa-arrow-down mr-1"></i>@alert.DisplayValue
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="align-middle text-sm text-dark font-weight-normal">
+                                            @alert.TriggerReason
+                                        </td>
+                                        <td class="align-middle text-sm text-muted">
+                                            @alert.EntryDate.ToString("dd MMM yyyy")
+                                        </td>
+                                        <td class="align-middle">
+                                            <div class="text-sm font-weight-bold">@alert.CreatorName</div>
+                                            <div class="text-muted text-xs">@alert.CreatedBy</div>
+                                        </td>
+                                    </tr>
+                                    sn++;
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-3">No alerts found for this filter combination.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Category Details Modal -->
+<div class="modal fade" id="categoryDetailsModal" tabindex="-1" role="dialog" aria-labelledby="categoryDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white py-2">
+                <h5 class="modal-title font-weight-bold text-md" id="categoryDetailsModalLabel">
+                    <i class="fas fa-list mr-1"></i> <span id="modalCategoryName">Category</span> Entries for <span id="modalDateStr">Date</span>
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" style="max-height: 450px; overflow-y: auto;">
+                <div class="p-4 text-center" id="modalLoadingSpinner">
+                    <i class="fas fa-spinner fa-spin fa-2x text-info"></i>
+                    <p class="text-sm text-muted mt-2 mb-0">Loading checklist details...</p>
+                </div>
+                <div class="table-responsive d-none" id="modalTableContainer">
+                    <table class="table table-sm table-striped table-hover table-bordered mb-0">
+                        <thead>
+                            <tr class="bg-light">
+                                <th class="text-center" style="width: 50px;">SN</th>
+                                <th>Item Name</th>
+                                <th class="text-center" style="width: 150px;">Metric Type</th>
+                                <th class="text-center" style="width: 150px;">Value</th>
+                                <th>Logged By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            var table = $("#alertsTable").DataTable({
+                pageLength: 10,
+                lengthChange: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                paging: true,
+                autoWidth: false,
+                responsive: true,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search alerts..."
+                }
+            });
+
+            // Handle clicking category badge to show modal
+            $(document).on('click', '.btn-view-category-details', function () {
+                var categoryId = $(this).data('category-id');
+                var categoryName = $(this).data('category-name');
+                var dateVal = $(this).data('date');
+                var dateStr = $(this).data('date-str');
+
+                // Set headers
+                $('#modalCategoryName').text(categoryName);
+                $('#modalDateStr').text(dateStr);
+
+                // Show spinner and hide table
+                $('#modalLoadingSpinner').removeClass('d-none');
+                $('#modalTableContainer').addClass('d-none');
+                $('#modalTableBody').empty();
+
+                // Open modal
+                $('#categoryDetailsModal').modal('show');
+
+                // Load data via AJAX
+                $.ajax({
+                    url: '/Report/GetCategoryDetailsForDate',
+                    type: 'GET',
+                    data: { categoryId: categoryId, date: dateVal },
+                    success: function (response) {
+                        $('#modalLoadingSpinner').addClass('d-none');
+                        
+                        if (response && response.success === true) {
+                            var html = '';
+                            if (response.data && response.data.length > 0) {
+                                $.each(response.data, function (index, item) {
+                                    var rowClass = item.isAlert ? 'table-warning font-weight-bold text-danger' : '';
+                                    var valBadge = '';
+
+                                    if (item.isAlert) {
+                                        if (item.valueTypeId === 3) {
+                                            valBadge = '<span class="badge badge-warning text-white" style="font-size:12px; background-color: #fd7e14 !important;"><i class="fas fa-exclamation-triangle mr-1"></i>' + item.displayValue + '</span>';
+                                        } else if (item.valueTypeId === 4) {
+                                            valBadge = '<span class="badge badge-danger" style="font-size:12px;"><i class="fas fa-times-circle mr-1"></i>' + item.displayValue + '</span>';
+                                        } else if (item.valueTypeId === 5) {
+                                            valBadge = '<span class="badge badge-purple text-white" style="font-size:12px; background-color: #6f42c1 !important;"><i class="fas fa-arrow-down mr-1"></i>' + item.displayValue + '</span>';
+                                        }
+                                    } else {
+                                        // Standard display values
+                                        if (item.displayValue === '✓' || item.displayValue === 'Up') {
+                                            valBadge = '<span class="badge badge-success text-xs" style="font-size:11px;"><i class="fas fa-check-circle mr-1"></i>' + item.displayValue + '</span>';
+                                        } else {
+                                            valBadge = '<span class="text-dark">' + item.displayValue + '</span>';
+                                        }
+                                    }
+
+                                    var pathDisplay = '<span class="text-secondary text-sm">' + item.displayName + '</span>';
+
+                                    html += '<tr class="' + rowClass + '">';
+                                    html += '<td class="text-center align-middle">' + (index + 1) + '</td>';
+                                    html += '<td class="align-middle">' + pathDisplay + '</td>';
+                                    html += '<td class="text-center align-middle text-sm">' + item.valueType + '</td>';
+                                    html += '<td class="text-center align-middle">' + valBadge + '</td>';
+                                    html += '<td class="align-middle text-xs"><strong>' + item.creatorName + '</strong><br/><span class="text-muted">' + item.creatorEmail + '</span></td>';
+                                    html += '</tr>';
+                                });
+                            } else {
+                                html = '<tr><td colspan="5" class="text-center text-muted p-3">No checklist entries found for this category on this date.</td></tr>';
+                            }
+                            
+                            $('#modalTableBody').html(html);
+                            $('#modalTableContainer').removeClass('d-none');
+                        } else {
+                            var errMsg = response ? response.message : "Failed to load details.";
+                            $('#modalTableBody').html('<tr><td colspan="5" class="text-center text-danger p-3"><i class="fas fa-exclamation-triangle mr-1"></i>' + errMsg + '</td></tr>');
+                            $('#modalTableContainer').removeClass('d-none');
+                        }
+                    },
+                    error: function () {
+                        $('#modalLoadingSpinner').addClass('d-none');
+                        $('#modalTableBody').html('<tr><td colspan="5" class="text-center text-danger p-3"><i class="fas fa-exclamation-triangle mr-1"></i>Connection error. Unable to load details.</td></tr>');
+                        $('#modalTableContainer').removeClass('d-none');
+                    }
+                });
+            });
+        });
+    </script>
+}

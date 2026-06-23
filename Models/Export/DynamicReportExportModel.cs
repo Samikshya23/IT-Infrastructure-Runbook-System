@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace EmployeeAccessSystem.Models
@@ -19,6 +19,8 @@ namespace EmployeeAccessSystem.Models
 
         public List<DynamicReportExportRow> Rows { get; set; }
 
+        public Dictionary<string, string> DateCreators { get; set; }
+
         public DynamicReportExportModel()
         {
             Title = string.Empty;
@@ -26,6 +28,7 @@ namespace EmployeeAccessSystem.Models
             Headings = new List<string>();
             Dates = new List<DateTime>();
             Rows = new List<DynamicReportExportRow>();
+            DateCreators = new Dictionary<string, string>();
         }
     }
 

@@ -1,4 +1,4 @@
-﻿using EmployeeAccessSystem.Helpers;
+using EmployeeAccessSystem.Helpers;
 using EmployeeAccessSystem.Models;
 using EmployeeAccessSystem.Repositories;
 using Microsoft.Extensions.Configuration;
@@ -11,15 +11,18 @@ namespace EmployeeAccessSystem.Services
         private readonly IAccountRepositories _accountRepo;
         private readonly IConfiguration _config;
         private readonly ILogger<AccountService> _logger;
+        private readonly IEmailService _emailService;
 
         public AccountService(
             IAccountRepositories accountRepo,
             IConfiguration config,
-            ILogger<AccountService> logger)
+            ILogger<AccountService> logger,
+            IEmailService emailService)
         {
             _accountRepo = accountRepo;
             _config = config;
             _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<string> RegisterAsync(RegisterModel model)
@@ -85,6 +88,15 @@ namespace EmployeeAccessSystem.Services
                 if (result.ResultId <= 0)
                 {
                     return result.Message;
+                }
+
+                try
+                {
+                    await _emailService.SendUserPasswordEmailAsync(model.Email, model.FullName, model.Password);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send registration password email to {Email}", model.Email);
                 }
 
                 return "";
@@ -280,6 +292,115 @@ namespace EmployeeAccessSystem.Services
             {
                 _logger.LogError(ex, "Error while deleting account. AccountId: {AccountId}", accountId);
                 return "Something went wrong while deleting user.";
+            }
+        }
+
+        public async Task<string> ForgotPasswordAsync(string email)
+        {
+            try
+            {
+                email = (email ?? "").Trim().ToLower();
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return "Email is required.";
+                }
+
+                Account? account = await _accountRepo.GetByEmailAsync(email);
+                if (account == null)
+                {
+                    return "User account not found.";
+                }
+
+                string tempPassword = Guid.NewGuid().ToString("N").Substring(0, 8);
+
+                string passwordKey = _config["Security:PasswordKey"] ?? "";
+
+                Helper.CreatePasswordHash(
+                    tempPassword,
+                    passwordKey,
+                    out byte[] passwordHash,
+                    out byte[] passwordSalt
+                );
+
+                DbResult result = await _accountRepo.UpdatePasswordAsync(email, passwordHash, passwordSalt);
+
+                if (result.ResultId <= 0)
+                {
+                    return result.Message;
+                }
+
+                try
+                {
+                    await _emailService.SendForgotPasswordEmailAsync(email, account.FullName ?? email, tempPassword);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send forgot password email to {Email}", email);
+                    return "Failed to send temporary password email, but password was reset in the database.";
+                }
+
+                return "";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during forgot password process for {Email}", email);
+                return "Something went wrong while resetting the password.";
+            }
+        }
+
+        public async Task<string> ResetPasswordAsync(string email, string password)
+        {
+            try
+            {
+                email = (email ?? "").Trim().ToLower();
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return "Email is required.";
+                }
+
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    return "Password is required.";
+                }
+
+                Account? account = await _accountRepo.GetByEmailAsync(email);
+                if (account == null)
+                {
+                    return "User account not found.";
+                }
+
+                string passwordKey = _config["Security:PasswordKey"] ?? "";
+
+                Helper.CreatePasswordHash(
+                    password,
+                    passwordKey,
+                    out byte[] passwordHash,
+                    out byte[] passwordSalt
+                );
+
+                DbResult result = await _accountRepo.UpdatePasswordAsync(email, passwordHash, passwordSalt);
+
+                if (result.ResultId <= 0)
+                {
+                    return result.Message;
+                }
+
+                try
+                {
+                    await _emailService.SendForgotPasswordEmailAsync(email, account.FullName ?? email, password);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send reset password email to {Email}", email);
+                    return "Failed to send email, but password was updated in the database.";
+                }
+
+                return "";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during password reset process for {Email}", email);
+                return "Something went wrong while resetting the password.";
             }
         }
     }

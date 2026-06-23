@@ -23,11 +23,6 @@
                     <p class="auth-subtitle">Please sign in to continue</p>
                 </div>
 
-                @if (TempData["Success"] != null)
-                {
-                    <div class="alert alert-success">@TempData["Success"]</div>
-                }
-
                 @if (ViewBag.Error != null)
                 {
                     <div class="alert alert-danger">@ViewBag.Error</div>
@@ -191,17 +186,10 @@
         color: #ffffff;
         font-size: 14px;
         font-weight: 500;
-        box-shadow: none;
-        transition: background 0.15s ease, border-color 0.15s ease;
     }
 
         .btn-primary-soft:hover {
             background-color: #1e4fd6;
-            border-color: #1e4fd6;
-        }
-
-        .btn-primary-soft:focus {
-            box-shadow: none;
         }
 
     .password-group {
@@ -220,15 +208,9 @@
         cursor: pointer;
         font-size: 18px;
         color: #475569;
-        user-select: none;
     }
 
-        .eye-icon:hover {
-            color: #2563eb;
-        }
-
     @@media (max-width: 991px) {
-
         .login-container {
             flex-direction: column;
         }
@@ -248,7 +230,6 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-
         function togglePassword(inputId, iconId) {
 
             const input = document.getElementById(inputId);
@@ -257,21 +238,15 @@
             if (!input || !icon) return;
 
             if (input.type === "password") {
-
                 input.type = "text";
-
                 icon.classList.remove("bi-eye-slash");
                 icon.classList.add("bi-eye");
-
             }
             else {
-
                 input.type = "password";
-
                 icon.classList.remove("bi-eye");
                 icon.classList.add("bi-eye-slash");
             }
         }
-
     </script>
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EmployeeAccessSystem.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -26,6 +26,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
             {
                 page.Size(PageSizes.A3.Landscape());
                 page.Margin(6);
+
                 page.DefaultTextStyle(delegate (TextStyle style)
                 {
                     return style.FontSize(8);
@@ -33,9 +34,9 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
                 page.Content().Column(delegate (ColumnDescriptor column)
                 {
-                    column.Item().AlignCenter().Text(_model.Title).Bold().FontSize(14);
+                    column.Item().AlignCenter().Text(_model.Title ?? "Report").Bold().FontSize(14);
 
-                    column.Item().AlignCenter().Text("Category: " + _model.CategoryName);
+                    column.Item().AlignCenter().Text("Category: " + (_model.CategoryName ?? "-"));
 
                     column.Item().AlignCenter().Text(
                         "From: " + _model.FromDate.ToString("dd/MM/yyyy") +
@@ -59,12 +60,18 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
                         foreach (string heading in _model.Headings)
                         {
-                            table.Cell().Element(HeaderCell).Text(heading).Bold();
+                            table.Cell().Element(HeaderCell).Text(heading ?? "-").Bold();
                         }
 
                         foreach (DateTime date in _model.Dates)
                         {
-                            table.Cell().Element(HeaderCell).Text(date.ToString("dd") + "\n" + date.ToString("ddd")).Bold();
+                            string dateKey = date.ToString("yyyy-MM-dd");
+                            string headerText = date.ToString("dd") + "\n" + date.ToString("ddd");
+                            if (_model.DateCreators != null && _model.DateCreators.TryGetValue(dateKey, out var creator))
+                            {
+                                headerText += "\n(" + creator + ")";
+                            }
+                            table.Cell().Element(HeaderCell).Text(headerText).Bold();
                         }
 
                         for (int r = 0; r < _model.Rows.Count; r++)
@@ -76,7 +83,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
                                     table.Cell()
                                         .RowSpan((uint)GetRowSpan(r, c))
                                         .Element(BodyCell)
-                                        .Text(_model.Rows[r].LeftValues[c]);
+                                        .Text(_model.Rows[r].LeftValues[c] ?? "-");
                                 }
                             }
 
@@ -85,12 +92,12 @@ namespace EmployeeAccessSystem.Pdf.Documents
                                 string key = date.ToString("yyyy-MM-dd");
                                 string value = "-";
 
-                                if (_model.Rows[r].DateValues.ContainsKey(key))
+                                if (_model.Rows[r].DateValues != null && _model.Rows[r].DateValues.ContainsKey(key))
                                 {
                                     value = _model.Rows[r].DateValues[key];
                                 }
 
-                                table.Cell().Element(BodyCell).AlignCenter().Text(value);
+                                table.Cell().Element(BodyCell).AlignCenter().Text(value ?? "-");
                             }
                         }
                     });
@@ -113,7 +120,10 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
             for (int i = 0; i <= columnIndex; i++)
             {
-                if (_model.Rows[rowIndex].LeftValues[i] != _model.Rows[rowIndex - 1].LeftValues[i])
+                string currentValue = _model.Rows[rowIndex].LeftValues[i] ?? "";
+                string previousValue = _model.Rows[rowIndex - 1].LeftValues[i] ?? "";
+
+                if (currentValue != previousValue)
                 {
                     return true;
                 }
@@ -132,7 +142,10 @@ namespace EmployeeAccessSystem.Pdf.Documents
 
                 for (int j = 0; j <= columnIndex; j++)
                 {
-                    if (_model.Rows[i].LeftValues[j] != _model.Rows[rowIndex].LeftValues[j])
+                    string currentValue = _model.Rows[i].LeftValues[j] ?? "";
+                    string selectedValue = _model.Rows[rowIndex].LeftValues[j] ?? "";
+
+                    if (currentValue != selectedValue)
                     {
                         same = false;
                         break;
