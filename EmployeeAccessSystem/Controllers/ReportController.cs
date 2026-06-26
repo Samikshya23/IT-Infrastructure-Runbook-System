@@ -457,7 +457,7 @@ namespace EmployeeAccessSystem.Controllers
                     .ThenByDescending(r => r.EntryId)
                     .FirstOrDefault();
 
-                string lastCreator = "-";
+                string lastCreator = "";
                 if (lastReport != null)
                 {
                     string email = lastReport.CreatedBy.Trim().ToLower();
@@ -472,7 +472,19 @@ namespace EmployeeAccessSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendReportEmail(int categoryId, DateTime fromDate, DateTime toDate, string recipientEmail, string fileType, string subject, string message, string senderEmail = null, string senderPassword = null)
+        public async Task<IActionResult> SendReportEmail(
+            int categoryId, 
+            DateTime fromDate, 
+            DateTime toDate, 
+            string recipientEmail, 
+            string fileType, 
+            string subject, 
+            string message, 
+            string senderEmail = null, 
+            string senderPassword = null,
+            string smtpHost = null,
+            int? smtpPort = null,
+            bool? enableSsl = null)
         {
             try
             {
@@ -521,7 +533,10 @@ namespace EmployeeAccessSystem.Controllers
                     subject,
                     message,
                     senderEmail,
-                    senderPassword
+                    senderPassword,
+                    smtpHost,
+                    smtpPort,
+                    enableSsl
                 );
 
                 return Json(new { success = true, message = "Report emailed successfully." });

@@ -163,7 +163,10 @@ namespace EmployeeAccessSystem.Services
             string subject = null, 
             string body = null,
             string senderEmail = null,
-            string senderPassword = null)
+            string senderPassword = null,
+            string smtpHost = null,
+            int? smtpPort = null,
+            bool? enableSsl = null)
         {
             try
             {
@@ -189,6 +192,33 @@ namespace EmployeeAccessSystem.Services
 
                 string activeSenderEmail = !string.IsNullOrWhiteSpace(senderEmail) ? senderEmail.Trim() : settings.SenderEmail;
                 string activeSenderPassword = !string.IsNullOrWhiteSpace(senderPassword) ? senderPassword.Trim() : settings.SenderPassword;
+                string activeSmtpHost = !string.IsNullOrWhiteSpace(smtpHost) ? smtpHost.Trim() : settings.SmtpHost;
+                int activeSmtpPort = smtpPort ?? settings.SmtpPort;
+                bool activeEnableSsl = enableSsl ?? settings.EnableSsl;
+
+                // Auto-detect common email providers if they just type their email address
+                if (string.IsNullOrWhiteSpace(smtpHost) && !string.IsNullOrWhiteSpace(senderEmail))
+                {
+                    string domain = senderEmail.Split('@').Last().ToLower();
+                    if (domain == "gmail.com")
+                    {
+                        activeSmtpHost = "smtp.gmail.com";
+                        activeSmtpPort = 587;
+                        activeEnableSsl = true;
+                    }
+                    else if (domain == "yahoo.com" || domain == "ymail.com")
+                    {
+                        activeSmtpHost = "smtp.mail.yahoo.com";
+                        activeSmtpPort = 587;
+                        activeEnableSsl = true;
+                    }
+                    else if (domain == "outlook.com" || domain == "hotmail.com" || domain == "live.com")
+                    {
+                        activeSmtpHost = "smtp.office365.com";
+                        activeSmtpPort = 587;
+                        activeEnableSsl = true;
+                    }
+                }
 
                 if (string.IsNullOrWhiteSpace(activeSenderEmail))
                 {
@@ -230,17 +260,27 @@ namespace EmployeeAccessSystem.Services
 
                     System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 
-                    using SmtpClient smtpClient = new SmtpClient(settings.SmtpHost);
+                    using SmtpClient smtpClient = new SmtpClient(activeSmtpHost);
 
-                    smtpClient.Port = settings.SmtpPort;
-                    smtpClient.EnableSsl = settings.EnableSsl;
-                    smtpClient.Timeout = 10000;
+                    smtpClient.Port = activeSmtpPort;
+                    smtpClient.EnableSsl = activeEnableSsl;
                     smtpClient.Credentials = new NetworkCredential(
                         activeSenderEmail,
                         activeSenderPassword
                     );
 
-                    await smtpClient.SendMailAsync(mailMessage);
+                    // Enforce a strict 10 second timeout for SendMailAsync in .NET Core
+                    var sendTask = smtpClient.SendMailAsync(mailMessage);
+                    var timeoutTask = Task.Delay(10000);
+
+                    var completedTask = await Task.WhenAny(sendTask, timeoutTask);
+                    if (completedTask == timeoutTask)
+                    {
+                        smtpClient.Dispose(); // Cancel underlying connection
+                        throw new TimeoutException("The SMTP connection timed out. Please check your SMTP Host, Port, and network connection.");
+                    }
+
+                    await sendTask; // Propagate exceptions if any
                 }
 
                 _logger.LogInformation("Report attachment email sent successfully. Email: {Email}", toEmail);

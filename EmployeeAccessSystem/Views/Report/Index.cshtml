@@ -287,7 +287,7 @@
                                              .ThenByDescending(r => r.EntryId)
                                              .FirstOrDefault();
 
-                                         string creatorName = "-";
+                                         string creatorName = "";
                                          if (lastReport != null)
                                          {
                                              string creatorEmail = lastReport.CreatedBy.Trim().ToLower();
@@ -1279,75 +1279,17 @@
 
             // Open email modal
             $(document).on('click', '#btnMailReport', function () {
-                // Reset sender override form to default
-                var defaultEmail = $('#senderEmail').data('default');
-                $('#senderEmailDisplay').val(defaultEmail);
-                $('#senderEmail').val(defaultEmail);
+                $('#senderEmail').val('');
                 $('#senderPassword').val('');
-                
-                $('#txtNewSenderEmail').val('');
-                $('#txtNewSenderPassword').val('');
-                $('#divChangeSender').addClass('d-none');
-                $('#btnResetSender').addClass('d-none');
-                $('#btnChangeSender').removeClass('d-none');
+                $('#smtpHost').val('');
+                $('#smtpPort').val('');
+                $('#enableSsl').prop('checked', true);
+                $('#smtpSettingsCollapse').collapse('hide');
 
                 $('#emailReportModal').modal({
                     backdrop: "static",
                     keyboard: false
                 });
-            });
-
-            // Toggle change sender panel
-            $(document).on('click', '#btnChangeSender', function () {
-                var currentEmail = $('#senderEmail').val();
-                $('#txtNewSenderEmail').val(currentEmail);
-                $('#txtNewSenderPassword').val('');
-                $('#divChangeSender').removeClass('d-none');
-            });
-
-            // Cancel change sender
-            $(document).on('click', '#btnCancelSender', function () {
-                $('#divChangeSender').addClass('d-none');
-            });
-
-            // Apply custom sender
-            $(document).on('click', '#btnApplySender', function () {
-                var newEmail = $('#txtNewSenderEmail').val().trim();
-                var newPassword = $('#txtNewSenderPassword').val().trim();
-
-                var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
-                if (!emailRegex.test(newEmail)) {
-                    toastr.warning('Please enter a valid sender email address.');
-                    return;
-                }
-
-                if (newPassword === '') {
-                    toastr.warning('Please enter the password for the new sender.');
-                    return;
-                }
-
-                // Apply values
-                $('#senderEmailDisplay').val(newEmail);
-                $('#senderEmail').val(newEmail);
-                $('#senderPassword').val(newPassword);
-
-                // UI adjustments
-                $('#divChangeSender').addClass('d-none');
-                $('#btnChangeSender').addClass('d-none');
-                $('#btnResetSender').removeClass('d-none');
-                toastr.success('Custom sender credentials applied.');
-            });
-
-            // Reset sender to default
-            $(document).on('click', '#btnResetSender', function () {
-                var defaultEmail = $('#senderEmail').data('default');
-                $('#senderEmailDisplay').val(defaultEmail);
-                $('#senderEmail').val(defaultEmail);
-                $('#senderPassword').val('');
-
-                $('#btnResetSender').addClass('d-none');
-                $('#btnChangeSender').removeClass('d-none');
-                toastr.info('Sender credentials reset to default.');
             });
 
             // Validate comma-separated emails
@@ -1388,15 +1330,13 @@
                         if (response && response.success === true) {
                             $('#emailReportModal').modal('hide');
                             $('#recipientEmail').val('');
+                            $('#senderEmail').val('');
                             $('#senderPassword').val('');
+                            $('#smtpHost').val('');
+                            $('#smtpPort').val('');
+                            $('#enableSsl').prop('checked', true);
                             $('#subject').val('');
                             $('#message').val('');
-                            
-                            // Revert sender credentials to default after success
-                            var defaultEmail = $('#senderEmail').data('default');
-                            $('#senderEmailDisplay').val(defaultEmail);
-                            $('#senderEmail').val(defaultEmail);
-                            $('#senderPassword').val('');
                             
                             toastr.success(response.message);
                         } else {

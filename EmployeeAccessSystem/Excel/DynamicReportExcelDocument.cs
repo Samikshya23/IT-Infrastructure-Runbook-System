@@ -66,7 +66,7 @@ namespace EmployeeAccessSystem.Excel
                 {
                     string dateKey = date.ToString("yyyy-MM-dd");
                     string headerText = date.ToString("dd MMM");
-                    if (_model.DateCreators != null && _model.DateCreators.TryGetValue(dateKey, out var creator))
+                    if (_model.DateCreators != null && _model.DateCreators.TryGetValue(dateKey, out var creator) && !string.IsNullOrWhiteSpace(creator))
                     {
                         headerText += "\n(" + creator + ")";
                     }

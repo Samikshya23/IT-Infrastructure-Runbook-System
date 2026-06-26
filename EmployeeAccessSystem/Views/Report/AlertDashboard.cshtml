@@ -51,32 +51,32 @@
     .info-box-link {
         text-decoration: none !important;
         cursor: pointer;
-        display: flex;
+        display: block !important;
         transition: all 0.2s ease-in-out;
         border: 2px solid transparent !important;
     }
     .info-box-link:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 18px rgba(0,0,0,0.12) !important;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.08) !important;
     }
     .info-box-link.active-filter[data-type-id="all"] {
         border-color: #17a2b8 !important;
-        box-shadow: 0 6px 14px rgba(23, 162, 184, 0.2) !important;
+        box-shadow: 0 6px 14px rgba(23, 162, 184, 0.15) !important;
         background-color: #f8fafc !important;
     }
     .info-box-link.active-filter[data-type-id="3"] {
         border-color: #ffc107 !important;
-        box-shadow: 0 6px 14px rgba(255, 193, 7, 0.2) !important;
+        box-shadow: 0 6px 14px rgba(255, 193, 7, 0.15) !important;
         background-color: #f8fafc !important;
     }
     .info-box-link.active-filter[data-type-id="4"] {
         border-color: #dc3545 !important;
-        box-shadow: 0 6px 14px rgba(220, 53, 69, 0.2) !important;
+        box-shadow: 0 6px 14px rgba(220, 53, 69, 0.15) !important;
         background-color: #f8fafc !important;
     }
     .info-box-link.active-filter[data-type-id="5"] {
         border-color: #6f42c1 !important;
-        box-shadow: 0 6px 14px rgba(111, 66, 193, 0.2) !important;
+        box-shadow: 0 6px 14px rgba(111, 66, 193, 0.15) !important;
         background-color: #f8fafc !important;
     }
     .progress-group .progress {
@@ -88,64 +88,54 @@
 <div class="card shadow-sm mb-0 h-100">
     <div class="card-header bg-white py-2">
         <div class="d-flex justify-content-between align-items-center">
-            <h3 class="mb-0 text-danger font-weight-bold">
-                <i class="fas fa-exclamation-triangle mr-2 text-danger"></i>Alert Dashboard
-            </h3>
+            <h3 class="mb-0">Alert Dashboard</h3>
             <a asp-controller="Report" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left mr-1"></i>Back to Reports
+                Back to Reports
             </a>
         </div>
     </div>
     
     <div class="card-body p-2">
         
-        <!-- Summary Info Boxes -->
+        <!-- Summary Filter Cards -->
         <div class="row mb-3">
             <div class="col-12 col-sm-6 col-md-3">
                 <a href="javascript:void(0);" 
-                   class="info-box shadow-sm text-dark info-box-link filter-card active-filter"
-                   data-type-id="all">
-                    <span class="info-box-icon bg-info"><i class="fas fa-bell"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text text-sm">Total Alerts</span>
-                        <span class="info-box-number font-weight-bold h4 mb-0">@totalAlerts</span>
-                    </div>
+                   class="card border shadow-sm filter-card active-filter info-box-link text-center p-3"
+                   data-type-id="all"
+                   style="border-radius: 12px; background: #fff; display: block; text-decoration: none;">
+                    <div class="text-muted text-sm mb-1">Total Alerts</div>
+                    <div class="font-weight-bold h3 mb-0">@totalAlerts</div>
                 </a>
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
                 <a href="javascript:void(0);" 
-                   class="info-box shadow-sm text-dark info-box-link filter-card"
-                   data-type-id="3">
-                    <span class="info-box-icon bg-warning text-white"><i class="fas fa-chart-line text-white"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text text-sm">Utilizations &ge; 90%</span>
-                        <span class="info-box-number font-weight-bold h4 mb-0">@percentageAlerts</span>
-                    </div>
+                   class="card border shadow-sm filter-card info-box-link text-center p-3"
+                   data-type-id="3"
+                   style="border-radius: 12px; background: #fff; display: block; text-decoration: none;">
+                    <div class="text-muted text-sm mb-1">Utilizations &ge; 90%</div>
+                    <div class="font-weight-bold h3 mb-0">@percentageAlerts</div>
                 </a>
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
                 <a href="javascript:void(0);" 
-                   class="info-box shadow-sm text-dark info-box-link filter-card"
-                   data-type-id="4">
-                    <span class="info-box-icon bg-danger"><i class="fas fa-times-circle"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text text-sm">Checklist Failures</span>
-                        <span class="info-box-number font-weight-bold h4 mb-0">@crossAlerts</span>
-                    </div>
+                   class="card border shadow-sm filter-card info-box-link text-center p-3"
+                   data-type-id="4"
+                   style="border-radius: 12px; background: #fff; display: block; text-decoration: none;">
+                    <div class="text-muted text-sm mb-1">Checklist Failures</div>
+                    <div class="font-weight-bold h3 mb-0">@crossAlerts</div>
                 </a>
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
                 <a href="javascript:void(0);" 
-                   class="info-box shadow-sm text-dark info-box-link filter-card"
-                   data-type-id="5">
-                    <span class="info-box-icon bg-purple text-white" style="background-color: #6f42c1 !important;"><i class="fas fa-arrow-alt-circle-down"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text text-sm">Services Down</span>
-                        <span class="info-box-number font-weight-bold h4 mb-0">@downAlerts</span>
-                    </div>
+                   class="card border shadow-sm filter-card info-box-link text-center p-3"
+                   data-type-id="5"
+                   style="border-radius: 12px; background: #fff; display: block; text-decoration: none;">
+                    <div class="text-muted text-sm mb-1">Services Down</div>
+                    <div class="font-weight-bold h3 mb-0">@downAlerts</div>
                 </a>
             </div>
         </div>
@@ -185,10 +175,7 @@
                             <div class="form-group mb-2">
                                 <label for="alertDateRange">Date Range</label>
                                 <div class="input-group">
-                                    <input type="text" id="alertDateRange" class="form-control bg-white" readonly />
-                                    <div class="input-group-append">
-                                        <span class="input-group-text" id="alertDateRangeIcon" style="cursor:pointer;"><i class="far fa-calendar-alt"></i></span>
-                                    </div>
+                                    <input type="text" id="alertDateRange" class="form-control bg-white" readonly style="cursor:pointer;" placeholder="Select Date Range" />
                                 </div>
                             </div>
                         </div>
@@ -201,7 +188,7 @@
         <div class="card card-primary card-outline mb-0">
             <div class="card-header bg-white py-2">
                 <h3 class="card-title font-weight-bold mb-0 align-middle" style="line-height: 28px;">
-                    <i class="fas fa-list mr-2 text-primary"></i>Alert Entries (@fromDate.ToString("dd MMM yyyy") - @toDate.ToString("dd MMM yyyy"))
+                    Alert Entries (@fromDate.ToString("dd MMM yyyy") - @toDate.ToString("dd MMM yyyy"))
                 </h3>
             </div>
             
@@ -268,8 +255,8 @@
                                             }
                                         </td>
                                         <td class="text-center align-middle">
-                                            <a href="/CategoryChecklist/Index?categoryId=@alert.CategoryId" class="btn btn-light border btn-sm p-0 d-inline-flex align-items-center justify-content-center" title="Edit/View Checklist" style="width:24px;height:24px;">
-                                                <i class="fas fa-pen" style="font-size:10px;"></i>
+                                            <a href="/CategoryChecklist/Index?categoryId=@alert.CategoryId" class="btn btn-light border btn-sm px-2 py-1" title="Edit/View Checklist" style="font-size:12px; font-weight: 500;">
+                                                Edit
                                             </a>
                                         </td>
                                     </tr>
@@ -298,7 +285,7 @@
             <div class="modal-content">
                 <div class="modal-header bg-info text-white py-2">
                     <h5 class="modal-title font-weight-bold text-md" id="categoryDetailsModalLabel">
-                        <i class="fas fa-list mr-1"></i> <span id="modalCategoryName">Category</span> Entries for <span id="modalDateStr">Date</span>
+                        <span id="modalCategoryName">Category</span> Entries for <span id="modalDateStr">Date</span>
                     </h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -388,9 +375,7 @@
                 $('#alertFilterForm').submit();
             });
 
-            $('#alertDateRangeIcon').on('click', function () {
-                $('#alertDateRange').trigger('click');
-            });
+
 
             // Select2 initialization
             $('.select2bs4').select2({
@@ -511,16 +496,16 @@
 
                                     if (item.isAlert) {
                                         if (item.valueTypeId === 3) {
-                                            valBadge = '<span class="badge badge-warning text-white" style="font-size:12px; background-color: #fd7e14 !important;"><i class="fas fa-exclamation-triangle mr-1"></i>' + item.displayValue + '</span>';
+                                            valBadge = '<span class="badge badge-warning text-white" style="font-size:12px; background-color: #fd7e14 !important;">' + item.displayValue + '</span>';
                                         } else if (item.valueTypeId === 4) {
-                                            valBadge = '<span class="badge badge-danger" style="font-size:12px;"><i class="fas fa-times-circle mr-1"></i>' + item.displayValue + '</span>';
+                                            valBadge = '<span class="badge badge-danger" style="font-size:12px;">' + item.displayValue + '</span>';
                                         } else if (item.valueTypeId === 5) {
-                                            valBadge = '<span class="badge badge-purple text-white" style="font-size:12px; background-color: #6f42c1 !important;"><i class="fas fa-arrow-down mr-1"></i>' + item.displayValue + '</span>';
+                                            valBadge = '<span class="badge badge-purple text-white" style="font-size:12px; background-color: #6f42c1 !important;">' + item.displayValue + '</span>';
                                         }
                                     } else {
                                         // Standard display values
                                         if (item.displayValue === '✓' || item.displayValue === 'Up') {
-                                            valBadge = '<span class="badge badge-success text-xs" style="font-size:11px;"><i class="fas fa-check-circle mr-1"></i>' + item.displayValue + '</span>';
+                                            valBadge = '<span class="badge badge-success text-xs" style="font-size:11px;">' + item.displayValue + '</span>';
                                         } else {
                                             valBadge = '<span class="text-dark">' + item.displayValue + '</span>';
                                         }
@@ -544,13 +529,13 @@
                             $('#modalTableContainer').removeClass('d-none');
                         } else {
                             var errMsg = response ? response.message : "Failed to load details.";
-                            $('#modalTableBody').html('<tr><td colspan="5" class="text-center text-danger p-3"><i class="fas fa-exclamation-triangle mr-1"></i>' + errMsg + '</td></tr>');
+                            $('#modalTableBody').html('<tr><td colspan="5" class="text-center text-danger p-3">' + errMsg + '</td></tr>');
                             $('#modalTableContainer').removeClass('d-none');
                         }
                     },
                     error: function () {
                         $('#modalLoadingSpinner').addClass('d-none');
-                        $('#modalTableBody').html('<tr><td colspan="5" class="text-center text-danger p-3"><i class="fas fa-exclamation-triangle mr-1"></i>Connection error. Unable to load details.</td></tr>');
+                        $('#modalTableBody').html('<tr><td colspan="5" class="text-center text-danger p-3">Connection error. Unable to load details.</td></tr>');
                         $('#modalTableContainer').removeClass('d-none');
                     }
                 });

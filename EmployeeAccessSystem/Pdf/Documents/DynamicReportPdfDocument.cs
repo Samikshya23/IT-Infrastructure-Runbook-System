@@ -67,7 +67,7 @@ namespace EmployeeAccessSystem.Pdf.Documents
                         {
                             string dateKey = date.ToString("yyyy-MM-dd");
                             string headerText = date.ToString("dd") + "\n" + date.ToString("ddd");
-                            if (_model.DateCreators != null && _model.DateCreators.TryGetValue(dateKey, out var creator))
+                            if (_model.DateCreators != null && _model.DateCreators.TryGetValue(dateKey, out var creator) && !string.IsNullOrWhiteSpace(creator))
                             {
                                 headerText += "\n(" + creator + ")";
                             }

@@ -1,22 +1,71 @@
 @{
     ViewData["Title"] = "Dashboard";
+    var hour = DateTime.Now.Hour;
+    var greeting = "Welcome back";
+    if (hour < 12) greeting = "Good morning";
+    else if (hour < 18) greeting = "Good afternoon";
+    else greeting = "Good evening";
+
+    var recentActivities = ViewBag.RecentActivities as List<EmployeeAccessSystem.Models.Report> ?? new List<EmployeeAccessSystem.Models.Report>();
+    var userMap = ViewBag.UserMap as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var totalCategories = ViewBag.TotalCategories ?? 0;
+    var totalChecks = ViewBag.TotalChecks ?? 0;
+    var activeAlertsCount = ViewBag.ActiveAlertsCount ?? 0;
+    var totalUsers = ViewBag.TotalUsers ?? 0;
 }
 
-<div class="container-fluid pt-3">
-    <div class="row">
-        <div class="col-12 col-md-8 col-lg-6">
-            <div class="card card-outline card-primary shadow-sm" style="border-radius: 12px;">
-                <div class="card-body p-4">
-                    <h2 class="text-primary font-weight-bold mb-3">
-                        <i class="fas fa-hand-holding-heart mr-2"></i>Hello, @User.Identity?.Name!
-                    </h2>
-                    <p class="lead text-muted">Welcome to the IT Infrastructure Runbook System.</p>
-                    <hr class="my-4" />
-                    <p class="text-secondary">
-                        Please use the sidebar menu on the left to navigate and manage the modules assigned to you.
-                    </p>
-                </div>
-            </div>
+<div class="container-fluid pt-4 px-4" style="background-color: #f8fafc; min-height: calc(100vh - 57px);">
+    
+    <!-- Welcome Banner Card -->
+    <div class="card border-0 mb-4 overflow-hidden position-relative shadow-sm" style="border-radius: 20px; background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%); color: #fff;">
+        <div class="card-body p-4 p-md-5 position-relative" style="z-index: 2; max-width: 70%;">
+            <h1 class="font-weight-bold mb-2" style="font-size: 32px; letter-spacing: -0.5px;">@greeting, @User.Identity?.Name!</h1>
+            <p class="mb-0" style="font-size: 16px; opacity: 0.9;">
+                @if (activeAlertsCount > 0)
+                {
+                    <span>You have <b>@activeAlertsCount</b> active checklist alerts that require your attention today. Let's resolve them.</span>
+                }
+                else
+                {
+                    <span>All checklist items are currently healthy and operational. Excellent status!</span>
+                }
+            </p>
         </div>
+        
+        <!-- SVG Server Rack Illustration -->
+        <svg class="d-none d-lg-block position-absolute" style="right: 50px; bottom: -15px; width: 220px; height: 220px;" viewBox="0 0 200 200">
+            <!-- Server Chassis base -->
+            <rect x="40" y="30" width="120" height="150" rx="12" fill="#1e1b4b" opacity="0.95" />
+            
+            <!-- Server Slot 1 -->
+            <rect x="50" y="45" width="100" height="30" rx="6" fill="#312e81" />
+            <circle cx="62" cy="60" r="4" fill="#22c55e" />
+            <circle cx="74" cy="60" r="4" fill="#22c55e" />
+            <rect x="90" y="58" width="45" height="4" rx="2" fill="#4338ca" />
+            
+            <!-- Server Slot 2 -->
+            <rect x="50" y="85" width="100" height="30" rx="6" fill="#312e81" />
+            <circle cx="62" cy="100" r="4" fill="#22c55e" />
+            @if (activeAlertsCount > 0)
+            {
+                <circle cx="74" cy="100" r="4" fill="#ef4444" />
+            }
+            else
+            {
+                <circle cx="74" cy="100" r="4" fill="#22c55e" />
+            }
+            <rect x="90" y="98" width="45" height="4" rx="2" fill="#4338ca" />
+
+            <!-- Server Slot 3 -->
+            <rect x="50" y="125" width="100" height="30" rx="6" fill="#312e81" />
+            <circle cx="62" cy="140" r="4" fill="#22c55e" />
+            <circle cx="74" cy="140" r="4" fill="#eab308" />
+            <rect x="90" y="138" width="45" height="4" rx="2" fill="#4338ca" />
+
+            <!-- Floating visual node links -->
+            <circle cx="160" cy="50" r="8" fill="#60a5fa" opacity="0.6" />
+            <circle cx="170" cy="140" r="12" fill="#818cf8" opacity="0.4" />
+        </svg>
     </div>
 </div>
+
