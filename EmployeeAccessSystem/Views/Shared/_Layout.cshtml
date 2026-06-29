@@ -64,6 +64,22 @@
     <!-- Common access denied AJAX handler -->
     <script src="~/js/common/access-denied-handler.js" asp-append-version="true"></script>
 
+    @if (TempData["Success"] != null || TempData["Error"] != null)
+    {
+        <script>
+            $(document).ready(function() {
+                @if (TempData["Success"] != null)
+                {
+                    <text>toastr.success('@Html.Raw(TempData["Success"])');</text>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <text>toastr.error('@Html.Raw(TempData["Error"])');</text>
+                }
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

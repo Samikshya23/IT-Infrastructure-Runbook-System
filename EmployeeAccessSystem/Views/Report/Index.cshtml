@@ -1319,14 +1319,14 @@
                 var form = $(this);
                 var submitBtn = $('#btnSendReportEmailSubmit');
                 
-                submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');
+                submitBtn.prop('disabled', true).text('Sending...');
 
                 $.ajax({
-                    url: '/Report/SendReportEmail',
+                    url: '/Email/SendReportEmail',
                     type: 'POST',
                     data: form.serialize(),
                     success: function (response) {
-                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send');
+                        submitBtn.prop('disabled', false).text('Send');
                         if (response && response.success === true) {
                             $('#emailReportModal').modal('hide');
                             $('#recipientEmail').val('');
@@ -1344,7 +1344,7 @@
                         }
                     },
                     error: function (xhr) {
-                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send');
+                        submitBtn.prop('disabled', false).text('Send');
                         if (xhr.status === 401) {
                             toastr.error("Please login first.");
                             return;

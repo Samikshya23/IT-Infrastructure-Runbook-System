@@ -1,16 +1,22 @@
-﻿@model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
+@model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
 
 @{
     int roleId = ViewBag.RoleId;
     string roleName = ViewBag.RoleName;
 }
 
-<div class="modal-header bg-white">
+<div class="modal-header bg-primary py-2 text-white">
 
-    <h5 class="modal-title font-weight-bold">
-        <i class="fas fa-key mr-1"></i>
+    <h6 class="modal-title text-white mb-0">
         Role Permission
-    </h5>
+    </h6>
+
+    <button type="button"
+            class="close text-white"
+            data-dismiss="modal"
+            aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
 
 </div>
 
@@ -180,14 +186,13 @@
 
     </div>
 
-    <div class="modal-footer bg-white">
+    <div class="modal-footer bg-light py-2">
 
         <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
             Back
         </button>
 
-        <button type="submit" class="btn btn-primary btn-sm">
-            <i class="fas fa-save mr-1"></i>
+        <button type="submit" class="btn btn-primary btn-sm px-3">
             Save
         </button>
 

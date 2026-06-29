@@ -1,4 +1,4 @@
-﻿@using System
+@using System
 @using System.Collections.Generic
 @using System.Linq
 @model List<EmployeeAccessSystem.Models.AccessControlRoleActionModel>
@@ -42,15 +42,14 @@
     }
 }
 
-<div class="modal-header bg-white py-2">
+<div class="modal-header bg-primary py-2 text-white">
 
-    <h5 class="modal-title font-weight-bold">
-        <i class="fas fa-key mr-1"></i>
+    <h6 class="modal-title text-white mb-0">
         User Permission
-    </h5>
+    </h6>
 
     <button type="button"
-            class="close"
+            class="close text-white"
             data-dismiss="modal"
             aria-label="Close">
         <span aria-hidden="true">&times;</span>
@@ -339,7 +338,7 @@
 
     </div>
 
-    <div class="modal-footer py-2">
+    <div class="modal-footer py-2 bg-light">
 
         <button type="button"
                 class="btn btn-secondary btn-sm"
@@ -348,8 +347,7 @@
         </button>
 
         <button type="submit"
-                class="btn btn-primary btn-sm">
-            <i class="fas fa-save mr-1"></i>
+                class="btn btn-primary btn-sm px-3">
             Save
         </button>
 

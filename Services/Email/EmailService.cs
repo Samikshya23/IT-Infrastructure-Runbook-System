@@ -13,6 +13,9 @@ namespace EmployeeAccessSystem.Services
         private readonly IEmailRepository _emailRepository;
         private readonly ILogger<EmailService> _logger;
 
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string host, int port, bool ssl)> _smtpCache = 
+            new System.Collections.Concurrent.ConcurrentDictionary<string, (string, int, bool)>(StringComparer.OrdinalIgnoreCase);
+
         public EmailService(
             IEmailRepository emailRepository,
             ILogger<EmailService> logger)
@@ -192,32 +195,20 @@ namespace EmployeeAccessSystem.Services
 
                 string activeSenderEmail = !string.IsNullOrWhiteSpace(senderEmail) ? senderEmail.Trim() : settings.SenderEmail;
                 string activeSenderPassword = !string.IsNullOrWhiteSpace(senderPassword) ? senderPassword.Trim() : settings.SenderPassword;
-                string activeSmtpHost = !string.IsNullOrWhiteSpace(smtpHost) ? smtpHost.Trim() : settings.SmtpHost;
-                int activeSmtpPort = smtpPort ?? settings.SmtpPort;
-                bool activeEnableSsl = enableSsl ?? settings.EnableSsl;
+                
+                string activeSmtpHost = "";
+                int activeSmtpPort = 587;
+                bool activeEnableSsl = true;
 
-                // Auto-detect common email providers if they just type their email address
-                if (string.IsNullOrWhiteSpace(smtpHost) && !string.IsNullOrWhiteSpace(senderEmail))
+                if (!string.IsNullOrWhiteSpace(senderEmail))
                 {
-                    string domain = senderEmail.Split('@').Last().ToLower();
-                    if (domain == "gmail.com")
-                    {
-                        activeSmtpHost = "smtp.gmail.com";
-                        activeSmtpPort = 587;
-                        activeEnableSsl = true;
-                    }
-                    else if (domain == "yahoo.com" || domain == "ymail.com")
-                    {
-                        activeSmtpHost = "smtp.mail.yahoo.com";
-                        activeSmtpPort = 587;
-                        activeEnableSsl = true;
-                    }
-                    else if (domain == "outlook.com" || domain == "hotmail.com" || domain == "live.com")
-                    {
-                        activeSmtpHost = "smtp.office365.com";
-                        activeSmtpPort = 587;
-                        activeEnableSsl = true;
-                    }
+                    activeSmtpHost = ResolveSmtpHostFromMx(activeSenderEmail, out activeSmtpPort, out activeEnableSsl);
+                }
+                else
+                {
+                    activeSmtpHost = settings.SmtpHost;
+                    activeSmtpPort = settings.SmtpPort;
+                    activeEnableSsl = settings.EnableSsl;
                 }
 
                 if (string.IsNullOrWhiteSpace(activeSenderEmail))
@@ -269,9 +260,9 @@ namespace EmployeeAccessSystem.Services
                         activeSenderPassword
                     );
 
-                    // Enforce a strict 10 second timeout for SendMailAsync in .NET Core
+                    // Enforce a strict 5 second timeout for SendMailAsync in .NET Core
                     var sendTask = smtpClient.SendMailAsync(mailMessage);
-                    var timeoutTask = Task.Delay(10000);
+                    var timeoutTask = Task.Delay(5000);
 
                     var completedTask = await Task.WhenAny(sendTask, timeoutTask);
                     if (completedTask == timeoutTask)
@@ -290,6 +281,134 @@ namespace EmployeeAccessSystem.Services
                 _logger.LogError(ex, "Error while sending report attachment email. Email: {Email}", toEmail);
                 throw;
             }
+        }
+
+        private string ResolveSmtpHostFromMx(string senderEmail, out int port, out bool enableSsl)
+        {
+            // Default fallbacks
+            port = 587;
+            enableSsl = true;
+
+            if (string.IsNullOrWhiteSpace(senderEmail) || !senderEmail.Contains("@"))
+            {
+                return "";
+            }
+
+            string domain = senderEmail.Split('@').Last().Trim().ToLower();
+
+            // Check cache first
+            if (_smtpCache.TryGetValue(domain, out var cached))
+            {
+                port = cached.port;
+                enableSsl = cached.ssl;
+                return cached.host;
+            }
+
+            string host = "";
+
+            // 1. Direct check for popular domains
+            if (domain == "gmail.com")
+            {
+                host = "smtp.gmail.com";
+            }
+            else if (domain == "yahoo.com" || domain == "ymail.com" || domain == "rocketmail.com")
+            {
+                host = "smtp.mail.yahoo.com";
+            }
+            else if (domain == "outlook.com" || domain == "hotmail.com" || domain == "live.com" || domain == "msn.com")
+            {
+                host = "smtp.office365.com";
+            }
+            else if (domain == "zoho.com")
+            {
+                host = "smtp.zoho.com";
+            }
+            else if (domain == "yandex.com")
+            {
+                host = "smtp.yandex.com";
+            }
+
+            if (!string.IsNullOrEmpty(host))
+            {
+                _smtpCache[domain] = (host, port, enableSsl);
+                return host;
+            }
+
+            // 2. Perform MX lookup for custom domains
+            try
+            {
+                using (var process = new System.Diagnostics.Process())
+                {
+                    process.StartInfo.FileName = "nslookup";
+                    process.StartInfo.Arguments = $"-type=MX {domain}";
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.Start();
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        string lowerOutput = output.ToLower();
+                        
+                        // Check if Google Workspace is hosting this domain
+                        if (lowerOutput.Contains("google.com") || lowerOutput.Contains("googlemail.com"))
+                        {
+                            host = "smtp.gmail.com";
+                        }
+                        // Check if Microsoft 365 / Exchange Online is hosting this domain
+                        else if (lowerOutput.Contains("outlook.com") || lowerOutput.Contains("mail.protection.outlook.com"))
+                        {
+                            host = "smtp.office365.com";
+                        }
+                        // Check if Zoho Mail is hosting this domain
+                        else if (lowerOutput.Contains("zoho.com"))
+                        {
+                            host = "smtp.zoho.com";
+                        }
+                        // Check if Yandex Mail is hosting this domain
+                        else if (lowerOutput.Contains("yandex.com"))
+                        {
+                            host = "smtp.yandex.com";
+                        }
+                        else
+                        {
+                            // Extract the primary mail exchanger host
+                            var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var line in lines)
+                            {
+                                if (line.Contains("mail exchanger ="))
+                                {
+                                    var parts = line.Split(new[] { "mail exchanger =" }, StringSplitOptions.None);
+                                    if (parts.Length > 1)
+                                    {
+                                        string resolved = parts[1].Trim().TrimEnd('.');
+                                        if (!string.IsNullOrEmpty(resolved))
+                                        {
+                                            host = resolved;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to resolve MX records for domain {Domain}", domain);
+            }
+
+            if (string.IsNullOrEmpty(host))
+            {
+                host = $"mail.{domain}";
+            }
+
+            _smtpCache[domain] = (host, port, enableSsl);
+            return host;
         }
 
         private bool IsValidEmail(string email)

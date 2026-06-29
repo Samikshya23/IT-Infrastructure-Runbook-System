@@ -34,11 +34,11 @@ namespace EmployeeAccessSystem.Repositories
         {
             try
             {
-                string path = Path.Combine(Directory.GetCurrentDirectory(), "EmailTemplates", fileName);
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Views", "Email", fileName);
                 if (!File.Exists(path))
                 {
                     // Fallback to checking the Web project subdirectory context if run from solution root
-                    string fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "EmployeeAccessSystem", "EmailTemplates", fileName);
+                    string fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "EmployeeAccessSystem", "Views", "Email", fileName);
                     if (File.Exists(fallbackPath))
                     {
                         path = fallbackPath;
@@ -60,17 +60,17 @@ namespace EmployeeAccessSystem.Repositories
 
         public async Task<string> GetUserPasswordEmailTemplateAsync()
         {
-            return await LoadTemplateFileAsync("UserPasswordEmail.html");
+            return await LoadTemplateFileAsync("UserPasswordEmail.cshtml");
         }
 
         public async Task<string> GetForgotPasswordEmailTemplateAsync()
         {
-            return await LoadTemplateFileAsync("ForgotPasswordEmail.html");
+            return await LoadTemplateFileAsync("ForgotPasswordEmail.cshtml");
         }
 
         public async Task<string> GetReportAttachmentEmailTemplateAsync()
         {
-            return await LoadTemplateFileAsync("ReportAttachmentEmail.html");
+            return await LoadTemplateFileAsync("ReportAttachmentEmail.cshtml");
         }
     }
 }
